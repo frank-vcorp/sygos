@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { getDb } from "./client";
-import { companies, userCompanyAccess, users } from "./schema";
+import { clients, companies, integrationSettings, suppliers, userCompanyAccess, users } from "./schema";
 
 export async function seedBase() {
   const db = getDb();
@@ -52,6 +52,31 @@ export async function seedBase() {
       userId: vectoria.id,
       companyId: company.id,
     });
+  }
+
+  await db.insert(clients).values({
+    companyId: servomotores.id,
+    name: "SYSTRON",
+    isIntercompany: true,
+    requiresInvoice: true,
+    responsibleUserId: vectoria.id,
+  });
+
+  await db.insert(suppliers).values({
+    companyId: systron.id,
+    name: "Servomotores",
+    isIntercompany: true,
+    emitsFiscalInvoice: true,
+  });
+
+  for (const company of [systron, servomotores]) {
+    for (const integration of ["FACTURAPI", "SENDGRID", "WHATSAPP"] as const) {
+      await db.insert(integrationSettings).values({
+        companyId: company.id,
+        integration,
+        configured: false,
+      });
+    }
   }
 
   return { skipped: false as const };

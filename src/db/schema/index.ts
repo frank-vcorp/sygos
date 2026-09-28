@@ -1,4 +1,14 @@
-import { pgTable, uuid, text, timestamp, boolean, pgEnum, uniqueIndex, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  boolean,
+  pgEnum,
+  uniqueIndex,
+  index,
+  integer,
+} from "drizzle-orm/pg-core";
 
 export const companyCodeEnum = pgEnum("company_code", ["SYSTRON", "SERVOMOTORES"]);
 
@@ -96,4 +106,124 @@ export const folioSequences = pgTable(
     uniqueIndex("folio_sequences_unique").on(t.scope, t.companyId, t.key),
     index("folio_sequences_company_idx").on(t.companyId),
   ],
+);
+
+export const clientClassificationEnum = pgEnum("client_classification", ["NORMAL", "PREMIUM"]);
+
+export const clients = pgTable(
+  "clients",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    name: text("name").notNull(),
+    classification: clientClassificationEnum("classification").default("NORMAL"),
+    responsibleUserId: uuid("responsible_user_id").references(() => users.id),
+    shippingAddress: text("shipping_address"),
+    taxIdentity: text("tax_identity"),
+    creditDays: integer("credit_days").notNull().default(0),
+    requiresInvoice: boolean("requires_invoice").notNull().default(true),
+    isIntercompany: boolean("is_intercompany").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    version: integer("version").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("clients_company_name_idx").on(t.companyId, t.name),
+    index("clients_company_active_idx").on(t.companyId, t.active),
+  ],
+);
+
+export const clientContacts = pgTable(
+  "client_contacts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    phone: text("phone"),
+    roleTitle: text("role_title"),
+    email: text("email"),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("client_contacts_client_idx").on(t.clientId)],
+);
+
+export const prospectStatusEnum = pgEnum("prospect_status", [
+  "NUEVO",
+  "EN_SEGUIMIENTO",
+  "CONVERTIDO",
+  "DESCARTADO",
+]);
+
+export const prospects = pgTable(
+  "prospects",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    name: text("name").notNull(),
+    responsibleUserId: uuid("responsible_user_id").references(() => users.id),
+    source: text("source"),
+    note: text("note"),
+    status: prospectStatusEnum("status").notNull().default("NUEVO"),
+    convertedClientId: uuid("converted_client_id").references(() => clients.id),
+    active: boolean("active").notNull().default(true),
+    version: integer("version").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("prospects_company_status_idx").on(t.companyId, t.status),
+    index("prospects_company_name_idx").on(t.companyId, t.name),
+  ],
+);
+
+export const suppliers = pgTable(
+  "suppliers",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    name: text("name").notNull(),
+    contactName: text("contact_name"),
+    phone: text("phone"),
+    email: text("email"),
+    taxIdentity: text("tax_identity"),
+    creditDays: integer("credit_days").notNull().default(0),
+    emitsFiscalInvoice: boolean("emits_fiscal_invoice").notNull().default(true),
+    category: text("category"),
+    isIntercompany: boolean("is_intercompany").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    version: integer("version").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("suppliers_company_name_idx").on(t.companyId, t.name),
+    index("suppliers_company_active_idx").on(t.companyId, t.active),
+  ],
+);
+
+export const integrationKeyEnum = pgEnum("integration_key", ["FACTURAPI", "SENDGRID", "WHATSAPP"]);
+
+export const integrationSettings = pgTable(
+  "integration_settings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    integration: integrationKeyEnum("integration").notNull(),
+    configured: boolean("configured").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("integration_settings_company_key").on(t.companyId, t.integration)],
 );

@@ -59,8 +59,8 @@ export default async function AppHomePage() {
       )}
 
       <section className="rounded-xl border border-dashed border-border bg-white/60 p-6 text-sm text-slate-600">
-        Próximo en Bloque 1: maestros (Clientes, Prospectos, Proveedores), folios, búsqueda global restringida
-        y reglas transversales del Discovery.
+        Bloque 1 en curso: maestros (Clientes, Prospectos, Proveedores), folios, búsqueda global CEO/Administrador e
+        integraciones configurables por empresa.
       </section>
     </div>
   );

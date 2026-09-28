@@ -1,7 +1,16 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
+import { canUseGlobalSearch } from "@/lib/permissions";
+import { GlobalSearch } from "@/components/global-search";
 import { logoutAction } from "../login/actions";
+
+const nav = [
+  { href: "/app", label: "Inicio" },
+  { href: "/app/clientes", label: "Clientes" },
+  { href: "/app/prospectos", label: "Prospectos" },
+  { href: "/app/proveedores", label: "Proveedores" },
+];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -10,26 +19,34 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen">
       <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
             <Link href="/app" className="text-sm font-semibold tracking-tight">
               SYGOS
             </Link>
             <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white">
               {session.activeCompany.displayName}
             </span>
+            <nav className="flex flex-wrap gap-2 text-sm text-slate-600">
+              {nav.map((item) => (
+                <Link key={item.href} href={item.href} className="hover:text-accent">
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
           </div>
-          <div className="flex items-center gap-3 text-sm text-slate-600">
-            <span>{session.displayName}</span>
+          <div className="flex flex-wrap items-center gap-3">
+            {canUseGlobalSearch(session.role) && <GlobalSearch />}
+            <span className="text-sm text-slate-600">{session.displayName}</span>
             <form action={logoutAction}>
-              <button type="submit" className="text-accent underline-offset-2 hover:underline">
+              <button type="submit" className="text-sm text-accent underline-offset-2 hover:underline">
                 Salir
               </button>
             </form>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
   );
 }
