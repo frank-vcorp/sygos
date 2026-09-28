@@ -3,7 +3,7 @@ set -eu
 
 if [ -n "${DATABASE_URL:-}" ]; then
   echo "[sygos] Running migrations..."
-  npx drizzle-kit migrate
+  ./node_modules/.bin/drizzle-kit migrate
   if [ "${SYGOS_AUTO_SEED:-0}" = "1" ]; then
     echo "[sygos] Running seed..."
     npm run db:seed
