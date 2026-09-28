@@ -12,11 +12,17 @@ strip_wrapping_quotes() {
 if [ -n "${DATABASE_URL:-}" ]; then
   DATABASE_URL=$(strip_wrapping_quotes "$DATABASE_URL")
   export DATABASE_URL
+  export CI=1
   echo "[sygos] Running migrations..."
-  ./node_modules/.bin/drizzle-kit migrate
+  if ! timeout 45 ./node_modules/.bin/drizzle-kit migrate; then
+    echo "[sygos] ERROR: migrations failed or timed out"
+    exit 1
+  fi
   if [ "${SYGOS_AUTO_SEED:-0}" = "1" ]; then
     echo "[sygos] Running seed..."
-    npm run db:seed
+    SYGOS_VECTORIA_INITIAL_PASSWORD=$(strip_wrapping_quotes "${SYGOS_VECTORIA_INITIAL_PASSWORD:-}")
+    export SYGOS_VECTORIA_INITIAL_PASSWORD
+    CI=1 npm run db:seed
   fi
 else
   echo "[sygos] WARN: DATABASE_URL not set; skipping migrations"
