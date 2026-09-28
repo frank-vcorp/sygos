@@ -1,10 +1,15 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { companies, userCompanyAccess, users } from "@/db/schema";
 
 export async function findUserByUsername(username: string) {
   const db = getDb();
-  const rows = await db.select().from(users).where(eq(users.username, username)).limit(1);
+  const normalized = username.trim().toLowerCase();
+  const rows = await db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.username}) = ${normalized}`)
+    .limit(1);
   return rows[0] ?? null;
 }
 

@@ -28,6 +28,7 @@ async function LoginForm({ errorPromise }: { errorPromise: Promise<{ error?: str
               name="username"
               autoComplete="username"
               required
+              placeholder="Vectoria"
               className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
             />
           </label>
