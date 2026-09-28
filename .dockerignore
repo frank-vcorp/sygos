@@ -1,0 +1,9 @@
+.next
+node_modules
+.git
+*.md
+!README.md
+.env
+.env.*
+!.env.example
+drizzle/meta

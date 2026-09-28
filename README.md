@@ -33,6 +33,13 @@ Incluye además venta de equipo, servicio en campo, garantías, servicio externo
 5. Roles fijos (sin constructor de permisos).
 6. Integraciones reales (Facturapi, SendGrid, etc.) — sin simular éxito en producción.
 
+## Stack (implementación)
+
+Ver [`docs/STACK.md`](./docs/STACK.md).
+
+- **Next.js 15** + **PostgreSQL** + **Drizzle** — consultas indexadas por empresa, despliegue Docker en Coolify.
+- Staging: **`https://sygos.vector-ia.mx`** (subdominio `sygos`; si el dominio principal está caído, usar la URL del servicio en Coolify hasta restaurar DNS).
+
 ## Documentación
 
 | Documento | Contenido |
