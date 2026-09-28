@@ -29,6 +29,13 @@ export default async function CuentaPage({
         <p className="mt-1 text-sm text-slate-600">
           {session.displayName} · {session.username} · {session.role.replaceAll("_", " ")}
         </p>
+        {session.username !== "Vectoria" && (
+          <p className="mt-2 text-xs text-slate-500">
+            Usuarios demo: la contraseña actual es la de staging{" "}
+            <code className="rounded bg-slate-100 px-1">SYGOS_DEMO_USERS_PASSWORD</code> en Coolify (no la de
+            Vectoria).
+          </p>
+        )}
       </div>
 
       {ok === "1" && (

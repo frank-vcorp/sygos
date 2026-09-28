@@ -11,9 +11,9 @@ export async function changePasswordAction(formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const current = String(formData.get("currentPassword") ?? "");
-  const next = String(formData.get("newPassword") ?? "");
-  const confirm = String(formData.get("confirmPassword") ?? "");
+  const current = String(formData.get("currentPassword") ?? "").trim();
+  const next = String(formData.get("newPassword") ?? "").trim();
+  const confirm = String(formData.get("confirmPassword") ?? "").trim();
 
   if (next.length < 10) {
     redirect("/app/cuenta?error=short");

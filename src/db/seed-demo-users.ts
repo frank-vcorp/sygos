@@ -53,7 +53,10 @@ const DEMO_USERS: DemoUserSpec[] = [
 ];
 
 export async function seedDemoUsers() {
-  const password = process.env.SYGOS_DEMO_USERS_PASSWORD?.trim();
+  let password = process.env.SYGOS_DEMO_USERS_PASSWORD?.trim() ?? "";
+  if (password.startsWith("'") && password.endsWith("'")) {
+    password = password.slice(1, -1);
+  }
   if (!password) {
     return { skipped: true as const, reason: "SYGOS_DEMO_USERS_PASSWORD not set" };
   }
