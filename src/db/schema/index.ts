@@ -110,6 +110,9 @@ export const folioSequences = pgTable(
 
 export const clientClassificationEnum = pgEnum("client_classification", ["NORMAL", "PREMIUM"]);
 
+export const masterEntityEnum = pgEnum("master_entity", ["CLIENT", "PROSPECT", "SUPPLIER"]);
+export const masterEventTypeEnum = pgEnum("master_event_type", ["UPDATED", "CANCELLED"]);
+
 export const clients = pgTable(
   "clients",
   {
@@ -117,6 +120,7 @@ export const clients = pgTable(
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id),
+    folio: text("folio"),
     name: text("name").notNull(),
     classification: clientClassificationEnum("classification").default("NORMAL"),
     responsibleUserId: uuid("responsible_user_id").references(() => users.id),
@@ -168,6 +172,7 @@ export const prospects = pgTable(
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id),
+    folio: text("folio"),
     name: text("name").notNull(),
     responsibleUserId: uuid("responsible_user_id").references(() => users.id),
     source: text("source"),
@@ -192,6 +197,7 @@ export const suppliers = pgTable(
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id),
+    folio: text("folio"),
     name: text("name").notNull(),
     contactName: text("contact_name"),
     phone: text("phone"),
@@ -226,4 +232,26 @@ export const integrationSettings = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("integration_settings_company_key").on(t.companyId, t.integration)],
+);
+
+export const masterRecordEvents = pgTable(
+  "master_record_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    entityType: masterEntityEnum("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    eventType: masterEventTypeEnum("event_type").notNull(),
+    reason: text("reason"),
+    actorUserId: uuid("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("master_record_events_entity_idx").on(t.entityType, t.entityId),
+    index("master_record_events_company_idx").on(t.companyId),
+  ],
 );

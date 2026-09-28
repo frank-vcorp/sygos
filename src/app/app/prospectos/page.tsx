@@ -26,7 +26,10 @@ export default async function ProspectosPage() {
       <ul className="divide-y divide-border rounded-xl border border-border bg-card">
         {rows.map((row) => (
           <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-            <span className="font-medium">{row.name}</span>
+            <Link href={`/app/prospectos/${row.id}`} className="font-medium text-accent hover:underline">
+              {row.name}
+            </Link>
+            <span className="font-mono text-xs text-slate-500">{row.folio ?? "—"}</span>
             <span className="text-xs uppercase text-slate-500">{row.status.replaceAll("_", " ")}</span>
           </li>
         ))}

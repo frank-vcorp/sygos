@@ -29,6 +29,7 @@ export default async function ProveedoresPage() {
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-border bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
+              <th className="px-4 py-3">Folio</th>
               <th className="px-4 py-3">Nombre</th>
               <th className="px-4 py-3">Contacto</th>
               <th className="px-4 py-3">Tipo</th>
@@ -37,14 +38,19 @@ export default async function ProveedoresPage() {
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 font-medium">{row.name}</td>
+                <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.folio ?? "—"}</td>
+                <td className="px-4 py-3">
+                  <Link href={`/app/proveedores/${row.id}`} className="font-medium text-accent hover:underline">
+                    {row.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-3">{row.contactName ?? "—"}</td>
                 <td className="px-4 py-3">{row.isIntercompany ? "Intercompañía" : "Normal"}</td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
                   Sin proveedores.
                 </td>
               </tr>

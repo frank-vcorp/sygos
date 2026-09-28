@@ -27,6 +27,7 @@ export default async function ClientesPage() {
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-border bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
+              <th className="px-4 py-3">Folio</th>
               <th className="px-4 py-3">Nombre</th>
               <th className="px-4 py-3">Crédito (días)</th>
               <th className="px-4 py-3">Factura</th>
@@ -36,13 +37,14 @@ export default async function ClientesPage() {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
                   Sin clientes en {session.activeCompany.displayName}.
                 </td>
               </tr>
             )}
             {rows.map((row) => (
               <tr key={row.id} className="border-b border-border last:border-0">
+                <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.folio ?? "—"}</td>
                 <td className="px-4 py-3">
                   <Link href={`/app/clientes/${row.id}`} className="font-medium text-accent hover:underline">
                     {row.name}

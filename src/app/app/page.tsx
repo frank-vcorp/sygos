@@ -59,8 +59,15 @@ export default async function AppHomePage() {
       )}
 
       <section className="rounded-xl border border-dashed border-border bg-white/60 p-6 text-sm text-slate-600">
-        Bloque 1 en curso: maestros (Clientes, Prospectos, Proveedores), folios, búsqueda global CEO/Administrador e
-        integraciones configurables por empresa.
+        <p>
+          Entrega 2 (Fase 1): usuarios demo, integraciones, folios en maestros, edición con control de versión, bajas
+          con historial y cambio de contraseña en Mi cuenta.
+        </p>
+        <p className="mt-2">
+          Usuarios de prueba (misma contraseña en <code className="text-xs">SYGOS_DEMO_USERS_PASSWORD</code>):{" "}
+          <strong>ceo</strong>, <strong>coord</strong>, <strong>ger.systron</strong>, <strong>ger.servomotores</strong>,{" "}
+          <strong>ventas.systron</strong>, <strong>almacen.systron</strong>.
+        </p>
       </section>
     </div>
   );

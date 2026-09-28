@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { getDb } from "./client";
 import { clients, companies, integrationSettings, suppliers, userCompanyAccess, users } from "./schema";
+import { seedDemoUsers } from "./seed-demo-users";
 
 export async function seedBase() {
   const db = getDb();
@@ -83,8 +84,14 @@ export async function seedBase() {
 }
 
 async function main() {
-  const result = await seedBase();
-  console.log(result.skipped ? "Seed skipped (already initialized)" : "Seed completed");
+  const base = await seedBase();
+  console.log(base.skipped ? "Seed skipped (already initialized)" : "Seed completed");
+  const demo = await seedDemoUsers();
+  if (demo.skipped) {
+    console.log(`Demo users skipped: ${demo.reason}`);
+  } else {
+    console.log(`Demo users: created=${demo.created} updated=${demo.updated}`);
+  }
 }
 
 main().catch((err) => {

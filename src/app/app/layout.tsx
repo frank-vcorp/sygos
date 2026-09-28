@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
-import { canUseGlobalSearch } from "@/lib/permissions";
+import { canConfigureIntegrations, canUseGlobalSearch } from "@/lib/permissions";
 import { GlobalSearch } from "@/components/global-search";
 import { logoutAction } from "../login/actions";
 
@@ -33,10 +33,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                   {item.label}
                 </Link>
               ))}
+              {canConfigureIntegrations(session.role) && (
+                <Link href="/app/integraciones" className="hover:text-accent">
+                  Integraciones
+                </Link>
+              )}
             </nav>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {canUseGlobalSearch(session.role) && <GlobalSearch />}
+            <Link href="/app/cuenta" className="text-sm text-slate-600 hover:text-accent">
+              Mi cuenta
+            </Link>
             <span className="text-sm text-slate-600">{session.displayName}</span>
             <form action={logoutAction}>
               <button type="submit" className="text-sm text-accent underline-offset-2 hover:underline">

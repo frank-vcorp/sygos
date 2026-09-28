@@ -30,7 +30,7 @@ Debe responder **200**. Si responde **401**, regenera tokens en Coolify Cloud �
 | `NODE_ENV` | `production` |
 | `SYGOS_VECTORIA_INITIAL_PASSWORD` | Contraseña inicial del usuario seed **Vectoria** |
 | `SYGOS_AUTO_SEED` | `0` en operación normal; `1` solo si quieres re-ejecutar seed en arranque |
-| `SYGOS_SKIP_MIGRATIONS` | `1` evita migrate en entrypoint; tras incluir `drizzle/meta` en la imagen Docker, puedes volver a `0` |
+| `SYGOS_DEMO_USERS_PASSWORD` | Contraseña compartida de usuarios demo (`ceo`, `coord`, `ger.systron`, …); ejecutar `npm run db:seed-demo` tras migrar |
 
 ## Migraciones y seed en producción
 
