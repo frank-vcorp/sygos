@@ -13,10 +13,14 @@ if [ -n "${DATABASE_URL:-}" ]; then
   DATABASE_URL=$(strip_wrapping_quotes "$DATABASE_URL")
   export DATABASE_URL
   export CI=1
-  echo "[sygos] Running migrations..."
-  if ! timeout 45 ./node_modules/.bin/drizzle-kit migrate; then
-    echo "[sygos] ERROR: migrations failed or timed out"
-    exit 1
+  if [ "${SYGOS_SKIP_MIGRATIONS:-0}" != "1" ]; then
+    echo "[sygos] Running migrations..."
+    if ! timeout 45 ./node_modules/.bin/drizzle-kit migrate; then
+      echo "[sygos] ERROR: migrations failed or timed out"
+      exit 1
+    fi
+  else
+    echo "[sygos] Skipping migrations (SYGOS_SKIP_MIGRATIONS=1)"
   fi
   if [ "${SYGOS_AUTO_SEED:-0}" = "1" ]; then
     echo "[sygos] Running seed..."
