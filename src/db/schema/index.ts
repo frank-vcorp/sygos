@@ -45,6 +45,8 @@ export const users = pgTable(
     role: roleEnum("role").notNull(),
     /** Empresa “home” para usuarios de una sola empresa; null si solo multi-empresa */
     homeCompanyId: uuid("home_company_id").references(() => companies.id),
+    /** Límite de descuento comercial (%); aplica a VENTAS_SYSTRON */
+    maxDiscountPercent: integer("max_discount_percent"),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { canConfigureIntegrations, canUseGlobalSearch } from "@/lib/permissions";
+import { canManageOperationalUsers } from "@/lib/permissions-users";
 import { canViewEqui, canViewMot } from "@/lib/permissions-activos";
 import { GlobalSearch } from "@/components/global-search";
 import { logoutAction } from "../login/actions";
@@ -37,6 +38,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
   if (session.role === "KIOSCO_ASISTENCIA" || session.role === "ADMINISTRADOR") {
     navItems.push({ href: "/app/kiosco", label: "Kiosco" });
+  }
+  if (canManageOperationalUsers(session.role)) {
+    navItems.push({ href: "/app/usuarios", label: "Usuarios" });
   }
   if (session.role === "ADMINISTRADOR" || session.role === "CEO") {
     navItems.push({ href: "/app/configuracion", label: "Config" });

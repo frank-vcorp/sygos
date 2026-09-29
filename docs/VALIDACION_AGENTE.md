@@ -1,5 +1,7 @@
 # Informe de validación agente — SYGOS 3.0 staging
 
+> **Obsoleto como criterio de cierre.** El producto exige implementación **completa** por fase; usar [CHECKLIST_VALIDACION_ESTADO.md](./CHECKLIST_VALIDACION_ESTADO.md) y [CRITERIO_DE_TERMINADO.md](./CRITERIO_DE_TERMINADO.md).
+
 - **Fecha:** 2026-09-28  
 - **Entorno:** https://sygos.vector-ia.mx  
 - **Commit desplegado:** `c9fba2c7` (migración `0004` aplicada vía `scripts/coolify-bootstrap-db.sh`)  

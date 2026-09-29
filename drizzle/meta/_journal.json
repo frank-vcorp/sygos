@@ -36,6 +36,13 @@
       "when": 1790648998055,
       "tag": "0004_abandoned_chameleon",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790649645342,
+      "tag": "0005_amazing_earthquake",
+      "breakpoints": true
     }
   ]
 }
