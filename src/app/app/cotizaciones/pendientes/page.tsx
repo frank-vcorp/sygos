@@ -15,6 +15,7 @@ export default async function PendientesCotizarPage() {
         {rows.map((q) => (
           <li key={q.id} className="px-4 py-3 text-sm">
             <Link href={`/app/cotizaciones/${q.id}`} className="text-accent">{q.folio}</Link>
+            <span className="ml-2 text-xs text-slate-500">{q.pendingOrigin?.replaceAll("_", " ") ?? "—"}</span>
           </li>
         ))}
         {rows.length === 0 && <li className="px-4 py-8 text-center text-slate-500">Bandeja vacía.</li>}

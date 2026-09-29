@@ -4,8 +4,9 @@ import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { clientContacts, quoteSendContacts, quotes } from "@/db/schema";
+import { clientContacts, quotePriceRevisions, quoteSendContacts, quotes, users } from "@/db/schema";
 import { nextCompanyFolio } from "@/lib/folio";
+import { canApplyQuoteDiscount, canSetQuotePrice } from "@/lib/permissions-commercial";
 import { getSession } from "@/lib/session";
 
 async function requireCommercial() {
@@ -52,6 +53,7 @@ export async function createQuoteAction(formData: FormData) {
     folio,
     status: "BORRADOR",
     pendingPricing: true,
+    pendingOrigin: "COTIZACION_INICIADA",
     commercialReference: String(formData.get("commercialReference") ?? "").trim() || null,
     createdByUserId: session.id,
   }).returning();
@@ -66,13 +68,21 @@ export async function sendQuoteAction(formData: FormData) {
   if (!quoteId || contactIds.length === 0) throw new Error("Selecciona al menos un contacto");
 
   const db = getDb();
+  const [quote] = await db
+    .select()
+    .from(quotes)
+    .where(and(eq(quotes.id, quoteId), eq(quotes.companyId, session.activeCompany.id)))
+    .limit(1);
+  if (!quote) throw new Error("Cotización no encontrada");
+  if (!quote.finalPriceMxn && !quote.priceMxn) throw new Error("CEO/Administrador debe fijar precio antes de enviar");
+
   for (const contactId of contactIds) {
     await db.insert(quoteSendContacts).values({ quoteId, contactId });
   }
   await db
     .update(quotes)
     .set({ status: "ENVIADA", pendingPricing: false })
-    .where(and(eq(quotes.id, quoteId), eq(quotes.companyId, session.activeCompany.id)));
+    .where(eq(quotes.id, quoteId));
 
   revalidatePath(`/app/cotizaciones/${quoteId}`);
   revalidatePath("/app/cotizaciones/pendientes");
@@ -91,4 +101,64 @@ export async function getQuote(companyId: string, id: string) {
 export async function listContactsForClient(clientId: string) {
   const db = getDb();
   return db.select().from(clientContacts).where(and(eq(clientContacts.clientId, clientId), eq(clientContacts.active, true)));
+}
+
+export async function setQuotePriceAction(formData: FormData) {
+  const session = await getSession();
+  if (!session || !canSetQuotePrice(session.role)) throw new Error("Solo CEO/Administrador fija precio");
+  const quoteId = String(formData.get("quoteId") ?? "");
+  const priceMxn = Number(formData.get("priceMxn") ?? 0);
+  const supplierCost = Number(formData.get("systronSupplierCostMxn") ?? 0) || null;
+  if (!quoteId || priceMxn < 0) throw new Error("Precio inválido");
+  const db = getDb();
+  await db.insert(quotePriceRevisions).values({ quoteId, priceMxn, authorUserId: session.id });
+  await db
+    .update(quotes)
+    .set({
+      priceMxn,
+      finalPriceMxn: priceMxn,
+      pendingPricing: false,
+      status: "PENDIENTE_PRECIO",
+      systronSupplierCostMxn: supplierCost,
+    })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.companyId, session.activeCompany.id)));
+  revalidatePath(`/app/cotizaciones/${quoteId}`);
+  revalidatePath("/app/cotizaciones/pendientes");
+}
+
+export async function applyQuoteDiscountAction(formData: FormData) {
+  const session = await getSession();
+  if (!session || !canApplyQuoteDiscount(session.role)) throw new Error("Sin permiso");
+  const quoteId = String(formData.get("quoteId") ?? "");
+  const discount = Number(formData.get("discountPercent") ?? 0);
+  const db = getDb();
+  const [quote] = await db
+    .select()
+    .from(quotes)
+    .where(and(eq(quotes.id, quoteId), eq(quotes.companyId, session.activeCompany.id)))
+    .limit(1);
+  if (!quote || quote.priceMxn == null) throw new Error("Precio no definido");
+  if (session.role === "VENTAS_SYSTRON") {
+    const [u] = await db.select().from(users).where(eq(users.id, session.id)).limit(1);
+    const max = u?.maxDiscountPercent ?? 0;
+    if (discount > max) throw new Error(`Descuento máximo permitido: ${max}%`);
+  }
+  const finalPriceMxn = Math.round(quote.priceMxn * (1 - discount / 100));
+  await db
+    .update(quotes)
+    .set({ discountPercent: discount, finalPriceMxn })
+    .where(eq(quotes.id, quoteId));
+  revalidatePath(`/app/cotizaciones/${quoteId}`);
+}
+
+export async function authorizeWithoutEquipmentAction(formData: FormData) {
+  const session = await getSession();
+  if (!session || !canSetQuotePrice(session.role)) throw new Error("Sin permiso");
+  const quoteId = String(formData.get("quoteId") ?? "");
+  const db = getDb();
+  await db
+    .update(quotes)
+    .set({ status: "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO", authorizedWithoutEquipment: true })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.companyId, session.activeCompany.id)));
+  revalidatePath(`/app/cotizaciones/${quoteId}`);
 }

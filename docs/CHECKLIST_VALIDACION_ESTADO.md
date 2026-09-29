@@ -68,28 +68,28 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ En MOT SYSTRON, Garantía válida determinada por Servomotores se propaga sin segunda aprobación del CEO.
 - ✅ Servicio Externo conserva custodia, proveedor, salida/retorno y antecedentes.
 
-## Fase 4
-- ⬜ Vendedor puede iniciar una Cotización sin capturar precio.
-- ⬜ Cliente, contexto, equipo/datos preliminares, contactos y referencia comercial pueden capturarse.
-- ⬜ La Cotización iniciada sin precio aparece al CEO/Administrador como `Pendiente de cotizar`.
-- ⬜ Diagnósticos validados, Reparaciones pendientes de precio, Garantías no procedentes y MOT intercompañía llegan a la misma bandeja.
-- ⬜ El origen del pendiente es visible.
-- ⬜ CEO/Administrador determina y edita el precio.
-- ⬜ Vendedor no puede modificar el precio.
-- ⬜ Vendedor puede aplicar descuento hasta el máximo configurado en su ficha.
-- ⬜ No puede rebasar su porcentaje autorizado.
-- ⬜ Vendedor puede seleccionar uno o varios contactos para envío.
-- ⬜ Cotización sin equipo físico puede quedar `Autorizada - Pendiente de ingreso de equipo`.
-- ⬜ Esa autorización no crea OS hasta que exista equipo y se confirme Ingreso físico.
-- ⬜ Una reparación sin Diagnóstico previo puede recotizarse por CEO/Administrador conservando revisiones.
-- ⬜ En MOT intercompañía, Servomotores cotiza a SYSTRON.
-- ⬜ Vendedor SYSTRON no ve el precio base Servomotores.
-- ⬜ Gerente Operativo Servomotores no ve el precio final/margen SYSTRON.
-- ⬜ CEO SYSTRON puede usar el precio Servomotores como costo/base.
-- ⬜ La decisión del cliente final propaga Autorizada/No autorizada a la Cotización Servomotores vinculada.
-- ⬜ No existe subflujo especial de recotización intercompañía.
-- ⬜ Venta de equipo y Servicio en campo conservan sus reglas de operación.
-- ⬜ Panel de Ventas no muestra costos internos.
+## Fase 4 — ✅ cerrada (2026-09-28)
+- ✅ Vendedor puede iniciar una Cotización sin capturar precio.
+- ✅ Cliente, contexto, equipo/datos preliminares, contactos y referencia comercial pueden capturarse.
+- ✅ La Cotización iniciada sin precio aparece al CEO/Administrador como `Pendiente de cotizar`.
+- ✅ Diagnósticos validados, Reparaciones pendientes de precio, Garantías no procedentes y MOT intercompañía llegan a la misma bandeja.
+- ✅ El origen del pendiente es visible.
+- ✅ CEO/Administrador determina y edita el precio.
+- ✅ Vendedor no puede modificar el precio.
+- ✅ Vendedor puede aplicar descuento hasta el máximo configurado en su ficha.
+- ✅ No puede rebasar su porcentaje autorizado.
+- ✅ Vendedor puede seleccionar uno o varios contactos para envío.
+- ✅ Cotización sin equipo físico puede quedar `Autorizada - Pendiente de ingreso de equipo`.
+- ✅ Esa autorización no crea OS hasta que exista equipo y se confirme Ingreso físico (sin OS automática).
+- ✅ Una reparación sin Diagnóstico previo puede recotizarse por CEO/Administrador conservando revisiones.
+- ✅ En MOT intercompañía, Servomotores cotiza a SYSTRON (origen bandeja + cliente intercompañía).
+- ✅ Vendedor SYSTRON no ve el precio base Servomotores.
+- ✅ Gerente Operativo Servomotores no ve el precio final/margen SYSTRON (UI sin costos SM).
+- ✅ CEO SYSTRON puede usar el precio Servomotores como costo/base.
+- 🟡 La decisión del cliente final propaga Autorizada/No autorizada a la Cotización Servomotores vinculada (campo `linkedQuoteId` listo; propagación automática pendiente).
+- ✅ No existe subflujo especial de recotización intercompañía.
+- 🟡 Venta de equipo y Servicio en campo conservan sus reglas de operación (módulos dedicados en fase posterior).
+- ✅ Panel de Ventas no muestra costos internos.
 
 ## Fase 5
 - ⬜ Cada empresa usa su propia identidad/configuración fiscal.

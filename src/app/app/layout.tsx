@@ -45,6 +45,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (session.role === "CEO" || session.role === "ADMINISTRADOR") {
     navItems.push({ href: "/app/paneles/ceo", label: "Panel CEO" });
   }
+  if (session.role === "VENTAS_SYSTRON") {
+    navItems.push({ href: "/app/paneles/ventas", label: "Mis ventas" });
+  }
   if (session.role === "KIOSCO_ASISTENCIA" || session.role === "ADMINISTRADOR") {
     navItems.push({ href: "/app/kiosco", label: "Kiosco" });
   }

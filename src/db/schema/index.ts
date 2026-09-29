@@ -358,8 +358,17 @@ export const quoteStatusEnum = pgEnum("quote_status", [
   "PENDIENTE_PRECIO",
   "ENVIADA",
   "AUTORIZADA",
+  "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO",
   "RECHAZADA",
   "CANCELADA",
+]);
+
+export const quotePendingOriginEnum = pgEnum("quote_pending_origin", [
+  "COTIZACION_INICIADA",
+  "DIAGNOSTICO_VALIDADO",
+  "REPARACION_PENDIENTE_PRECIO",
+  "GARANTIA_NO_PROCEDENTE",
+  "MOT_INTERCOMPANIA",
 ]);
 
 export const invoiceStatusEnum = pgEnum("invoice_status", ["BORRADOR", "TIMBRADA", "CANCELADA"]);
@@ -649,6 +658,15 @@ export const quotes = pgTable(
     folio: text("folio").notNull(),
     status: quoteStatusEnum("status").notNull().default("BORRADOR"),
     pendingPricing: boolean("pending_pricing").notNull().default(true),
+    pendingOrigin: quotePendingOriginEnum("pending_origin").default("COTIZACION_INICIADA"),
+    attendanceId: uuid("attendance_id").references(() => attendances.id),
+    priceMxn: integer("price_mxn"),
+    finalPriceMxn: integer("final_price_mxn"),
+    discountPercent: integer("discount_percent").notNull().default(0),
+    /** Costo base Servomotores (solo CEO SYSTRON en intercompañía) */
+    systronSupplierCostMxn: integer("systron_supplier_cost_mxn"),
+    linkedQuoteId: uuid("linked_quote_id"),
+    authorizedWithoutEquipment: boolean("authorized_without_equipment").notNull().default(false),
     commercialReference: text("commercial_reference"),
     createdByUserId: uuid("created_by_user_id").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -656,6 +674,18 @@ export const quotes = pgTable(
   },
   (t) => [index("quotes_company_status_idx").on(t.companyId, t.status)],
 );
+
+export const quotePriceRevisions = pgTable("quote_price_revisions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  quoteId: uuid("quote_id")
+    .notNull()
+    .references(() => quotes.id, { onDelete: "cascade" }),
+  priceMxn: integer("price_mxn").notNull(),
+  authorUserId: uuid("author_user_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const quoteSendContacts = pgTable(
   "quote_send_contacts",
