@@ -7,8 +7,10 @@ import {
   getMot,
   getMotCustodyHistory,
 } from "../../activos/actions";
-import { listTechnicalLogForMot } from "../../tecnica/actions";
-import { addTechnicalLogAction } from "../../tecnica/actions";
+import { addTechnicalLogAction, listAttendancesForMot, listTechnicalLogForMot } from "../../tecnica/actions";
+import { getDb } from "@/db/client";
+import { diagnoses } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDIENTE_INGRESO_SERVOMOTORES: "Pendiente ingreso físico (Servomotores)",
@@ -33,6 +35,16 @@ export default async function MotDetallePage({
   if (!mot) notFound();
   const bitacora = await listTechnicalLogForMot(id);
   const custodyHistory = await getMotCustodyHistory(id);
+  const motAttendances = await listAttendancesForMot(id);
+  const db = getDb();
+  const warrantyRows = await Promise.all(
+    motAttendances
+      .filter((a) => a.attentionType === "DIAGNOSTICO_GARANTIA")
+      .map(async (a) => {
+        const [d] = await db.select().from(diagnoses).where(eq(diagnoses.attendanceId, a.id)).limit(1);
+        return d ? { attendanceId: a.id, outcome: d.warrantyOutcome, companyId: a.companyId } : null;
+      }),
+  );
   const canIngress = canConfirmMotIngress(session) && mot.custodyStatus === "PENDIENTE_INGRESO_SERVOMOTORES";
 
   return (
@@ -113,6 +125,22 @@ export default async function MotDetallePage({
                 {ev.recipient && <p className="text-slate-600">Recibe: {ev.recipient}</p>}
                 {ev.documentRef && <p className="text-slate-600">Doc: {ev.documentRef}</p>}
                 {ev.note && <p className="text-slate-600">{ev.note}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {session.activeCompany.code === "SYSTRON" && mot.originCompanyCode === "SYSTRON" && motAttendances.length > 0 && (
+        <section className="rounded-xl border border-border bg-card p-6 text-sm">
+          <h2 className="font-semibold">Operación técnica Servomotores (solo lectura)</h2>
+          <ul className="mt-2 space-y-1">
+            {motAttendances.map((a) => (
+              <li key={a.id}>
+                {a.attentionType.replaceAll("_", " ")} · empresa operativa vinculada
+                {warrantyRows.find((w) => w?.attendanceId === a.id)?.outcome === "PROCEDENTE" && (
+                  <span className="ml-2 text-accent">Garantía válida (propagada desde Servomotores)</span>
+                )}
               </li>
             ))}
           </ul>

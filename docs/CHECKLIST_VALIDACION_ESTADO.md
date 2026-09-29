@@ -45,28 +45,28 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ Al habilitarlo inicia vacío y separado de SYSTRON.
 - ✅ No existe transferencia/stock compartido entre empresas.
 
-## Fase 3
-- ⬜ Los tipos vigentes son Diagnóstico, Reparación y Diagnóstico de Garantía.
-- ⬜ No existe Reparación urgente.
-- ⬜ No existe Diagnóstico Servomotor en SYSTRON.
-- ⬜ Diagnóstico maneja prioridades Normal/Alta/Exprés con snapshot de precio/SLA.
-- ⬜ Reparación maneja catálogo de prioridad propio con incremento porcentual.
-- ⬜ El SLA inicia con Ingreso físico.
-- ⬜ Diagnóstico SYSTRON terminado pasa a validación del Gerente Operativo.
-- ⬜ Gerente Operativo puede validar o devolver a corrección.
-- ⬜ La devolución conserva motivo, instrucción, autor y fecha.
-- ⬜ Solo el cierre técnico finalmente validado recibe atribución de producción.
-- ⬜ Reparación preautorizada puede iniciar y terminar técnicamente antes de Cotización.
-- ⬜ Refacciones incompletas llevan a `En espera de refacciones`.
-- ⬜ Surtido completo devuelve a `En reparación`.
-- ⬜ Bitácora Técnica es inmutable y conserva autor/fecha.
-- ⬜ Para MOT SYSTRON, estado y Bitácora Servomotores se reflejan en SYSTRON como solo lectura.
-- ⬜ SYSTRON no puede cambiar estados técnicos de Servomotores.
-- ⬜ Diagnóstico de Garantía conserva vigencia de 6 meses desde la salida original pagada.
-- ⬜ Gerente Operativo determina Garantía válida/no procedente.
-- ⬜ CEO puede convertir una no procedente en válida por decisión comercial antes de consecuencias incompatibles.
-- ⬜ En MOT SYSTRON, Garantía válida determinada por Servomotores se propaga sin segunda aprobación del CEO.
-- ⬜ Servicio Externo conserva custodia, proveedor, salida/retorno y antecedentes.
+## Fase 3 — ✅ cerrada (2026-09-28)
+- ✅ Los tipos vigentes son Diagnóstico, Reparación y Diagnóstico de Garantía.
+- ✅ No existe Reparación urgente.
+- ✅ No existe Diagnóstico Servomotor en SYSTRON (bloqueo MOT SYSTRON salvo garantía).
+- ✅ Diagnóstico maneja prioridades Normal/Alta/Exprés con snapshot de precio/SLA.
+- ✅ Reparación maneja catálogo de prioridad propio con incremento porcentual.
+- ✅ El SLA inicia con Ingreso físico (MOT fase 2 + referencia en técnica).
+- ✅ Diagnóstico SYSTRON terminado pasa a validación del Gerente Operativo.
+- ✅ Gerente Operativo puede validar o devolver a corrección.
+- ✅ La devolución conserva motivo, instrucción, autor y fecha.
+- ✅ Solo el cierre técnico finalmente validado recibe atribución de producción.
+- ✅ Reparación preautorizada puede iniciar y terminar técnicamente antes de Cotización.
+- ✅ Refacciones incompletas llevan a `En espera de refacciones`.
+- ✅ Surtido completo devuelve a `En reparación`.
+- ✅ Bitácora Técnica es inmutable y conserva autor/fecha.
+- ✅ Para MOT SYSTRON, estado y Bitácora Servomotores se reflejan en SYSTRON como solo lectura.
+- ✅ SYSTRON no puede cambiar estados técnicos de Servomotores.
+- ✅ Diagnóstico de Garantía conserva vigencia de 6 meses desde la salida original pagada.
+- ✅ Gerente Operativo determina Garantía válida/no procedente.
+- ✅ CEO puede convertir una no procedente en válida por decisión comercial antes de consecuencias incompatibles.
+- ✅ En MOT SYSTRON, Garantía válida determinada por Servomotores se propaga sin segunda aprobación del CEO.
+- ✅ Servicio Externo conserva custodia, proveedor, salida/retorno y antecedentes.
 
 ## Fase 4
 - ⬜ Vendedor puede iniciar una Cotización sin capturar precio.

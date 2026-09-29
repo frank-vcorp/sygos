@@ -323,8 +323,26 @@ export const diagnosisStatusEnum = pgEnum("diagnosis_status", [
   "ABIERTO",
   "EN_TRABAJO",
   "TERMINADO",
+  "PENDIENTE_VALIDACION_GERENTE",
   "DEVUELTO_CORRECCION",
   "VALIDADO_GERENTE",
+]);
+
+export const repairPriorityEnum = pgEnum("repair_priority", ["NORMAL", "ALTA", "EXPRESS"]);
+
+export const repairStatusEnum = pgEnum("repair_status", [
+  "EN_ESPERA",
+  "EN_REPARACION",
+  "EN_ESPERA_REFACCIONES",
+  "REPARACION_TERMINADA",
+  "SIN_REPARACION",
+]);
+
+export const warrantyOutcomeEnum = pgEnum("warranty_outcome", [
+  "PENDIENTE",
+  "PROCEDENTE",
+  "NO_PROCEDENTE",
+  "CEO_VALIDADA",
 ]);
 
 export const serviceOrderStatusEnum = pgEnum("service_order_status", [
@@ -413,6 +431,8 @@ export const motUnits = pgTable(
     egressRecipient: text("egress_recipient"),
     egressDocumentRef: text("egress_document_ref"),
     egressAt: timestamp("egress_at", { withTimezone: true }),
+    /** Salida de reparación pagada (referencia garantía 6 meses) */
+    paidRepairEgressAt: timestamp("paid_repair_egress_at", { withTimezone: true }),
     createdByUserId: uuid("created_by_user_id").references(() => users.id),
     active: boolean("active").notNull().default(true),
     version: integer("version").notNull().default(1),
@@ -516,9 +536,72 @@ export const diagnoses = pgTable("diagnoses", {
   status: diagnosisStatusEnum("status").notNull().default("ABIERTO"),
   snapshotPriceMxn: integer("snapshot_price_mxn"),
   snapshotSlaDays: integer("snapshot_sla_days"),
+  completedByUserId: uuid("completed_by_user_id").references(() => users.id),
+  productionAttributedUserId: uuid("production_attributed_user_id").references(() => users.id),
+  warrantyReferencePaidEgressAt: timestamp("warranty_reference_paid_egress_at", { withTimezone: true }),
+  warrantyValidUntil: timestamp("warranty_valid_until", { withTimezone: true }),
+  warrantyOutcome: warrantyOutcomeEnum("warranty_outcome").default("PENDIENTE"),
   managerValidatedAt: timestamp("manager_validated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const diagnosisCorrections = pgTable("diagnosis_corrections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  diagnosisId: uuid("diagnosis_id")
+    .notNull()
+    .references(() => diagnoses.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  instruction: text("instruction").notNull(),
+  authorUserId: uuid("author_user_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const repairs = pgTable("repairs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  attendanceId: uuid("attendance_id")
+    .notNull()
+    .references(() => attendances.id),
+  priority: repairPriorityEnum("priority").notNull().default("NORMAL"),
+  snapshotIncrementPercent: integer("snapshot_increment_percent").notNull().default(0),
+  snapshotSlaDays: integer("snapshot_sla_days").notNull().default(10),
+  status: repairStatusEnum("status").notNull().default("EN_ESPERA"),
+  completedByUserId: uuid("completed_by_user_id").references(() => users.id),
+  productionAttributedUserId: uuid("production_attributed_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const externalServiceCases = pgTable("external_service_cases", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  attendanceId: uuid("attendance_id")
+    .notNull()
+    .references(() => attendances.id),
+  supplierId: uuid("supplier_id")
+    .notNull()
+    .references(() => suppliers.id),
+  outboundAt: timestamp("outbound_at", { withTimezone: true }),
+  inboundAt: timestamp("inbound_at", { withTimezone: true }),
+  outboundNote: text("outbound_note"),
+  inboundNote: text("inbound_note"),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const technicalProductionCredits = pgTable("technical_production_credits", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  attendanceId: uuid("attendance_id")
+    .notNull()
+    .references(() => attendances.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
+  creditedAt: timestamp("credited_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const technicalLogEntries = pgTable(

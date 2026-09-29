@@ -57,6 +57,13 @@
       "when": 1790650155325,
       "tag": "0007_colorful_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790650375678,
+      "tag": "0008_omniscient_thunderbolts",
+      "breakpoints": true
     }
   ]
 }
