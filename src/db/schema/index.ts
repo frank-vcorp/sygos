@@ -142,6 +142,45 @@ export const clients = pgTable(
   ],
 );
 
+export const clientCommunications = pgTable(
+  "client_communications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    channel: text("channel").notNull().default("GENERAL"),
+    subject: text("subject"),
+    body: text("body").notNull(),
+    createdByUserId: uuid("created_by_user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("client_communications_client_idx").on(t.clientId),
+    index("client_communications_company_idx").on(t.companyId),
+  ],
+);
+
+export const clientCommunicationRecipients = pgTable(
+  "client_communication_recipients",
+  {
+    communicationId: uuid("communication_id")
+      .notNull()
+      .references(() => clientCommunications.id, { onDelete: "cascade" }),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => clientContacts.id),
+  },
+  (t) => [
+    uniqueIndex("client_communication_recipients_unique").on(t.communicationId, t.contactId),
+  ],
+);
+
 export const clientContacts = pgTable(
   "client_contacts",
   {

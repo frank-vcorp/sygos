@@ -1,25 +1,25 @@
 # Checklist validación — estado de implementación
-_Generado desde SYGOS_3.0_PLAN_VALIDACION_FINAL.md. Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
+_Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 
-## Fase 1
-- ⬜ Existen los contextos `SYSTRON` y `Servomotores`.
-- ⬜ CEO, Coordinación y Administrador pueden cambiar de empresa.
-- ⬜ Los usuarios operativos normales solo acceden a su empresa.
-- ⬜ No existe ninguna vista consolidada de ambas empresas.
-- ⬜ El contexto activo es evidente antes de capturar o consultar datos.
-- 🟡 Administrador conserva acceso adicional a Integraciones y cuentas Administrador.
+## Fase 1 — ✅ cerrada (2026-09-28)
+- ✅ Existen los contextos `SYSTRON` y `Servomotores`.
+- ✅ CEO, Coordinación y Administrador pueden cambiar de empresa.
+- ✅ Los usuarios operativos normales solo acceden a su empresa.
+- ✅ No existe ninguna vista consolidada de ambas empresas.
+- ✅ El contexto activo es evidente antes de capturar o consultar datos.
+- ✅ Administrador conserva acceso adicional a Integraciones y cuentas Administrador.
 - ✅ CEO no puede consultar ni administrar cuentas Administrador.
-- ⬜ Clientes, Prospectos y Proveedores se separan por empresa.
-- ⬜ Los Clientes admiten múltiples contactos y uno principal.
-- ⬜ En una comunicación pueden elegirse uno o varios contactos sin alterar el principal.
-- ⬜ Existe Cliente intercompañía `SYSTRON` en Servomotores y Proveedor `Servomotores` en SYSTRON.
-- ⬜ Folios normales son independientes por empresa.
-- ⬜ Solo MOT utiliza secuencia global compartida.
-- ⬜ Búsqueda global está disponible solo para CEO/Administrador y respeta empresa activa/permisos.
-- ⬜ Los registros no se sobrescriben silenciosamente ante edición concurrente.
-- ⬜ Las cancelaciones e historiales respetan trazabilidad.
-- ⬜ El sistema inicia sin datos demo.
-- ⬜ Configuración faltante de una integración se muestra de forma explícita.
+- ✅ Clientes, Prospectos y Proveedores se separan por empresa.
+- ✅ Los Clientes admiten múltiples contactos y uno principal.
+- ✅ En una comunicación pueden elegirse uno o varios contactos sin alterar el principal.
+- ✅ Existe Cliente intercompañía `SYSTRON` en Servomotores y Proveedor `Servomotores` en SYSTRON.
+- ✅ Folios normales son independientes por empresa.
+- ✅ Solo MOT utiliza secuencia global compartida.
+- ✅ Búsqueda global está disponible solo para CEO/Administrador y respeta empresa activa/permisos.
+- ✅ Los registros no se sobrescriben silenciosamente ante edición concurrente.
+- ✅ Las cancelaciones e historiales respetan trazabilidad.
+- ✅ El sistema inicia sin datos demo (`SYGOS_SEED_DEMO_USERS` opt-in).
+- ✅ Configuración faltante de una integración se muestra de forma explícita.
 
 ## Fase 2
 - ⬜ EQUI se usa para equipos SYSTRON no pertenecientes al flujo MOT.
@@ -208,4 +208,11 @@ _Generado desde SYGOS_3.0_PLAN_VALIDACION_FINAL.md. Leyenda: ⬜ pendiente · �
 - ⬜ Las funciones esenciales siguen disponibles en móvil.
 - ⬜ PWA puede instalarse cuando corresponda sin prometer trabajo offline.
 - ⬜ Se ejecutan recorridos extremo a extremo:
+- ⬜ SYSTRON EQUI.
+- ⬜ Servomotores cliente directo.
+- ⬜ MOT originado en SYSTRON.
+- ⬜ Compra directa.
+- ⬜ O.C.
+- ⬜ Facturación/pago intercompañía.
+- ⬜ Nómina de ambas empresas.
 - ⬜ La documentación del repo en GitHub está alineada con el Discovery (README, descripción, topics).

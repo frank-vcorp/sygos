@@ -4,7 +4,11 @@ import { getSession } from "@/lib/session";
 import { canConfigureIntegrations, canUseGlobalSearch } from "@/lib/permissions";
 import { canManageOperationalUsers } from "@/lib/permissions-users";
 import { canViewEqui, canViewMot } from "@/lib/permissions-activos";
+import { ActiveCompanyNotice } from "@/components/active-company-notice";
+import { CompanySwitcher } from "@/components/company-switcher";
 import { GlobalSearch } from "@/components/global-search";
+import { IntegrationNotice } from "@/components/integration-notice";
+import { listIntegrations } from "./maestros/actions";
 import { logoutAction } from "../login/actions";
 
 const nav = [
@@ -17,6 +21,8 @@ const nav = [
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const integrations = await listIntegrations(session.activeCompany.id);
 
   const navItems = [...nav];
   if (canViewEqui(session)) navItems.push({ href: "/app/equi", label: "EQUI" });
@@ -71,6 +77,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </nav>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <CompanySwitcher session={session} />
             {canUseGlobalSearch(session.role) && <GlobalSearch />}
             <Link href="/app/cuenta" className="text-sm text-slate-600 hover:text-accent">
               Mi cuenta
@@ -84,6 +91,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </header>
+      <ActiveCompanyNotice session={session} />
+      <IntegrationNotice role={session.role} rows={integrations} />
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
   );

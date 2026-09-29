@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
+  clientCommunicationRecipients,
+  clientCommunications,
   clientContacts,
   clients,
   folioSequences,
@@ -615,4 +617,89 @@ export async function getMotSequenceState() {
   const last = rows[0]?.lastValue ?? "0";
   const nextNum = Number(last) + 1;
   return { lastAssigned: last === "0" ? null : `MOT-${last}`, nextPreview: `MOT-${nextNum}` };
+}
+
+export async function listClientCommunications(clientId: string, companyId: string) {
+  const db = getDb();
+  const comms = await db
+    .select()
+    .from(clientCommunications)
+    .where(and(eq(clientCommunications.clientId, clientId), eq(clientCommunications.companyId, companyId)))
+    .orderBy(desc(clientCommunications.createdAt))
+    .limit(50);
+
+  if (comms.length === 0) return [];
+
+  const commIds = comms.map((c) => c.id);
+  const recipients = await db
+    .select({
+      communicationId: clientCommunicationRecipients.communicationId,
+      contactName: clientContacts.name,
+    })
+    .from(clientCommunicationRecipients)
+    .innerJoin(clientContacts, eq(clientContacts.id, clientCommunicationRecipients.contactId))
+    .where(inArray(clientCommunicationRecipients.communicationId, commIds));
+
+  const namesByComm = new Map<string, string[]>();
+  for (const r of recipients) {
+    const list = namesByComm.get(r.communicationId) ?? [];
+    list.push(r.contactName);
+    namesByComm.set(r.communicationId, list);
+  }
+
+  return comms.map((c) => ({
+    ...c,
+    recipientNames: namesByComm.get(c.id) ?? [],
+  }));
+}
+
+export async function logClientCommunicationAction(formData: FormData) {
+  const session = await requireSession();
+  if (!canManageClients(session.role, session.activeCompany.code)) {
+    throw new Error("Sin permiso");
+  }
+
+  const clientId = String(formData.get("clientId") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+  const subject = String(formData.get("subject") ?? "").trim() || null;
+  const contactIds = formData.getAll("contactIds").map(String).filter(Boolean);
+  if (!clientId || !body || contactIds.length === 0) {
+    throw new Error("Mensaje y al menos un contacto destinatario requeridos");
+  }
+
+  const client = await getClient(session.activeCompany.id, clientId);
+  if (!client || !client.active) throw new Error("Cliente no encontrado");
+
+  const db = getDb();
+  const validContacts = await db
+    .select({ id: clientContacts.id })
+    .from(clientContacts)
+    .where(
+      and(
+        eq(clientContacts.clientId, clientId),
+        eq(clientContacts.active, true),
+        inArray(clientContacts.id, contactIds),
+      ),
+    );
+  if (validContacts.length !== contactIds.length) throw new Error("Contactos inválidos");
+
+  const [comm] = await db
+    .insert(clientCommunications)
+    .values({
+      companyId: session.activeCompany.id,
+      clientId,
+      body,
+      subject,
+      createdByUserId: session.id,
+    })
+    .returning();
+
+  for (const contactId of contactIds) {
+    await db.insert(clientCommunicationRecipients).values({
+      communicationId: comm.id,
+      contactId,
+    });
+  }
+
+  revalidatePath(`/app/clientes/${clientId}`);
 }

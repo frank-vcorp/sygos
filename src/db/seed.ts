@@ -87,11 +87,15 @@ export async function seedBase() {
 async function main() {
   const base = await seedBase();
   console.log(base.skipped ? "Seed skipped (already initialized)" : "Seed completed");
-  const demo = await seedDemoUsers();
-  if (demo.skipped) {
-    console.log(`Demo users skipped: ${demo.reason}`);
+  if (process.env.SYGOS_SEED_DEMO_USERS === "1") {
+    const demo = await seedDemoUsers();
+    if (demo.skipped) {
+      console.log(`Demo users skipped: ${demo.reason}`);
+    } else {
+      console.log(`Demo users: created=${demo.created} updated=${demo.updated}`);
+    }
   } else {
-    console.log(`Demo users: created=${demo.created} updated=${demo.updated}`);
+    console.log("Demo users skipped: set SYGOS_SEED_DEMO_USERS=1 to create staging demo accounts");
   }
 }
 

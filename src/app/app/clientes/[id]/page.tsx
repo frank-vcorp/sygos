@@ -8,6 +8,8 @@ import {
   getClient,
   getClientContacts,
   getEntityHistory,
+  listClientCommunications,
+  logClientCommunicationAction,
   removeClientContactAction,
   setPrimaryClientContactAction,
   updateClientAction,
@@ -29,6 +31,7 @@ export default async function ClienteDetallePage({
   if (!client || !client.active) notFound();
 
   const contacts = await getClientContacts(client.id);
+  const communications = await listClientCommunications(client.id, session.activeCompany.id);
   const history = await getEntityHistory("CLIENT", client.id);
   const canEdit = canManageClients(session.role, session.activeCompany.code) && !client.isIntercompany;
 
@@ -175,6 +178,48 @@ export default async function ClienteDetallePage({
               Agregar
             </button>
           </form>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-6">
+        <h2 className="text-sm font-semibold">Comunicaciones</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Elige uno o varios contactos; el contacto principal del cliente no cambia.
+        </p>
+        <ul className="mt-3 space-y-2 text-sm">
+          {communications.length === 0 && <li className="text-slate-500">Sin comunicaciones registradas.</li>}
+          {communications.map((c) => (
+            <li key={c.id} className="rounded-md border border-border px-3 py-2">
+              <p className="text-xs text-slate-500">
+                {new Date(c.createdAt).toLocaleString("es-MX")} · Destinatarios: {c.recipientNames.join(", ")}
+              </p>
+              {c.subject && <p className="font-medium">{c.subject}</p>}
+              <p className="text-slate-700">{c.body}</p>
+            </li>
+          ))}
+        </ul>
+        {canEdit && contacts.length > 0 && (
+          <form action={logClientCommunicationAction} className="mt-4 space-y-2 border-t border-border pt-4">
+            <input type="hidden" name="clientId" value={client.id} />
+            <p className="text-xs font-medium uppercase text-slate-500">Registrar comunicación</p>
+            <fieldset className="space-y-1">
+              {contacts.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" name="contactIds" value={c.id} />
+                  {c.name}
+                  {c.isPrimary ? " (principal)" : ""}
+                </label>
+              ))}
+            </fieldset>
+            <input name="subject" placeholder="Asunto (opcional)" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+            <textarea name="body" required rows={3} placeholder="Mensaje o nota de envío" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+            <button type="submit" className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white">
+              Registrar
+            </button>
+          </form>
+        )}
+        {canEdit && contacts.length === 0 && (
+          <p className="mt-2 text-xs text-amber-800">Agrega contactos antes de registrar una comunicación.</p>
         )}
       </section>
 

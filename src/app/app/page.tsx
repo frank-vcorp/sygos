@@ -1,16 +1,13 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { canSwitchActiveCompany } from "@/lib/permissions-company";
 import { switchCompanyAction } from "./actions";
-
-function canSwitchCompany(role: string) {
-  return role === "ADMINISTRADOR" || role === "CEO" || role === "COORDINACION_ADMIN";
-}
 
 export default async function AppHomePage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const showSwitcher = canSwitchCompany(session.role) && session.allowedCompanies.length > 1;
+  const showSwitcher = canSwitchActiveCompany(session.role) && session.allowedCompanies.length > 1;
 
   return (
     <div className="space-y-6">
@@ -60,13 +57,8 @@ export default async function AppHomePage() {
 
       <section className="rounded-xl border border-dashed border-border bg-white/60 p-6 text-sm text-slate-600">
         <p>
-          Entrega 2 (Fase 1): usuarios demo, integraciones, folios en maestros, edición con control de versión, bajas
-          con historial y cambio de contraseña en Mi cuenta.
-        </p>
-        <p className="mt-2">
-          Usuarios de prueba (misma contraseña en <code className="text-xs">SYGOS_DEMO_USERS_PASSWORD</code>):{" "}
-          <strong>ceo</strong>, <strong>coord</strong>, <strong>ger.systron</strong>, <strong>ger.servomotores</strong>,{" "}
-          <strong>ventas.systron</strong>, <strong>almacen.systron</strong>.
+          Fase 1: maestros por empresa, contactos, comunicaciones multicontacto, folios, búsqueda global (CEO/Admin),
+          integraciones, usuarios y Mi cuenta. Usa el selector de empresa en la barra superior si tu rol lo permite.
         </p>
       </section>
     </div>
