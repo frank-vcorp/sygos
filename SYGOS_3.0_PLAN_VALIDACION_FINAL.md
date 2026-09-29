@@ -322,3 +322,44 @@ Validar los recorridos completos, integraciones, errores, reintentos, documentos
 ## Resultado esperado
 
 SYGOS 3.0 queda validado funcionalmente de extremo a extremo, con integraciones reales, errores recuperables, separación multiempresa y documentación coherente con el Discovery final.
+
+---
+
+# Estado de validación — staging (2026-09-29)
+
+**URL:** https://sygos.vector-ia.mx  
+**Evidencia detallada:** `docs/VALIDACION_BROWSER_STAGING.md`, `docs/E2E_BROWSER_RUN_2026-09-29.md`, `docs/UAT_PLAN_CIERRE_STAGING.json`  
+**Automatización:** `scripts/uat-browser-full.mjs`, `scripts/uat-plan-cierre-staging.mjs`
+
+## Resumen ejecutivo
+
+| Ámbito | Estado |
+|--------|--------|
+| Fases 1–4, 6–8 (operación, técnica, comercial, compras, RRHH, paneles) | **Validado** en staging (E2E + roles demo + barrido browser) |
+| Fase 5 y 9 (fiscal/comercial **sin emisión externa**) | **Validado**: registros, CxC/CxP, pagos por validar, interco SM→SY + pago parcial SY→SM, remisiones, solicitudes, reintento timbrado **sin UUID** |
+| Fase 9 recorridos E2E | **7/7** operativos (incl. interco fiscal/pago sin CFDI) |
+| **Único alcance pendiente** | **Generación y envío de comprobantes/documentos hacia fuera del ERP** (ver abajo) |
+
+## Pendiente exclusivo — emisión / envío de comprobantes
+
+No se considera bloqueo de cierre operativo; requiere credenciales y sandbox/producción controlada:
+
+1. **CFDI timbrado exitoso** vía Facturapi (UUID fiscal, XML/PDF oficial generado por el proveedor).
+2. **Envío de correo** con comprobantes o notificaciones (SendGrid u otro).
+3. **WhatsApp** u otros canales de entrega de documentos.
+4. **Nómina:** timbrado exitoso de recibos (misma regla que Facturapi; en UI solo se validó fallo + reintento sin duplicar).
+
+Todo lo demás del plan (captura, autorización, saldos, intercompañía contable, remisiones en sistema, cotización → factura en borrador, política “guardado sin timbrar”, etc.) **sí fue comprobado** en staging.
+
+## Cierre Fase 9 — recorridos
+
+| Recorrido | Estado staging |
+|-----------|----------------|
+| SYSTRON EQUI | ✅ |
+| Servomotores cliente directo | ✅ |
+| MOT originado en SYSTRON | ✅ |
+| Compra directa | ✅ |
+| O.C. | ✅ |
+| Facturación/pago intercompañía | ✅ (registros + pago parcial; **sin** CFDI) |
+| Nómina ambas empresas | ✅ (autorización; **sin** timbrado nómina) |
+| Documentación repo / Discovery | ✅ |

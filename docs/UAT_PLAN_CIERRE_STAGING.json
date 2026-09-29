@@ -1,0 +1,50 @@
+{
+  "at": "2026-09-29T14:25:49.096Z",
+  "log": [
+    {
+      "name": "f5-interco-factura-cxc-cxp",
+      "ok": true,
+      "detail": "SM finanzas"
+    },
+    {
+      "name": "f5-interco-pago-parcial",
+      "ok": true,
+      "detail": "SYSTRON pago"
+    },
+    {
+      "name": "f5-ventas-solicita-factura",
+      "ok": true,
+      "detail": "form solicitud"
+    },
+    {
+      "name": "f5-factura-borrador-sin-timbrar",
+      "ok": true,
+      "detail": "Finanzas — SYSTRON\n\nIdentidad fiscal: Sin razón social · RFC —. Solo empresa act"
+    },
+    {
+      "name": "f5-reintento-timbrado-ui",
+      "ok": true,
+      "detail": "sin UUID"
+    },
+    {
+      "name": "f5-remision",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "f7-rrhh-vacaciones-ui",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "f7-vacaciones-solicitud",
+      "ok": true,
+      "detail": "form enviado si había empleado"
+    },
+    {
+      "name": "f5-ger-sm-finanzas-solicitud",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}
