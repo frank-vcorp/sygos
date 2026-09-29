@@ -45,6 +45,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (session.role === "CEO" || session.role === "ADMINISTRADOR") {
     navItems.push({ href: "/app/paneles/ceo", label: "Panel CEO" });
   }
+  if (["COORDINACION_ADMIN", "ADMINISTRADOR", "CEO"].includes(session.role)) {
+    navItems.push({ href: "/app/paneles/coordinacion", label: "Coordinación" });
+  }
+  if (
+    session.role === "GERENTE_OPERATIVO_SERVOMOTORES" ||
+    session.role === "CEO" ||
+    session.role === "ADMINISTRADOR"
+  ) {
+    navItems.push({ href: "/app/paneles/gerente-sm", label: "Panel Gerente SM" });
+  }
+  if (
+    ["CEO", "ADMINISTRADOR", "COORDINACION_ADMIN", "GERENTE_OPERATIVO_SYSTRON", "GERENTE_OPERATIVO_SERVOMOTORES"].includes(
+      session.role,
+    )
+  ) {
+    navItems.push({ href: "/app/paneles/reportes", label: "Reportes" });
+  }
   if (session.role === "VENTAS_SYSTRON") {
     navItems.push({ href: "/app/paneles/ventas", label: "Mis ventas" });
   }

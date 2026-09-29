@@ -371,9 +371,32 @@ export const quotePendingOriginEnum = pgEnum("quote_pending_origin", [
   "MOT_INTERCOMPANIA",
 ]);
 
-export const invoiceStatusEnum = pgEnum("invoice_status", ["BORRADOR", "TIMBRADA", "CANCELADA"]);
+export const invoiceStatusEnum = pgEnum("invoice_status", ["BORRADOR", "TIMBRADA", "CANCELADA", "CANCELACION_PENDIENTE"]);
 
-export const purchaseStatusEnum = pgEnum("purchase_status", ["REGISTRADA", "PENDIENTE_OC", "AUTORIZADA", "CANCELADA"]);
+export const paymentValidationEnum = pgEnum("payment_validation", ["PENDIENTE_VALIDACION", "VALIDADO"]);
+
+export const documentRequestTypeEnum = pgEnum("document_request_type", ["FACTURA", "REMISION"]);
+
+export const documentRequestStatusEnum = pgEnum("document_request_status", ["SOLICITADA", "GENERADA", "CANCELADA"]);
+
+export const purchaseStatusEnum = pgEnum("purchase_status", [
+  "REGISTRADA",
+  "PENDIENTE_OC",
+  "AUTORIZADA",
+  "VALIDADA",
+  "CANCELADA",
+]);
+
+export const purchaseOrderStatusEnum = pgEnum("purchase_order_status", [
+  "PENDIENTE_AUTORIZACION",
+  "AUTORIZADA",
+  "PROCESADA",
+  "CANCELADA",
+]);
+
+export const payrollRunStatusEnum = pgEnum("payroll_run_status", ["BORRADOR", "AUTORIZADA", "TIMBRADO_FALLIDO", "CERRADA"]);
+
+export const vacationStatusEnum = pgEnum("vacation_status", ["SOLICITADA", "AUTORIZADA", "RECHAZADA"]);
 
 export const companySettings = pgTable(
   "company_settings",
@@ -383,6 +406,10 @@ export const companySettings = pgTable(
       .references(() => companies.id),
     servomotoresInventoryEnabled: boolean("servomotores_inventory_enabled").notNull().default(false),
     testModeEnabled: boolean("test_mode_enabled").notNull().default(false),
+    fiscalLegalName: text("fiscal_legal_name"),
+    fiscalRfc: text("fiscal_rfc"),
+    monthlyPurchaseBudgetMxn: integer("monthly_purchase_budget_mxn").notNull().default(5000),
+    maxDirectPurchaseMxn: integer("max_direct_purchase_mxn").notNull().default(2000),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
 );
@@ -712,13 +739,55 @@ export const invoices = pgTable(
     clientId: uuid("client_id")
       .notNull()
       .references(() => clients.id),
+    quoteId: uuid("quote_id").references(() => quotes.id),
     folio: text("folio").notNull(),
     totalMxn: integer("total_mxn").notNull().default(0),
+    contractTotalMxn: integer("contract_total_mxn"),
+    isFreeInvoice: boolean("is_free_invoice").notNull().default(false),
+    isIntercompany: boolean("is_intercompany").notNull().default(false),
+    linkedApInvoiceId: uuid("linked_ap_invoice_id"),
+    facturapiUuid: text("facturapi_uuid"),
+    lastStampError: text("last_stamp_error"),
+    requiresCashPolicy: boolean("requires_cash_policy").notNull().default(false),
     status: invoiceStatusEnum("status").notNull().default("BORRADOR"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("invoices_company_idx").on(t.companyId)],
 );
+
+export const remissions = pgTable("remissions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id),
+  folio: text("folio").notNull(),
+  totalMxn: integer("total_mxn").notNull().default(0),
+  allowsPhysicalExit: boolean("allows_physical_exit").notNull().default(false),
+  invoiceObligationRemains: boolean("invoice_obligation_remains").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documentRequests = pgTable("document_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id),
+  requestType: documentRequestTypeEnum("request_type").notNull(),
+  status: documentRequestStatusEnum("status").notNull().default("SOLICITADA"),
+  quoteId: uuid("quote_id").references(() => quotes.id),
+  invoiceId: uuid("invoice_id").references(() => invoices.id),
+  remissionId: uuid("remission_id").references(() => remissions.id),
+  requestedByUserId: uuid("requested_by_user_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const payments = pgTable("payments", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -727,9 +796,75 @@ export const payments = pgTable("payments", {
     .references(() => companies.id),
   invoiceId: uuid("invoice_id").references(() => invoices.id),
   amountMxn: integer("amount_mxn").notNull(),
+  validationStatus: paymentValidationEnum("validation_status").notNull().default("PENDIENTE_VALIDACION"),
+  validatedAt: timestamp("validated_at", { withTimezone: true }),
+  validatedByUserId: uuid("validated_by_user_id").references(() => users.id),
   paidAt: timestamp("paid_at", { withTimezone: true }).notNull().defaultNow(),
   createdByUserId: uuid("created_by_user_id").references(() => users.id),
 });
+
+export const customerCreditBalances = pgTable(
+  "customer_credit_balances",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id),
+    unappliedMxn: integer("unapplied_mxn").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("customer_credit_balances_unique").on(t.companyId, t.clientId)],
+);
+
+export const receivableBalances = pgTable("receivable_balances", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id),
+  invoiceId: uuid("invoice_id")
+    .notNull()
+    .references(() => invoices.id),
+  openMxn: integer("open_mxn").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const payableBalances = pgTable("payable_balances", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  supplierId: uuid("supplier_id")
+    .notNull()
+    .references(() => suppliers.id),
+  invoiceId: uuid("invoice_id").references(() => invoices.id),
+  openMxn: integer("open_mxn").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const purchaseOrders = pgTable(
+  "purchase_orders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    folio: text("folio").notNull(),
+    description: text("description").notNull(),
+    amountMxn: integer("amount_mxn").notNull(),
+    status: purchaseOrderStatusEnum("status").notNull().default("PENDIENTE_AUTORIZACION"),
+    authorizedByUserId: uuid("authorized_by_user_id").references(() => users.id),
+    cancelReason: text("cancel_reason"),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("purchase_orders_company_idx").on(t.companyId)],
+);
 
 export const purchases = pgTable(
   "purchases",
@@ -739,8 +874,10 @@ export const purchases = pgTable(
       .notNull()
       .references(() => companies.id),
     supplierId: uuid("supplier_id").references(() => suppliers.id),
+    purchaseOrderId: uuid("purchase_order_id").references(() => purchaseOrders.id),
     description: text("description").notNull(),
     amountMxn: integer("amount_mxn").notNull(),
+    calendarMonth: text("calendar_month").notNull(),
     status: purchaseStatusEnum("status").notNull().default("REGISTRADA"),
     requiresCeoAuth: boolean("requires_ceo_auth").notNull().default(false),
     createdByUserId: uuid("created_by_user_id").references(() => users.id),
@@ -760,10 +897,123 @@ export const employees = pgTable(
     fullName: text("full_name").notNull(),
     active: boolean("active").notNull().default(true),
     userId: uuid("user_id").references(() => users.id),
+    managerId: uuid("manager_id"),
+    kioskEligible: boolean("kiosk_eligible").notNull().default(true),
+    fixedSalaryOnly: boolean("fixed_salary_only").notNull().default(false),
+    salaryStampedMxn: integer("salary_stamped_mxn"),
+    salaryCashMxn: integer("salary_cash_mxn"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("employees_company_number").on(t.companyId, t.employeeNumber)],
 );
+
+export const salaryHistoryEntries = pgTable("salary_history_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  employeeId: uuid("employee_id")
+    .notNull()
+    .references(() => employees.id, { onDelete: "cascade" }),
+  stampedMxn: integer("stamped_mxn").notNull(),
+  cashMxn: integer("cash_mxn").notNull().default(0),
+  effectiveFrom: timestamp("effective_from", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const vacationRequests = pgTable("vacation_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  employeeId: uuid("employee_id")
+    .notNull()
+    .references(() => employees.id),
+  startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+  endDate: timestamp("end_date", { withTimezone: true }).notNull(),
+  businessDays: integer("business_days").notNull(),
+  status: vacationStatusEnum("status").notNull().default("SOLICITADA"),
+  requestedByUserId: uuid("requested_by_user_id").references(() => users.id),
+  approvedByUserId: uuid("approved_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const overtimeRequests = pgTable("overtime_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  employeeId: uuid("employee_id")
+    .notNull()
+    .references(() => employees.id),
+  weekKey: text("week_key").notNull(),
+  hoursDouble: integer("hours_double").notNull().default(0),
+  hoursTriple: integer("hours_triple").notNull().default(0),
+  originatedByUserId: uuid("originated_by_user_id").references(() => users.id),
+  approvedByUserId: uuid("approved_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const payrollRuns = pgTable(
+  "payroll_runs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    weekKey: text("week_key").notNull(),
+    status: payrollRunStatusEnum("status").notNull().default("BORRADOR"),
+    stampError: text("stamp_error"),
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("payroll_runs_company_week").on(t.companyId, t.weekKey)],
+);
+
+export const payrollLines = pgTable("payroll_lines", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  payrollRunId: uuid("payroll_run_id")
+    .notNull()
+    .references(() => payrollRuns.id, { onDelete: "cascade" }),
+  employeeId: uuid("employee_id")
+    .notNull()
+    .references(() => employees.id),
+  grossMxn: integer("gross_mxn").notNull(),
+  vacationPremiumMxn: integer("vacation_premium_mxn").notNull().default(0),
+});
+
+export const testSessions = pgTable("test_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  startedByUserId: uuid("started_by_user_id")
+    .notNull()
+    .references(() => users.id),
+  active: boolean("active").notNull().default(true),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+});
+
+export const testSessionParticipants = pgTable(
+  "test_session_participants",
+  {
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => testSessions.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+  },
+  (t) => [uniqueIndex("test_session_participants_unique").on(t.sessionId, t.userId)],
+);
+
+export const integrationStampAttempts = pgTable("integration_stamp_attempts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  invoiceId: uuid("invoice_id")
+    .notNull()
+    .references(() => invoices.id),
+  success: boolean("success").notNull(),
+  externalUuid: text("external_uuid"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const attendancePunches = pgTable("attendance_punches", {
   id: uuid("id").defaultRandom().primaryKey(),

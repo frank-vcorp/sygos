@@ -28,8 +28,8 @@ export default async function IntegracionesPage() {
         </Link>
         <h1 className="mt-2 text-xl font-semibold">Integraciones</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Empresa activa: <strong>{session.activeCompany.displayName}</strong>. Solo Administrador configura
-          credenciales (próximamente); aquí se muestra el estado.
+          Empresa activa: <strong>{session.activeCompany.displayName}</strong>. Estado real por integración; en
+          producción no se simula éxito si faltan credenciales.
         </p>
       </div>
 
@@ -39,11 +39,11 @@ export default async function IntegracionesPage() {
             <span className="font-medium">{LABELS[row.integration] ?? row.integration}</span>
             {row.configured ? (
               <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-800">
-                Configurada
+                Configurada (credenciales en servidor; no se muestran completas)
               </span>
             ) : (
               <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
-                No configurada — faltan credenciales en esta empresa
+                No configurada — timbrado/correo fallará y la operación quedará guardada sin envío
               </span>
             )}
           </li>

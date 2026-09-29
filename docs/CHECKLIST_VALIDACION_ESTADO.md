@@ -92,121 +92,121 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ Panel de Ventas no muestra costos internos.
 
 ## Fase 5
-- ⬜ Cada empresa usa su propia identidad/configuración fiscal.
-- ⬜ Vendedor SYSTRON y Gerente Operativo Servomotores pueden solicitar Factura.
-- ⬜ Coordinación genera Facturas en la empresa activa.
-- ⬜ Coordinación puede iniciar Factura cuando una operación requiere factura aunque no exista solicitud.
-- ⬜ Facturación parcial no permite sobrefacturación.
-- ⬜ Vendedor no genera Remisiones; las solicita.
-- ⬜ Gerente Operativo Servomotores puede solicitar Remisión.
-- ⬜ Coordinación genera Remisiones.
-- ⬜ Remisión puede habilitar salida sin eliminar obligación futura de Factura.
-- ⬜ Factura libre no crea entidades operativas artificiales.
-- ⬜ Pago registrado queda pendiente de validación cuando corresponda.
-- ⬜ Solo Pago validado reduce saldos.
-- ⬜ Crédito anticipado de Cliente requiere aplicación manual posterior.
-- ⬜ Política de efectivo SYSTRON se respeta para Facturas de clientes que requieren factura.
-- ⬜ Servomotores puede facturar a SYSTRON sin depender del cierre técnico o facturación al cliente final.
-- ⬜ Factura intercompañía genera CxC Servomotores y CxP SYSTRON relacionadas.
-- ⬜ El pago SYSTRON -> Servomotores genera salida real e ingreso real.
-- ⬜ Pago intercompañía puede ser parcial.
-- ⬜ No existe compensación ficticia.
-- ⬜ Fallo de Facturapi permite reintento sin duplicar CFDI.
-- ⬜ Cancelaciones/notas de crédito respetan autorización y ejecución definidas.
+- ✅ Cada empresa usa su propia identidad/configuración fiscal.
+- ✅ Vendedor SYSTRON y Gerente Operativo Servomotores pueden solicitar Factura.
+- ✅ Coordinación genera Facturas en la empresa activa.
+- ✅ Coordinación puede iniciar Factura cuando una operación requiere factura aunque no exista solicitud.
+- ✅ Facturación parcial no permite sobrefacturación.
+- ✅ Vendedor no genera Remisiones; las solicita.
+- ✅ Gerente Operativo Servomotores puede solicitar Remisión.
+- ✅ Coordinación genera Remisiones.
+- ✅ Remisión puede habilitar salida sin eliminar obligación futura de Factura.
+- ✅ Factura libre no crea entidades operativas artificiales.
+- ✅ Pago registrado queda pendiente de validación cuando corresponda.
+- ✅ Solo Pago validado reduce saldos.
+- ✅ Crédito anticipado de Cliente requiere aplicación manual posterior.
+- ✅ Política de efectivo SYSTRON se respeta para Facturas de clientes que requieren factura.
+- ✅ Servomotores puede facturar a SYSTRON sin depender del cierre técnico o facturación al cliente final.
+- ✅ Factura intercompañía genera CxC Servomotores y CxP SYSTRON relacionadas.
+- ✅ El pago SYSTRON -> Servomotores genera salida real e ingreso real.
+- ✅ Pago intercompañía puede ser parcial.
+- ✅ No existe compensación ficticia.
+- ✅ Fallo de Facturapi permite reintento sin duplicar CFDI.
+- 🟡 Cancelaciones/notas de crédito respetan autorización y ejecución definidas.
 
 ## Fase 6
-- ⬜ Existe módulo Compras por empresa.
-- ⬜ Gerente Operativo, Coordinación, CEO y Administrador acceden según permisos.
-- ⬜ El Gerente tiene presupuesto mensual default $5,000 MXN configurable.
-- ⬜ Tiene máximo por compra directa default $2,000 MXN configurable.
-- ⬜ Ambos límites operan por mes calendario.
-- ⬜ El sobrante mensual no se acumula.
-- ⬜ Una compra directa debe cumplir ambos límites.
-- ⬜ Una compra registrada consume presupuesto aun antes de validación.
-- ⬜ Coordinación puede editar/eliminar una compra directa para cuadrarla.
-- ⬜ Editar/eliminar recalcula/libera presupuesto.
-- ⬜ Si una edición rebasa límites, la compra ya no puede permanecer como directa.
-- ⬜ Compra directa validada se vincula a exactamente un Egreso o una CxP.
-- ⬜ O.C. representa solicitud interna, no compromiso con proveedor.
-- ⬜ O.C. se usa al rebasar límites o requerir autorización.
-- ⬜ Solo CEO autoriza O.C.
-- ⬜ O.C. creada directamente por CEO queda autorizada.
-- ⬜ O.C. autorizada no consume la bolsa mensual.
-- ⬜ Coordinación ve O.C. autorizadas pendientes de procesar.
-- ⬜ Cambios materiales requieren nueva autorización CEO.
-- ⬜ Una O.C. termina en exactamente un Egreso o una CxP.
-- ⬜ CEO o Coordinación pueden cancelar O.C. autorizada con motivo.
-- ⬜ Una O.C. por sí sola no afecta bancos ni genera deuda.
-- ⬜ Finanzas de SYSTRON y Servomotores están completamente separadas.
-- ⬜ No existe dashboard financiero consolidado.
-- ⬜ Pendientes de comprobación Servomotores permiten registrar pago antes de factura sin duplicar egreso al regularizar.
-- ⬜ Movimientos confirmados navegan a su origen.
+- ✅ Existe módulo Compras por empresa.
+- ✅ Gerente Operativo, Coordinación, CEO y Administrador acceden según permisos.
+- ✅ El Gerente tiene presupuesto mensual default $5,000 MXN configurable.
+- ✅ Tiene máximo por compra directa default $2,000 MXN configurable.
+- ✅ Ambos límites operan por mes calendario.
+- ✅ El sobrante mensual no se acumula.
+- ✅ Una compra directa debe cumplir ambos límites.
+- ✅ Una compra registrada consume presupuesto aun antes de validación.
+- ✅ Coordinación puede editar/eliminar una compra directa para cuadrarla.
+- ✅ Editar/eliminar recalcula/libera presupuesto.
+- ✅ Si una edición rebasa límites, la compra ya no puede permanecer como directa.
+- 🟡 Compra directa validada se vincula a exactamente un Egreso o una CxP (CxP implementada; egreso bancario pendiente).
+- ✅ O.C. representa solicitud interna, no compromiso con proveedor.
+- ✅ O.C. se usa al rebasar límites o requerir autorización.
+- ✅ Solo CEO autoriza O.C.
+- ✅ O.C. creada directamente por CEO queda autorizada.
+- ✅ O.C. autorizada no consume la bolsa mensual.
+- ✅ Coordinación ve O.C. autorizadas pendientes de procesar.
+- 🟡 Cambios materiales requieren nueva autorización CEO.
+- 🟡 Una O.C. termina en exactamente un Egreso o una CxP (CxP).
+- ✅ CEO o Coordinación pueden cancelar O.C. autorizada con motivo.
+- ✅ Una O.C. por sí sola no afecta bancos ni genera deuda.
+- ✅ Finanzas de SYSTRON y Servomotores están completamente separadas.
+- ✅ No existe dashboard financiero consolidado.
+- 🟡 Pendientes de comprobación Servomotores permiten registrar pago antes de factura sin duplicar egreso al regularizar.
+- 🟡 Movimientos confirmados navegan a su origen.
 
 ## Fase 7
-- ⬜ Cada empresa mantiene sus propios colaboradores/Nómina.
-- ⬜ Colaborador activo tiene usuario ERP.
-- ⬜ Ayudante General tiene usuario sin panel operativo.
-- ⬜ Jefe directo se conserva con historia.
-- ⬜ Gerente Operativo Servomotores tiene CEO como jefe.
-- ⬜ Ayudante General tiene Gerente Operativo como jefe.
-- ⬜ Salarios timbrado/efectivo conservan historial.
-- ⬜ Kiosco aplica solo a colaboradores elegibles.
-- ⬜ Gerente Operativo Servomotores no usa Kiosco ni horario.
-- ⬜ Vacaciones son solicitadas por jefe directo.
-- ⬜ CEO/Administrador valida.
-- ⬜ Si CEO/Administrador es jefe, su acción resuelve la autorización.
-- ⬜ Solo lunes-viernes consumen vacaciones.
-- ⬜ Prima vacacional se genera automáticamente al 25%.
-- ⬜ Prima usa salario diario total y distribución timbrado/efectivo proporcional.
-- ⬜ Si las vacaciones cruzan semanas, la prima se divide por días en cada Nómina.
-- ⬜ Horas extra no permiten elegir tipo manualmente.
-- ⬜ Acumulación semanal 1-9 Doble, 10+ Triple.
-- ⬜ Una solicitud puede dividirse entre ambos tramos.
-- ⬜ Ayudante General tiene Horas extra originadas por Gerente Operativo y autorización final CEO/Administrador.
-- ⬜ Gerente Operativo Servomotores no tiene Horas extra, Vacaciones, prima vacacional, Aguinaldo ni Bonos.
-- ⬜ Su Nómina contiene solo salario fijo.
-- ⬜ Distribuciones de utilidades se manejan fuera de Nómina.
-- ⬜ Nómina autorizada no se reabre.
-- ⬜ Fallo de timbrado permite reintento sin duplicar.
-- ⬜ Comisiones SYSTRON respetan los esquemas vigentes.
+- ✅ Cada empresa mantiene sus propios colaboradores/Nómina.
+- 🟡 Colaborador activo tiene usuario ERP (campo `userId`; alta masiva pendiente).
+- 🟡 Ayudante General tiene usuario sin panel operativo.
+- ✅ Jefe directo se conserva con historia.
+- 🟡 Gerente Operativo Servomotores tiene CEO como jefe (regla de seed/defaults).
+- 🟡 Ayudante General tiene Gerente Operativo como jefe.
+- ✅ Salarios timbrado/efectivo conservan historial.
+- ✅ Kiosco aplica solo a colaboradores elegibles.
+- ✅ Gerente Operativo Servomotores no usa Kiosco ni horario (`fixedSalaryOnly` / `kioskEligible`).
+- ✅ Vacaciones son solicitadas por jefe directo.
+- ✅ CEO/Administrador valida.
+- ✅ Si CEO/Administrador es jefe, su acción resuelve la autorización.
+- ✅ Solo lunes-viernes consumen vacaciones.
+- ✅ Prima vacacional se genera automáticamente al 25%.
+- ✅ Prima usa salario diario total y distribución timbrado/efectivo proporcional.
+- 🟡 Si las vacaciones cruzan semanas, la prima se divide por días en cada Nómina.
+- ✅ Horas extra no permiten elegir tipo manualmente.
+- ✅ Acumulación semanal 1-9 Doble, 10+ Triple.
+- ✅ Una solicitud puede dividirse entre ambos tramos.
+- 🟡 Ayudante General tiene Horas extra originadas por Gerente Operativo y autorización final CEO/Administrador.
+- ✅ Gerente Operativo Servomotores no tiene Horas extra, Vacaciones, prima vacacional, Aguinaldo ni Bonos (excluido en UI nómina).
+- ✅ Su Nómina contiene solo salario fijo.
+- ✅ Distribuciones de utilidades se manejan fuera de Nómina.
+- ✅ Nómina autorizada no se reabre.
+- ✅ Fallo de timbrado permite reintento sin duplicar.
+- 🟡 Comisiones SYSTRON respetan los esquemas vigentes.
 
 ## Fase 8
-- ⬜ Producción Técnica atribuye resultados al cierre técnico final validado.
-- ⬜ Gerente Operativo SYSTRON no recibe producción técnica por no ejecutar.
-- ⬜ Gerente Operativo Servomotores sí puede recibir atribución de su trabajo técnico.
-- ⬜ Panel CEO siempre corresponde a una empresa activa.
-- ⬜ No existe resumen consolidado.
-- ⬜ `Pendientes de cotizar` reúne todos los orígenes definidos.
-- ⬜ O.C. pendientes de autorización aparecen al CEO.
-- ⬜ Panel Coordinación muestra Facturación, Remisiones, Pagos, Compras/O.C., CxP, Cobranza y Nómina.
-- ⬜ Servomotores muestra pendientes de comprobación cuando existan.
-- ⬜ Panel Gerente Operativo Servomotores concentra Ingresos, técnicos, Cotizaciones/seguimiento, Compras y Egresos.
-- ⬜ Reportes se ejecutan por empresa.
-- ⬜ Los reportes no conceden permisos para editar datos.
-- ⬜ KPI/indicadores navegan a registros origen.
-- ⬜ Reportes exportan respetando filtros.
-- ⬜ Búsqueda/Paneles no exponen precio base Servomotores al Vendedor.
+- ✅ Producción Técnica atribuye resultados al cierre técnico final validado (fase 3 + créditos).
+- ✅ Gerente Operativo SYSTRON no recibe producción técnica por no ejecutar.
+- ✅ Gerente Operativo Servomotores sí puede recibir atribución de su trabajo técnico.
+- ✅ Panel CEO siempre corresponde a una empresa activa.
+- ✅ No existe resumen consolidado.
+- ✅ `Pendientes de cotizar` reúne todos los orígenes definidos.
+- ✅ O.C. pendientes de autorización aparecen al CEO.
+- ✅ Panel Coordinación muestra Facturación, Remisiones, Pagos, Compras/O.C., CxP, Cobranza y Nómina.
+- 🟡 Servomotores muestra pendientes de comprobación cuando existan.
+- 🟡 Panel Gerente Operativo Servomotores concentra Ingresos, técnicos, Cotizaciones/seguimiento, Compras y Egresos.
+- ✅ Reportes se ejecutan por empresa.
+- ✅ Los reportes no conceden permisos para editar datos.
+- ✅ KPI/indicadores navegan a registros origen.
+- ✅ Reportes exportan respetando filtros.
+- ✅ Búsqueda/Paneles no exponen precio base Servomotores al Vendedor.
 
 ## Fase 9
-- ⬜ Facturapi, SendGrid y demás integraciones muestran configuración/estado real.
-- ⬜ Producción nunca simula éxito.
-- ⬜ Credenciales protegidas no vuelven a mostrarse completas.
-- ⬜ Facturapi usa configuración de la empresa correspondiente.
-- ⬜ Los errores indican si una operación quedó guardada o no.
-- ⬜ Los reintentos no duplican efectos.
-- ⬜ Documentos oficiales del proveedor se conservan cuando existan.
-- ⬜ Archivos persistentes pueden consultarse/descargarse desde su origen.
-- ⬜ Modo de Pruebas solo puede activarlo/finalizarlo Administrador según reglas.
-- ⬜ Usuarios seleccionados operan contexto temporal.
-- ⬜ Usuarios no seleccionados continúan producción.
-- ⬜ El contexto de prueba respeta acceso multiempresa.
-- ⬜ No se consumen folios reales, incluida secuencia MOT.
-- ⬜ No se afectan Inventarios, Finanzas, CxC, CxP, Nómina ni Reportes reales.
-- ⬜ No se ejecutan CFDI/correos/WhatsApp reales.
-- ⬜ Al finalizar se descartan cambios de prueba.
-- ⬜ El producto es utilizable en escritorio, tablet y móvil.
-- ⬜ Las funciones esenciales siguen disponibles en móvil.
-- ⬜ PWA puede instalarse cuando corresponda sin prometer trabajo offline.
+- ✅ Facturapi, SendGrid y demás integraciones muestran configuración/estado real.
+- ✅ Producción nunca simula éxito.
+- ✅ Credenciales protegidas no vuelven a mostrarse completas.
+- ✅ Facturapi usa configuración de la empresa correspondiente.
+- ✅ Los errores indican si una operación quedó guardada o no.
+- ✅ Los reintentos no duplican efectos.
+- 🟡 Documentos oficiales del proveedor se conservan cuando existan.
+- 🟡 Archivos persistentes pueden consultarse/descargarse desde su origen.
+- ✅ Modo de Pruebas solo puede activarlo/finalizarlo Administrador según reglas.
+- ✅ Usuarios seleccionados operan contexto temporal (`test_sessions`).
+- ✅ Usuarios no seleccionados continúan producción.
+- 🟡 El contexto de prueba respeta acceso multiempresa (sesión global; aislamiento operativo parcial).
+- 🟡 No se consumen folios reales, incluida secuencia MOT (hook en `test-mode` pendiente en todas las rutas).
+- 🟡 No se afectan Inventarios, Finanzas, CxC, CxP, Nómina ni Reportes reales.
+- ✅ No se ejecutan CFDI/correos/WhatsApp reales.
+- 🟡 Al finalizar se descartan cambios de prueba (sesión se cierra; rollback transaccional pendiente).
+- ✅ El producto es utilizable en escritorio, tablet y móvil.
+- ✅ Las funciones esenciales siguen disponibles en móvil.
+- ✅ PWA puede instalarse cuando corresponda sin prometer trabajo offline.
 - ⬜ Se ejecutan recorridos extremo a extremo:
 - ⬜ SYSTRON EQUI.
 - ⬜ Servomotores cliente directo.
