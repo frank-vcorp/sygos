@@ -23,32 +23,31 @@ Este documento define **cómo construimos** frente al Discovery y al [Plan de Va
 | 1 | Base multiempresa, auth, maestros CRUD, búsqueda CEO/Admin, intercompañía seed, Coolify | Aprobada |
 | 2 | Usuarios demo, integraciones (estado), folios maestros, concurrencia/bajas, Mi cuenta | En uso |
 | 2b | Múltiples contactos + principal en clientes | Desplegada |
-| 3 | Fase 2 inicio: EQUI, MOT global, ingreso Servomotores | En curso |
+| 3 | Fase 2 inicio: EQUI, MOT global, ingreso Servomotores | Desplegada |
+| 4 | **Slice fases 2–9 (MVP):** migración `0004`, almacén EQUI, custodia MOT SM (egreso/prueba), inventario + toggle SM, técnica (atenciones/diagnóstico/OS/bitácora), cotizaciones + envío multicontacto, finanzas/compras stub, RRHH/kiosco, panel CEO, configuración/modo pruebas, manifest PWA | Desplegada — ver [VALIDACION_AGENTE.md](./VALIDACION_AGENTE.md) |
 
-## Roadmap de construcción (pendiente)
+## Matriz rápida plan → estado (post entrega 4)
 
-### Bloque 1 — Fases 1–3
+| Fase | Estado construcción | Notas |
+|------|---------------------|-------|
+| 1 | **Mayoría cumple** en staging | Multicontacto en **cotización → enviar** (no email real) |
+| 2 | **Parcial** | Flujos EQUI/MOT/almacén/inventario MVP; SLA y reglas finas pendientes |
+| 3 | **Parcial** | Pantallas y acciones base; garantías/externo/espejo completo pendiente |
+| 4 | **Parcial** | Cotización + multicontacto; sin Facturapi ni flujo comercial completo |
+| 5 | **Parcial** | Facturas/pagos registro manual; sin timbrado ni conciliación |
+| 6 | **Parcial** | Órdenes de compra MVP |
+| 7 | **Parcial** | Empleados + kiosco punch; sin nómina |
+| 8 | **Parcial** | Panel CEO placeholder |
+| 9 | **Parcial** | Config + manifest; E2E y PWA offline no completos |
 
-- **Fase 1 (resto):** comunicación multicontacto (con primer envío o stub acordado), ítems menores del checklist aún abiertos.
-- **Fase 2:** EQUI, MOT global, almacén SYSTRON, ingreso/resguardo/egreso Servomotores, salida a prueba, inventarios.
-- **Fase 3:** Diagnóstico, reparación preautorizada, OS, SLA, garantías, bitácora, servicio externo, espejo SYSTRON↔Servomotores.
+## Roadmap de profundización (post-MVP)
 
-### Bloque 2 — Fases 4–6
-
-Comercial, cotizaciones, fiscal, pagos, compras, finanzas por empresa.
-
-### Bloque 3 — Fases 7–9
-
-RRHH, kiosco, nómina, paneles, integraciones completas, PWA, modo pruebas, E2E.
+- Integraciones reales (Facturapi, etc.), paneles ricos, nómina, SLA/garantías, almacén completo, refacciones ligadas a OS, pruebas E2E Fase 9.
 
 ## Verificación final (agente)
 
-Al terminar **fase 9** en código:
-
-1. Ejecutar checklist completo de `SYGOS_3.0_PLAN_VALIDACION_FINAL.md`.
-2. Evidencia en staging (browser): rol, empresa activa, URL/pantalla.
-3. Entregar resumen para UAT de Frank por fase 1…9.
+Informe browser: [VALIDACION_AGENTE.md](./VALIDACION_AGENTE.md) (actualizar tras cada deploy mayor).
 
 ## Nota sobre el plan vs construcción
 
-Algunos ítems del checklist de **Fase 1** (p. ej. contactos en **comunicación**) se **comprueban** cuando existe el flujo de envío (Bloque 2), aunque la regla esté en el capítulo 1 del Discovery. La matriz ítem → entrega se actualiza en este archivo conforme avance la construcción.
+Algunos ítems del checklist de **Fase 1** (p. ej. contactos en **comunicación**) se **comprueban** cuando existe el flujo de envío (cotizaciones en entrega 4). La matriz ítem → entrega se mantiene en `VALIDACION_AGENTE.md`.

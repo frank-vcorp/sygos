@@ -275,6 +275,50 @@ export async function confirmMotIngressAction(formData: FormData) {
   revalidatePath(`/app/mot/${id}`);
 }
 
+export async function motTrialExitAction(formData: FormData) {
+  const session = await requireSession();
+  if (!canConfirmMotIngress(session)) throw new Error("Sin permiso");
+  const id = String(formData.get("id") ?? "");
+  const version = Number(formData.get("version") ?? 0);
+  const db = getDb();
+  await db
+    .update(motUnits)
+    .set({ custodyStatus: "SALIDA_PRUEBA", version: version + 1, updatedAt: sql`now()` })
+    .where(
+      and(eq(motUnits.id, id), eq(motUnits.version, version), eq(motUnits.custodyStatus, "EN_RESGUARDO_SERVOMOTORES")),
+    );
+  revalidatePath("/app/mot/servomotores");
+  revalidatePath(`/app/mot/${id}`);
+}
+
+export async function motDefinitiveEgressAction(formData: FormData) {
+  const session = await requireSession();
+  if (!canConfirmMotIngress(session)) throw new Error("Sin permiso");
+  const id = String(formData.get("id") ?? "");
+  const version = Number(formData.get("version") ?? 0);
+  const recipient = String(formData.get("recipient") ?? "").trim();
+  if (!recipient) throw new Error("Indica quién recibe físicamente");
+  const db = getDb();
+  await db
+    .update(motUnits)
+    .set({ custodyStatus: "EGRESADO", version: version + 1, updatedAt: sql`now()` })
+    .where(and(eq(motUnits.id, id), eq(motUnits.version, version)));
+  revalidatePath("/app/mot/servomotores");
+  revalidatePath(`/app/mot/${id}`);
+}
+
+export async function listMotByCustody(status: "PENDIENTE_INGRESO_SERVOMOTORES" | "EN_RESGUARDO_SERVOMOTORES" | "SALIDA_PRUEBA" | "EGRESADO") {
+  const session = await requireSession();
+  if (!canConfirmMotIngress(session) && status !== "EGRESADO") return [];
+  const db = getDb();
+  return db
+    .select()
+    .from(motUnits)
+    .where(and(eq(motUnits.active, true), eq(motUnits.custodyStatus, status)))
+    .orderBy(desc(motUnits.createdAt))
+    .limit(100);
+}
+
 export async function listClientsForSelect(companyId: string) {
   const db = getDb();
   return db

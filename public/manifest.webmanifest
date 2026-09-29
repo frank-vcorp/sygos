@@ -1,0 +1,9 @@
+{
+  "name": "SYGOS 3.0",
+  "short_name": "SYGOS",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a5f",
+  "lang": "es-MX"
+}

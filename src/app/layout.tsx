@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title: "SYGOS 3.0",
   description: "ERP operativo SYSTRON / Servomotores",
   applicationName: "SYGOS",
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {

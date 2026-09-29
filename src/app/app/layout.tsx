@@ -20,6 +20,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const navItems = [...nav];
   if (canViewEqui(session)) navItems.push({ href: "/app/equi", label: "EQUI" });
   if (canViewMot(session)) navItems.push({ href: "/app/mot", label: "MOT" });
+  if (session.activeCompany.code === "SYSTRON") {
+    navItems.push({ href: "/app/almacen", label: "Almacén" });
+  }
+  navItems.push(
+    { href: "/app/inventario", label: "Inventario" },
+    { href: "/app/tecnica", label: "Técnica" },
+    { href: "/app/cotizaciones", label: "Cotizaciones" },
+    { href: "/app/compras", label: "Compras" },
+  );
+  if (["ADMINISTRADOR", "CEO", "COORDINACION_ADMIN"].includes(session.role)) {
+    navItems.push({ href: "/app/finanzas", label: "Finanzas" }, { href: "/app/rrhh", label: "RRHH" });
+  }
+  if (session.role === "CEO" || session.role === "ADMINISTRADOR") {
+    navItems.push({ href: "/app/paneles/ceo", label: "Panel CEO" });
+  }
+  if (session.role === "KIOSCO_ASISTENCIA" || session.role === "ADMINISTRADOR") {
+    navItems.push({ href: "/app/kiosco", label: "Kiosco" });
+  }
+  if (session.role === "ADMINISTRADOR" || session.role === "CEO") {
+    navItems.push({ href: "/app/configuracion", label: "Config" });
+  }
 
   return (
     <div className="min-h-screen">

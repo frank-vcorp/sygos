@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { getDb } from "./client";
-import { clients, companies, integrationSettings, suppliers, userCompanyAccess, users } from "./schema";
+import { clients, companies, companySettings, integrationSettings, suppliers, userCompanyAccess, users } from "./schema";
 import { seedDemoUsers } from "./seed-demo-users";
 
 export async function seedBase() {
@@ -78,6 +78,7 @@ export async function seedBase() {
         configured: false,
       });
     }
+    await db.insert(companySettings).values({ companyId: company.id });
   }
 
   return { skipped: false as const };
