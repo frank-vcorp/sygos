@@ -9,9 +9,10 @@ export default async function MotServomotoresCustodiaPage() {
   if (session.activeCompany.code !== "SERVOMOTORES") redirect("/app/mot");
   if (!canConfirmMotIngress(session)) redirect("/app");
 
-  const [ingresos, resguardo, egresos] = await Promise.all([
+  const [ingresos, resguardo, prueba, egresos] = await Promise.all([
     listMotByCustody("PENDIENTE_INGRESO_SERVOMOTORES"),
     listMotByCustody("EN_RESGUARDO_SERVOMOTORES"),
+    listMotByCustody("SALIDA_PRUEBA"),
     listMotByCustody("EGRESADO"),
   ]);
 
@@ -31,15 +32,35 @@ export default async function MotServomotoresCustodiaPage() {
                   <input type="hidden" name="version" value={m.version} />
                   <button type="submit" className="text-xs underline">Salida a prueba</button>
                 </form>
-                <form action={motDefinitiveEgressAction} className="flex gap-1">
+                <form action={motDefinitiveEgressAction} className="flex flex-wrap gap-1">
                   <input type="hidden" name="id" value={m.id} />
                   <input type="hidden" name="version" value={m.version} />
                   <input name="recipient" required placeholder="Recibe físicamente" className="rounded border px-1 text-xs" />
+                  <input name="documentRef" required placeholder="Doc. habilitante" className="rounded border px-1 text-xs" />
                   <button type="submit" className="text-xs underline">Egreso definitivo</button>
                 </form>
               </div>
             </li>
           ))}
+        </ul>
+      </section>
+      <section>
+        <h2 className="text-sm font-semibold">Salida a prueba (sin cerrar proceso)</h2>
+        <ul className="mt-2 space-y-2 text-sm">
+          {prueba.map((m) => (
+            <li key={m.id} className="rounded border border-border p-3">
+              <Link href={`/app/mot/${m.id}`} className="font-mono text-accent">{m.folio}</Link>
+              <form action={motDefinitiveEgressAction} className="mt-2 flex flex-wrap gap-1">
+                <input type="hidden" name="id" value={m.id} />
+                <input type="hidden" name="version" value={m.version} />
+                <input type="hidden" name="fromTrial" value="1" />
+                <input name="recipient" required placeholder="Destinatario final" className="rounded border px-1 text-xs" />
+                <input name="documentRef" required placeholder="Doc. habilitante" className="rounded border px-1 text-xs" />
+                <button type="submit" className="text-xs underline">Permanencia fuera (egreso)</button>
+              </form>
+            </li>
+          ))}
+          {prueba.length === 0 && <li className="text-slate-500">Ninguno en prueba.</li>}
         </ul>
       </section>
       <section>

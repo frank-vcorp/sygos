@@ -409,6 +409,10 @@ export const motUnits = pgTable(
     manufacturerSerial: text("manufacturer_serial"),
     custodyStatus: motCustodyStatusEnum("custody_status").notNull(),
     physicalIngressAt: timestamp("physical_ingress_at", { withTimezone: true }),
+    slaDueAt: timestamp("sla_due_at", { withTimezone: true }),
+    egressRecipient: text("egress_recipient"),
+    egressDocumentRef: text("egress_document_ref"),
+    egressAt: timestamp("egress_at", { withTimezone: true }),
     createdByUserId: uuid("created_by_user_id").references(() => users.id),
     active: boolean("active").notNull().default(true),
     version: integer("version").notNull().default(1),
@@ -420,6 +424,44 @@ export const motUnits = pgTable(
     index("mot_units_origin_idx").on(t.originCompanyId),
     index("mot_units_custody_idx").on(t.custodyStatus),
   ],
+);
+
+export const equiWarehouseEvents = pgTable(
+  "equi_warehouse_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    equiId: uuid("equi_id")
+      .notNull()
+      .references(() => equiUnits.id, { onDelete: "cascade" }),
+    fromStatus: equiWarehouseStatusEnum("from_status"),
+    toStatus: equiWarehouseStatusEnum("to_status").notNull(),
+    note: text("note"),
+    authorUserId: uuid("author_user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("equi_warehouse_events_equi_idx").on(t.equiId)],
+);
+
+export const motCustodyEvents = pgTable(
+  "mot_custody_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    motId: uuid("mot_id")
+      .notNull()
+      .references(() => motUnits.id, { onDelete: "cascade" }),
+    fromStatus: motCustodyStatusEnum("from_status"),
+    toStatus: motCustodyStatusEnum("to_status").notNull(),
+    note: text("note"),
+    recipient: text("recipient"),
+    documentRef: text("document_ref"),
+    authorUserId: uuid("author_user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("mot_custody_events_mot_idx").on(t.motId)],
 );
 
 export const inventoryParts = pgTable(

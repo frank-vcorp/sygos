@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { canConfirmMotIngress, confirmMotIngressAction, getMot } from "../../activos/actions";
+import {
+  canConfirmMotIngress,
+  confirmMotIngressAction,
+  getMot,
+  getMotCustodyHistory,
+} from "../../activos/actions";
 import { listTechnicalLogForMot } from "../../tecnica/actions";
 import { addTechnicalLogAction } from "../../tecnica/actions";
 
@@ -27,6 +32,7 @@ export default async function MotDetallePage({
   const mot = await getMot(id);
   if (!mot) notFound();
   const bitacora = await listTechnicalLogForMot(id);
+  const custodyHistory = await getMotCustodyHistory(id);
   const canIngress = canConfirmMotIngress(session) && mot.custodyStatus === "PENDIENTE_INGRESO_SERVOMOTORES";
 
   return (
@@ -35,6 +41,7 @@ export default async function MotDetallePage({
         ← MOT
       </Link>
       <h1 className="font-mono text-xl font-semibold">{mot.folio}</h1>
+      <p className="text-sm text-slate-600">Identidad global MOT — el serial no sustituye al folio.</p>
       {conflict === "1" && (
         <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">Conflicto de versión; recarga e intenta de nuevo.</p>
       )}
@@ -64,6 +71,26 @@ export default async function MotDetallePage({
           <dt className="text-xs uppercase text-slate-500">Ingreso físico</dt>
           <dd>{mot.physicalIngressAt ? new Date(mot.physicalIngressAt).toLocaleString("es-MX") : "—"}</dd>
         </div>
+        <div>
+          <dt className="text-xs uppercase text-slate-500">SLA (desde ingreso)</dt>
+          <dd>{mot.slaDueAt ? new Date(mot.slaDueAt).toLocaleString("es-MX") : "—"}</dd>
+        </div>
+        {mot.egressAt && (
+          <>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">Egreso</dt>
+              <dd>{new Date(mot.egressAt).toLocaleString("es-MX")}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">Recibe físicamente</dt>
+              <dd>{mot.egressRecipient ?? "—"}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs uppercase text-slate-500">Documento habilitante</dt>
+              <dd>{mot.egressDocumentRef ?? "—"}</dd>
+            </div>
+          </>
+        )}
         {mot.description && (
           <div className="sm:col-span-2">
             <dt className="text-xs uppercase text-slate-500">Descripción</dt>
@@ -71,6 +98,26 @@ export default async function MotDetallePage({
           </div>
         )}
       </dl>
+
+      {custodyHistory.length > 0 && (
+        <section className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-sm font-semibold">Historial de custodia</h2>
+          <ul className="mt-2 space-y-2 text-sm">
+            {custodyHistory.map((ev) => (
+              <li key={ev.id} className="rounded border border-border px-3 py-2">
+                <span className="font-medium">
+                  {STATUS_LABEL[ev.fromStatus ?? ""] ?? ev.fromStatus ?? "—"} →{" "}
+                  {STATUS_LABEL[ev.toStatus] ?? ev.toStatus}
+                </span>
+                <span className="text-slate-500"> · {new Date(ev.createdAt).toLocaleString("es-MX")}</span>
+                {ev.recipient && <p className="text-slate-600">Recibe: {ev.recipient}</p>}
+                {ev.documentRef && <p className="text-slate-600">Doc: {ev.documentRef}</p>}
+                {ev.note && <p className="text-slate-600">{ev.note}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {canIngress && (
         <form action={confirmMotIngressAction} className="rounded-xl border border-border bg-card p-6">

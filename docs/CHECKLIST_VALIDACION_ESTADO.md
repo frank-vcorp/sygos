@@ -21,29 +21,29 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ El sistema inicia sin datos demo (`SYGOS_SEED_DEMO_USERS` opt-in).
 - ✅ Configuración faltante de una integración se muestra de forma explícita.
 
-## Fase 2
-- ⬜ EQUI se usa para equipos SYSTRON no pertenecientes al flujo MOT.
-- ⬜ Una etiqueta EQUI existente conserva la identidad/historia del mismo equipo.
-- ⬜ Serial de fabricante no sustituye el folio.
-- ⬜ Todo motor/servomotor usa MOT.
-- ⬜ La secuencia MOT es única entre ambas empresas.
-- ⬜ SYSTRON solo ve MOT originados en SYSTRON.
-- ⬜ Servomotores ve MOT propios y provenientes de SYSTRON.
-- ⬜ Un MOT de SYSTRON no ingresa al Almacén SYSTRON.
-- ⬜ El Gerente Operativo de Servomotores ve el pendiente de Ingreso.
-- ⬜ Confirmar Ingreso en Servomotores inicia custodia y SLA.
-- ⬜ SYSTRON mantiene Entradas, En resguardo y Salidas para EQUI/mercancía aplicable.
-- ⬜ Servomotores mantiene Ingresos, En resguardo y Egresos para MOT.
-- ⬜ Salida a prueba no cierra artificialmente el proceso.
-- ⬜ Si una salida a prueba se convierte en permanencia fuera, no se exige retorno ficticio.
-- ⬜ Un Egreso definitivo conserva destinatario físico y documento habilitante.
-- ⬜ Un MOT de SYSTRON puede entregarse directamente desde Servomotores al destinatario final indicado.
-- ⬜ Inventario SYSTRON maneja mínimos/máximos informativos.
-- ⬜ Mínimos/máximos no generan compras ni reservas automáticas.
-- ⬜ Inventario Servomotores inicia deshabilitado.
-- ⬜ Administrador puede habilitarlo.
-- ⬜ Al habilitarlo inicia vacío y separado de SYSTRON.
-- ⬜ No existe transferencia/stock compartido entre empresas.
+## Fase 2 — ✅ cerrada (2026-09-28)
+- ✅ EQUI se usa para equipos SYSTRON no pertenecientes al flujo MOT.
+- ✅ Una etiqueta EQUI existente conserva la identidad/historia del mismo equipo.
+- ✅ Serial de fabricante no sustituye el folio.
+- ✅ Todo motor/servomotor usa MOT.
+- ✅ La secuencia MOT es única entre ambas empresas.
+- ✅ SYSTRON solo ve MOT originados en SYSTRON.
+- ✅ Servomotores ve MOT propios y provenientes de SYSTRON.
+- ✅ Un MOT de SYSTRON no ingresa al Almacén SYSTRON.
+- ✅ El Gerente Operativo de Servomotores ve el pendiente de Ingreso.
+- ✅ Confirmar Ingreso en Servomotores inicia custodia y SLA.
+- ✅ SYSTRON mantiene Entradas, En resguardo y Salidas para EQUI/mercancía aplicable.
+- ✅ Servomotores mantiene Ingresos, En resguardo y Egresos para MOT.
+- ✅ Salida a prueba no cierra artificialmente el proceso.
+- ✅ Si una salida a prueba se convierte en permanencia fuera, no se exige retorno ficticio.
+- ✅ Un Egreso definitivo conserva destinatario físico y documento habilitante.
+- ✅ Un MOT de SYSTRON puede entregarse directamente desde Servomotores al destinatario final indicado.
+- ✅ Inventario SYSTRON maneja mínimos/máximos informativos.
+- ✅ Mínimos/máximos no generan compras ni reservas automáticas.
+- ✅ Inventario Servomotores inicia deshabilitado.
+- ✅ Administrador puede habilitarlo.
+- ✅ Al habilitarlo inicia vacío y separado de SYSTRON.
+- ✅ No existe transferencia/stock compartido entre empresas.
 
 ## Fase 3
 - ⬜ Los tipos vigentes son Diagnóstico, Reparación y Diagnóstico de Garantía.

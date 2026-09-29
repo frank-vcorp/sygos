@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import {
   listEquiWarehouse,
   registerEquiEntryAction,
+  registerEquiDefinitiveExitAction,
   registerEquiReturnFromTrialAction,
   registerEquiTrialExitAction,
 } from "./actions";
@@ -45,19 +46,36 @@ export default async function AlmacenPage() {
               </form>
             )}
             {e.warehouseStatus === "EN_RESGUARDO" && (
-              <form action={registerEquiTrialExitAction} className="flex flex-wrap gap-2">
-                <input type="hidden" name="equiId" value={e.id} />
-                <input type="hidden" name="version" value={e.version} />
-                <input name="reason" required placeholder="Motivo salida a prueba" className="rounded border px-2 py-1 text-xs" />
-                <button type="submit" className="rounded-md border px-2 py-1 text-xs">Salida a prueba</button>
-              </form>
+              <div className="flex flex-col gap-2">
+                <form action={registerEquiTrialExitAction} className="flex flex-wrap gap-2">
+                  <input type="hidden" name="equiId" value={e.id} />
+                  <input type="hidden" name="version" value={e.version} />
+                  <input name="reason" required placeholder="Motivo salida a prueba" className="rounded border px-2 py-1 text-xs" />
+                  <button type="submit" className="rounded-md border px-2 py-1 text-xs">Salida a prueba</button>
+                </form>
+                <form action={registerEquiDefinitiveExitAction} className="flex flex-wrap gap-2">
+                  <input type="hidden" name="equiId" value={e.id} />
+                  <input type="hidden" name="version" value={e.version} />
+                  <input name="note" required placeholder="Destinatario y documento" className="rounded border px-2 py-1 text-xs" />
+                  <button type="submit" className="rounded-md border px-2 py-1 text-xs">Salida definitiva</button>
+                </form>
+              </div>
             )}
             {e.warehouseStatus === "SALIDA_PRUEBA" && (
-              <form action={registerEquiReturnFromTrialAction}>
-                <input type="hidden" name="equiId" value={e.id} />
-                <input type="hidden" name="version" value={e.version} />
-                <button type="submit" className="rounded-md border px-2 py-1 text-xs">Registrar retorno</button>
-              </form>
+              <div className="flex flex-wrap gap-2">
+                <form action={registerEquiReturnFromTrialAction}>
+                  <input type="hidden" name="equiId" value={e.id} />
+                  <input type="hidden" name="version" value={e.version} />
+                  <button type="submit" className="rounded-md border px-2 py-1 text-xs">Registrar retorno</button>
+                </form>
+                <form action={registerEquiDefinitiveExitAction} className="flex flex-wrap gap-2">
+                  <input type="hidden" name="equiId" value={e.id} />
+                  <input type="hidden" name="version" value={e.version} />
+                  <input type="hidden" name="fromTrial" value="1" />
+                  <input name="note" required placeholder="Destinatario y documento" className="rounded border px-2 py-1 text-xs" />
+                  <button type="submit" className="rounded-md border px-2 py-1 text-xs">Permanencia fuera</button>
+                </form>
+              </div>
             )}
           </li>
         ))}

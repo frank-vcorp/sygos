@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { canConfigureIntegrations, canUseGlobalSearch } from "@/lib/permissions";
 import { canManageOperationalUsers } from "@/lib/permissions-users";
-import { canViewEqui, canViewMot } from "@/lib/permissions-activos";
+import { canConfirmMotIngress, canViewEqui, canViewMot } from "@/lib/permissions-activos";
 import { ActiveCompanyNotice } from "@/components/active-company-notice";
 import { CompanySwitcher } from "@/components/company-switcher";
 import { GlobalSearch } from "@/components/global-search";
@@ -27,6 +27,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const navItems = [...nav];
   if (canViewEqui(session)) navItems.push({ href: "/app/equi", label: "EQUI" });
   if (canViewMot(session)) navItems.push({ href: "/app/mot", label: "MOT" });
+  if (canConfirmMotIngress(session)) {
+    navItems.push({ href: "/app/mot/servomotores", label: "Custodia SM" });
+  }
   if (session.activeCompany.code === "SYSTRON") {
     navItems.push({ href: "/app/almacen", label: "Almacén" });
   }

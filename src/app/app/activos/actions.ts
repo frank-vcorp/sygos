@@ -5,6 +5,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { clients, companies, equiUnits, motUnits } from "@/db/schema";
+import {
+  addBusinessDays,
+  DEFAULT_INGRESS_SLA_DAYS,
+  logMotCustodyEvent,
+  listMotCustodyEvents,
+} from "@/lib/custody-events";
 import { assignEquiFolio, assignMotFolio } from "@/lib/folio-format";
 import {
   canConfirmMotIngress,
@@ -258,11 +264,15 @@ export async function confirmMotIngressAction(formData: FormData) {
     throw new Error("El MOT no está pendiente de ingreso");
   }
 
+  const ingressAt = new Date();
+  const slaDueAt = addBusinessDays(ingressAt, DEFAULT_INGRESS_SLA_DAYS);
+
   const updated = await db
     .update(motUnits)
     .set({
       custodyStatus: "EN_RESGUARDO_SERVOMOTORES",
-      physicalIngressAt: sql`now()`,
+      physicalIngressAt: ingressAt,
+      slaDueAt,
       version: version + 1,
       updatedAt: sql`now()`,
     })
@@ -270,6 +280,14 @@ export async function confirmMotIngressAction(formData: FormData) {
     .returning({ id: motUnits.id });
 
   if (updated.length === 0) redirect(`/app/mot/${id}?conflict=1`);
+
+  await logMotCustodyEvent({
+    motId: id,
+    fromStatus: "PENDIENTE_INGRESO_SERVOMOTORES",
+    toStatus: "EN_RESGUARDO_SERVOMOTORES",
+    note: `SLA objetivo: ${slaDueAt.toLocaleDateString("es-MX")}`,
+    authorUserId: session.id,
+  });
 
   revalidatePath("/app/mot");
   revalidatePath(`/app/mot/${id}`);
@@ -280,13 +298,23 @@ export async function motTrialExitAction(formData: FormData) {
   if (!canConfirmMotIngress(session)) throw new Error("Sin permiso");
   const id = String(formData.get("id") ?? "");
   const version = Number(formData.get("version") ?? 0);
+  const note = String(formData.get("note") ?? "").trim() || null;
   const db = getDb();
-  await db
+  const updated = await db
     .update(motUnits)
     .set({ custodyStatus: "SALIDA_PRUEBA", version: version + 1, updatedAt: sql`now()` })
     .where(
       and(eq(motUnits.id, id), eq(motUnits.version, version), eq(motUnits.custodyStatus, "EN_RESGUARDO_SERVOMOTORES")),
-    );
+    )
+    .returning({ id: motUnits.id });
+  if (updated.length === 0) throw new Error("No se pudo registrar salida a prueba");
+  await logMotCustodyEvent({
+    motId: id,
+    fromStatus: "EN_RESGUARDO_SERVOMOTORES",
+    toStatus: "SALIDA_PRUEBA",
+    note,
+    authorUserId: session.id,
+  });
   revalidatePath("/app/mot/servomotores");
   revalidatePath(`/app/mot/${id}`);
 }
@@ -297,14 +325,48 @@ export async function motDefinitiveEgressAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const version = Number(formData.get("version") ?? 0);
   const recipient = String(formData.get("recipient") ?? "").trim();
+  const documentRef = String(formData.get("documentRef") ?? "").trim() || null;
+  const fromTrial = formData.get("fromTrial") === "1";
   if (!recipient) throw new Error("Indica quién recibe físicamente");
+  if (!documentRef) throw new Error("Indica documento habilitante (remisión, carta porte, etc.)");
+
   const db = getDb();
-  await db
+  const mot = await getMot(id);
+  if (!mot) throw new Error("MOT no encontrado");
+  const allowedFrom = fromTrial
+    ? mot.custodyStatus === "SALIDA_PRUEBA"
+    : mot.custodyStatus === "EN_RESGUARDO_SERVOMOTORES" || mot.custodyStatus === "SALIDA_PRUEBA";
+  if (!allowedFrom) throw new Error("Estado de custodia no permite egreso");
+
+  const updated = await db
     .update(motUnits)
-    .set({ custodyStatus: "EGRESADO", version: version + 1, updatedAt: sql`now()` })
-    .where(and(eq(motUnits.id, id), eq(motUnits.version, version)));
+    .set({
+      custodyStatus: "EGRESADO",
+      egressRecipient: recipient,
+      egressDocumentRef: documentRef,
+      egressAt: sql`now()`,
+      version: version + 1,
+      updatedAt: sql`now()`,
+    })
+    .where(and(eq(motUnits.id, id), eq(motUnits.version, version)))
+    .returning({ id: motUnits.id });
+  if (updated.length === 0) redirect(`/app/mot/${id}?conflict=1`);
+
+  await logMotCustodyEvent({
+    motId: id,
+    fromStatus: mot.custodyStatus,
+    toStatus: "EGRESADO",
+    recipient,
+    documentRef,
+    note: fromTrial ? "Egreso definitivo desde salida a prueba (sin retorno ficticio)" : null,
+    authorUserId: session.id,
+  });
   revalidatePath("/app/mot/servomotores");
   revalidatePath(`/app/mot/${id}`);
+}
+
+export async function getMotCustodyHistory(motId: string) {
+  return listMotCustodyEvents(motId);
 }
 
 export async function listMotByCustody(status: "PENDIENTE_INGRESO_SERVOMOTORES" | "EN_RESGUARDO_SERVOMOTORES" | "SALIDA_PRUEBA" | "EGRESADO") {

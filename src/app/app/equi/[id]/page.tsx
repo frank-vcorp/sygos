@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { listEquiWarehouseEvents } from "@/lib/custody-events";
 import { canViewEqui, getEqui } from "../../activos/actions";
+
+const WH_LABEL: Record<string, string> = {
+  SIN_ENTRADA: "Sin entrada",
+  EN_RESGUARDO: "En resguardo",
+  SALIDA_PRUEBA: "Salida a prueba",
+  SALIDA_DEFINITIVA: "Salida definitiva",
+};
 
 export default async function EquiDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -11,6 +19,7 @@ export default async function EquiDetallePage({ params }: { params: Promise<{ id
   const { id } = await params;
   const equi = await getEqui(session.activeCompany.id, id);
   if (!equi || !equi.active) notFound();
+  const events = await listEquiWarehouseEvents(equi.id);
 
   return (
     <div className="space-y-4">
@@ -18,7 +27,14 @@ export default async function EquiDetallePage({ params }: { params: Promise<{ id
         ← EQUI
       </Link>
       <h1 className="font-mono text-xl font-semibold">{equi.folio}</h1>
+      <p className="text-sm text-slate-600">
+        Identidad del equipo = folio <strong>EQUI</strong> (permanente). El serial de fabricante no sustituye al folio.
+      </p>
       <dl className="grid gap-3 rounded-xl border border-border bg-card p-6 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-xs uppercase text-slate-500">Almacén</dt>
+          <dd>{WH_LABEL[equi.warehouseStatus] ?? equi.warehouseStatus}</dd>
+        </div>
         <div>
           <dt className="text-xs uppercase text-slate-500">Modelo</dt>
           <dd>{equi.model}</dd>
@@ -42,6 +58,23 @@ export default async function EquiDetallePage({ params }: { params: Promise<{ id
           </div>
         )}
       </dl>
+      {events.length > 0 && (
+        <section className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-sm font-semibold">Historial almacén</h2>
+          <ul className="mt-3 space-y-2 text-sm">
+            {events.map((ev) => (
+              <li key={ev.id} className="rounded border border-border px-3 py-2">
+                <span className="font-medium">
+                  {ev.fromStatus ? `${WH_LABEL[ev.fromStatus] ?? ev.fromStatus} → ` : ""}
+                  {WH_LABEL[ev.toStatus] ?? ev.toStatus}
+                </span>
+                <span className="text-slate-500"> · {new Date(ev.createdAt).toLocaleString("es-MX")}</span>
+                {ev.note && <p className="text-slate-600">{ev.note}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
