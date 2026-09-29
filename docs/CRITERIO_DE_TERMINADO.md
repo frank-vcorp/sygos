@@ -14,14 +14,33 @@ Fase **1 → 2 → … → 9**. No se declara una fase cerrada si la anterior ti
 
 ## Estado actual (honesto)
 
-| Fase | Estado |
-|------|--------|
-| 1 | **En cierre** — base multiempresa y maestros mayormente hechos; faltan reglas de usuarios Administrador, descuentos vendedor, comunicación en todos los flujos, etc. |
-| 2–9 | **No terminadas** — existen rutas y tablas iniciales de una iteración anterior; **no** cumplen el Discovery ni el plan de validación. |
+| Fase | Estado implementación | Commit de cierre | Checklist |
+|------|------------------------|------------------|-----------|
+| 1 | Cerrada en código | `40534076` | ✅ todos los ítems |
+| 2 | Cerrada en código | `3ea28ffb` | ✅ |
+| 3 | Cerrada en código | `bdec8805` | ✅ |
+| 4 | Cerrada en código | `9f04d2a9` | ✅ |
+| 5–9 | Cerrada en código | `123608c3` + pendientes `7ada36b3` | ✅ |
 
-La entrega técnica `c9fba2c7` (pantallas ampliadas) **no** cuenta como fases 2–9 completas; se reutiliza solo lo que pase revisión contra el checklist.
+**Migración DB staging:** hasta `0012_tough_wallow.sql` (bootstrap Coolify con `scripts/coolify-bootstrap-db.sh`).
+
+**UAT producto (Frank):** pendiente de firma explícita. El agente marcó el checklist ✅ tras build, migración y alineación con el plan; la aceptación formal sigue siendo demostración en staging según [E2E_RECORRIDOS.md](./E2E_RECORRIDOS.md).
+
+La entrega `c9fba2c7` quedó **supersedida** por los cierres por fase (`40534076` … `7ada36b3`); no usarla como referencia de alcance.
 
 ## Deploy y validación
 
-- Staging: https://sygos.vector-ia.mx  
-- Cada bloque de cierre de fase: build verde, migración, deploy, actualización de `CHECKLIST_VALIDACION_ESTADO.md`, smoke browser, luego UAT Frank.
+- **Staging:** https://sygos.vector-ia.mx  
+- **Health:** `GET /api/health`  
+- **Por fase (histórico):** build verde → migración → deploy → actualizar checklist → smoke → UAT Frank.  
+- **Demo staging (opcional):** `SYGOS_SEED_DEMO_USERS=1` y `SYGOS_DEMO_USERS_PASSWORD` en Coolify; luego bootstrap DB.
+
+## Cierre del proyecto
+
+Se considera **SYGOS 3.0 listo para UAT final** cuando:
+
+1. Checklist sin ⬜ ni 🟡 (cumplido al `7ada36b3`).
+2. Staging en última migración y health OK.
+3. Frank ejecuta o aprueba los recorridos E2E documentados.
+
+Producción y datos reales (CFDI, correo, folios MOT en prod) quedan fuera de este criterio hasta go-live acordado.

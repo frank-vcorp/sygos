@@ -8,9 +8,10 @@ ERP operativo multiempresa para **SYSTRON** y **Servomotores (SYSTRON Servomotor
 
 | Aspecto | Detalle |
 |--------|---------|
-| Fase | Inicio de construcción |
+| Fases 1–9 | Implementadas en `main`; checklist ✅ — **UAT Frank pendiente** (ver [`docs/CRITERIO_DE_TERMINADO.md`](./docs/CRITERIO_DE_TERMINADO.md)) |
+| Staging | https://sygos.vector-ia.mx — DB migrada hasta `0012` |
 | Fuente funcional | [`SYGOS_3.0_DISCOVERY_FINAL.md`](./SYGOS_3.0_DISCOVERY_FINAL.md) |
-| Validación por fases | [`SYGOS_3.0_PLAN_VALIDACION_FINAL.md`](./SYGOS_3.0_PLAN_VALIDACION_FINAL.md) |
+| Validación por fases | [`SYGOS_3.0_PLAN_VALIDACION_FINAL.md`](./SYGOS_3.0_PLAN_VALIDACION_FINAL.md) · seguimiento [`docs/CHECKLIST_VALIDACION_ESTADO.md`](./docs/CHECKLIST_VALIDACION_ESTADO.md) |
 | Zona horaria | `America/Mexico_City` |
 | Moneda operativa | MXN |
 
@@ -47,6 +48,8 @@ Ver [`docs/STACK.md`](./docs/STACK.md).
 | [Discovery funcional](./SYGOS_3.0_DISCOVERY_FINAL.md) | Requisitos, reglas de negocio, criterios de aceptación (fuente de verdad) |
 | [Plan de validación](./SYGOS_3.0_PLAN_VALIDACION_FINAL.md) | Comprobaciones por fase antes de dar por cerrada cada etapa |
 | [Plan de construcción en 3 bloques](./CONSTRUCCION_3_BLOQUES.md) | Agrupación de las 9 fases para iteraciones de revisión |
+| [Criterio de terminado](./docs/CRITERIO_DE_TERMINADO.md) | Qué cuenta como fase/proyecto cerrado |
+| [Recorridos E2E](./docs/E2E_RECORRIDOS.md) | Smoke staging por flujo de negocio |
 
 ## Plan de construcción (resumen)
 
