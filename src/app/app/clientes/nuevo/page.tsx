@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { canManageClients } from "@/lib/permissions";
+import { ClientContactsEditor } from "@/components/client-contacts-editor";
 import { createClientAction } from "../../maestros/actions";
 
 export default async function NuevoClientePage() {
@@ -24,12 +25,7 @@ export default async function NuevoClientePage() {
           <input name="requiresInvoice" type="checkbox" defaultChecked />
           Requiere factura
         </label>
-        <fieldset className="space-y-2 rounded-md border border-border p-3">
-          <legend className="px-1 text-sm font-medium">Contacto principal (opcional)</legend>
-          <input name="contactName" placeholder="Nombre" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
-          <input name="contactPhone" placeholder="Teléfono" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
-          <input name="contactEmail" placeholder="Correo" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
-        </fieldset>
+        <ClientContactsEditor minRows={1} maxRows={8} />
         <button type="submit" className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white">
           Guardar
         </button>

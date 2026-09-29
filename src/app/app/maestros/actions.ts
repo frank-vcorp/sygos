@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
@@ -14,6 +14,11 @@ import {
   users,
 } from "@/db/schema";
 import { assignClientFolio, assignProspectFolio, assignSupplierFolio } from "@/lib/folio-format";
+import {
+  insertClientContacts,
+  parseClientContactsFromForm,
+  resolvePrimaryContactSlot,
+} from "@/lib/client-contacts";
 import { getSession } from "@/lib/session";
 import { logMasterEvent, listMasterEvents } from "@/lib/master-events";
 import {
@@ -62,15 +67,10 @@ export async function createClientAction(formData: FormData) {
     })
     .returning();
 
-  const contactName = String(formData.get("contactName") ?? "").trim();
-  if (contactName) {
-    await db.insert(clientContacts).values({
-      clientId: row.id,
-      name: contactName,
-      email: String(formData.get("contactEmail") ?? "").trim() || null,
-      phone: String(formData.get("contactPhone") ?? "").trim() || null,
-      isPrimary: true,
-    });
+  const parsed = parseClientContactsFromForm(formData);
+  if (parsed.length > 0) {
+    const primary = resolvePrimaryContactSlot(formData, parsed);
+    await insertClientContacts(db, row.id, parsed, primary);
   }
 
   revalidatePath("/app/clientes");
@@ -459,7 +459,123 @@ export async function getSupplier(companyId: string, id: string) {
 
 export async function getClientContacts(clientId: string) {
   const db = getDb();
-  return db.select().from(clientContacts).where(eq(clientContacts.clientId, clientId));
+  return db
+    .select()
+    .from(clientContacts)
+    .where(and(eq(clientContacts.clientId, clientId), eq(clientContacts.active, true)))
+    .orderBy(desc(clientContacts.isPrimary), asc(clientContacts.name));
+}
+
+async function assertClientContactAccess(clientId: string) {
+  const session = await requireSession();
+  if (!canManageClients(session.role, session.activeCompany.code)) {
+    throw new Error("Sin permiso");
+  }
+  const client = await getClient(session.activeCompany.id, clientId);
+  if (!client || !client.active) throw new Error("Cliente no encontrado");
+  if (client.isIntercompany) throw new Error("Contactos de intercompañía son solo lectura");
+  return { session, client };
+}
+
+export async function addClientContactAction(formData: FormData) {
+  const clientId = String(formData.get("clientId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!clientId || !name) throw new Error("Datos incompletos");
+
+  await assertClientContactAccess(clientId);
+  const db = getDb();
+  const existing = await getClientContacts(clientId);
+  const makePrimary = formData.get("makePrimary") === "on" || existing.length === 0;
+
+  if (makePrimary) {
+    await db
+      .update(clientContacts)
+      .set({ isPrimary: false })
+      .where(and(eq(clientContacts.clientId, clientId), eq(clientContacts.active, true)));
+  }
+
+  await db.insert(clientContacts).values({
+    clientId,
+    name,
+    phone: String(formData.get("phone") ?? "").trim() || null,
+    email: String(formData.get("email") ?? "").trim() || null,
+    roleTitle: String(formData.get("roleTitle") ?? "").trim() || null,
+    isPrimary: makePrimary,
+  });
+
+  revalidatePath(`/app/clientes/${clientId}`);
+}
+
+export async function setPrimaryClientContactAction(formData: FormData) {
+  const clientId = String(formData.get("clientId") ?? "");
+  const contactId = String(formData.get("contactId") ?? "");
+  if (!clientId || !contactId) throw new Error("Datos incompletos");
+
+  await assertClientContactAccess(clientId);
+  const db = getDb();
+
+  await db
+    .update(clientContacts)
+    .set({ isPrimary: false })
+    .where(and(eq(clientContacts.clientId, clientId), eq(clientContacts.active, true)));
+
+  const updated = await db
+    .update(clientContacts)
+    .set({ isPrimary: true })
+    .where(
+      and(
+        eq(clientContacts.id, contactId),
+        eq(clientContacts.clientId, clientId),
+        eq(clientContacts.active, true),
+      ),
+    )
+    .returning({ id: clientContacts.id });
+
+  if (updated.length === 0) throw new Error("Contacto no encontrado");
+
+  revalidatePath(`/app/clientes/${clientId}`);
+}
+
+export async function removeClientContactAction(formData: FormData) {
+  const clientId = String(formData.get("clientId") ?? "");
+  const contactId = String(formData.get("contactId") ?? "");
+  if (!clientId || !contactId) throw new Error("Datos incompletos");
+
+  await assertClientContactAccess(clientId);
+  const db = getDb();
+
+  const rows = await db
+    .select()
+    .from(clientContacts)
+    .where(
+      and(
+        eq(clientContacts.id, contactId),
+        eq(clientContacts.clientId, clientId),
+        eq(clientContacts.active, true),
+      ),
+    )
+    .limit(1);
+  const target = rows[0];
+  if (!target) throw new Error("Contacto no encontrado");
+
+  await db
+    .update(clientContacts)
+    .set({ active: false, isPrimary: false })
+    .where(eq(clientContacts.id, contactId));
+
+  if (target.isPrimary) {
+    const remaining = await db
+      .select({ id: clientContacts.id })
+      .from(clientContacts)
+      .where(and(eq(clientContacts.clientId, clientId), eq(clientContacts.active, true)))
+      .orderBy(clientContacts.createdAt)
+      .limit(1);
+    if (remaining[0]) {
+      await db.update(clientContacts).set({ isPrimary: true }).where(eq(clientContacts.id, remaining[0].id));
+    }
+  }
+
+  revalidatePath(`/app/clientes/${clientId}`);
 }
 
 export async function getEntityHistory(entityType: "CLIENT" | "PROSPECT" | "SUPPLIER", entityId: string) {

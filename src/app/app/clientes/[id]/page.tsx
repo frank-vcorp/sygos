@@ -3,10 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { canManageClients } from "@/lib/permissions";
 import {
+  addClientContactAction,
   cancelClientAction,
   getClient,
   getClientContacts,
   getEntityHistory,
+  removeClientContactAction,
+  setPrimaryClientContactAction,
   updateClientAction,
 } from "../../maestros/actions";
 
@@ -125,14 +128,54 @@ export default async function ClienteDetallePage({
           {contacts.length === 0 && <li className="text-slate-500">Sin contactos registrados.</li>}
           {contacts.map((c) => (
             <li key={c.id} className="rounded-md border border-border px-3 py-2">
-              <span className="font-medium">{c.name}</span>
-              {c.isPrimary && <span className="ml-2 text-xs text-accent">Principal</span>}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-medium">{c.name}</span>
+                {c.isPrimary ? (
+                  <span className="text-xs font-medium text-accent">Principal</span>
+                ) : canEdit ? (
+                  <form action={setPrimaryClientContactAction}>
+                    <input type="hidden" name="clientId" value={client.id} />
+                    <input type="hidden" name="contactId" value={c.id} />
+                    <button type="submit" className="text-xs text-accent hover:underline">
+                      Marcar principal
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+              {c.roleTitle && <p className="text-xs text-slate-500">{c.roleTitle}</p>}
               <p className="text-slate-600">
                 {[c.phone, c.email].filter(Boolean).join(" · ") || "—"}
               </p>
+              {canEdit && (
+                <form action={removeClientContactAction} className="mt-2">
+                  <input type="hidden" name="clientId" value={client.id} />
+                  <input type="hidden" name="contactId" value={c.id} />
+                  <button type="submit" className="text-xs text-danger hover:underline">
+                    Quitar contacto
+                  </button>
+                </form>
+              )}
             </li>
           ))}
         </ul>
+
+        {canEdit && (
+          <form action={addClientContactAction} className="mt-4 space-y-2 border-t border-border pt-4">
+            <input type="hidden" name="clientId" value={client.id} />
+            <p className="text-xs font-medium uppercase text-slate-500">Agregar contacto</p>
+            <input name="name" required placeholder="Nombre" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+            <input name="roleTitle" placeholder="Puesto / rol" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+            <input name="phone" placeholder="Teléfono" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+            <input name="email" type="email" placeholder="Correo" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+            <label className="flex items-center gap-2 text-sm">
+              <input name="makePrimary" type="checkbox" />
+              Marcar como principal
+            </label>
+            <button type="submit" className="rounded-md border border-border px-3 py-2 text-sm hover:bg-slate-50">
+              Agregar
+            </button>
+          </form>
+        )}
       </section>
 
       {history.length > 0 && (
