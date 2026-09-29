@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { canConfigureIntegrations, canUseGlobalSearch } from "@/lib/permissions";
+import { canViewEqui, canViewMot } from "@/lib/permissions-activos";
 import { GlobalSearch } from "@/components/global-search";
 import { logoutAction } from "../login/actions";
 
@@ -16,6 +17,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await getSession();
   if (!session) redirect("/login");
 
+  const navItems = [...nav];
+  if (canViewEqui(session)) navItems.push({ href: "/app/equi", label: "EQUI" });
+  if (canViewMot(session)) navItems.push({ href: "/app/mot", label: "MOT" });
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-border bg-card">
@@ -28,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               {session.activeCompany.displayName}
             </span>
             <nav className="flex flex-wrap gap-2 text-sm text-slate-600">
-              {nav.map((item) => (
+              {navItems.map((item) => (
                 <Link key={item.href} href={item.href} className="hover:text-accent">
                   {item.label}
                 </Link>

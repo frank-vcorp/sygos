@@ -22,6 +22,11 @@ export async function assignSupplierFolio(companyId: string, companyCode: Compan
   return `${companyPrefix(companyCode)}-PROV-${n.padStart(4, "0")}`;
 }
 
-export async function previewNextMotFolio() {
+export async function assignEquiFolio(companyId: string) {
+  const n = await nextCompanyFolio(companyId, "EQUI");
+  return `EQUI-${n.padStart(4, "0")}`;
+}
+
+export async function assignMotFolio() {
   return nextMotFolio();
 }

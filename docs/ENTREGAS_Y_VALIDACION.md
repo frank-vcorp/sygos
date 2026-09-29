@@ -23,6 +23,7 @@ Este documento define **cómo construimos** frente al Discovery y al [Plan de Va
 | 1 | Base multiempresa, auth, maestros CRUD, búsqueda CEO/Admin, intercompañía seed, Coolify | Aprobada |
 | 2 | Usuarios demo, integraciones (estado), folios maestros, concurrencia/bajas, Mi cuenta | En uso |
 | 2b | Múltiples contactos + principal en clientes | Desplegada |
+| 3 | Fase 2 inicio: EQUI, MOT global, ingreso Servomotores | En curso |
 
 ## Roadmap de construcción (pendiente)
 

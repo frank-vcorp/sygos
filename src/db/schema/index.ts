@@ -255,3 +255,70 @@ export const masterRecordEvents = pgTable(
     index("master_record_events_company_idx").on(t.companyId),
   ],
 );
+
+export const motCustodyStatusEnum = pgEnum("mot_custody_status", [
+  "PENDIENTE_INGRESO_SERVOMOTORES",
+  "EN_RESGUARDO_SERVOMOTORES",
+  "EGRESADO",
+]);
+
+/** Equipos físicos SYSTRON (no flujo MOT). */
+export const equiUnits = pgTable(
+  "equi_units",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    folio: text("folio").notNull(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id),
+    equipmentType: text("equipment_type"),
+    brand: text("brand"),
+    model: text("model").notNull(),
+    description: text("description"),
+    manufacturerSerial: text("manufacturer_serial"),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id),
+    active: boolean("active").notNull().default(true),
+    version: integer("version").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("equi_units_company_folio").on(t.companyId, t.folio),
+    index("equi_units_company_client_idx").on(t.companyId, t.clientId),
+  ],
+);
+
+/** Motor/servomotor — folio MOT global, visibilidad según empresa origen. */
+export const motUnits = pgTable(
+  "mot_units",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    folio: text("folio").notNull(),
+    originCompanyId: uuid("origin_company_id")
+      .notNull()
+      .references(() => companies.id),
+    originCompanyCode: companyCodeEnum("origin_company_code").notNull(),
+    systronClientId: uuid("systron_client_id").references(() => clients.id),
+    servomotoresClientId: uuid("servomotores_client_id").references(() => clients.id),
+    systronResponsibleUserId: uuid("systron_responsible_user_id").references(() => users.id),
+    brand: text("brand"),
+    model: text("model").notNull(),
+    description: text("description"),
+    manufacturerSerial: text("manufacturer_serial"),
+    custodyStatus: motCustodyStatusEnum("custody_status").notNull(),
+    physicalIngressAt: timestamp("physical_ingress_at", { withTimezone: true }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id),
+    active: boolean("active").notNull().default(true),
+    version: integer("version").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("mot_units_folio_unique").on(t.folio),
+    index("mot_units_origin_idx").on(t.originCompanyId),
+    index("mot_units_custody_idx").on(t.custodyStatus),
+  ],
+);
