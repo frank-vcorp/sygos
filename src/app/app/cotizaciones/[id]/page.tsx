@@ -6,6 +6,7 @@ import {
   applyQuoteDiscountAction,
   authorizeWithoutEquipmentAction,
   getQuote,
+  recordQuoteClientDecisionAction,
   listContactsForClient,
   sendQuoteAction,
   setQuotePriceAction,
@@ -17,6 +18,8 @@ const ORIGIN_LABEL: Record<string, string> = {
   REPARACION_PENDIENTE_PRECIO: "Reparación pendiente de precio",
   GARANTIA_NO_PROCEDENTE: "Garantía no procedente",
   MOT_INTERCOMPANIA: "MOT intercompañía",
+  VENTA_EQUIPO: "Venta de equipo",
+  SERVICIO_EN_CAMPO: "Servicio en campo",
 };
 
 export default async function CotizacionDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -73,6 +76,24 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
             Autorizar sin equipo físico (pendiente ingreso)
           </button>
         </form>
+      )}
+
+      {quote.status === "ENVIADA" && (
+        <div className="flex gap-2 text-sm">
+          <form action={recordQuoteClientDecisionAction}>
+            <input type="hidden" name="quoteId" value={quote.id} />
+            <input type="hidden" name="decision" value="AUTORIZADA" />
+            <button type="submit" className="rounded bg-green-700 px-3 py-1 text-white">Cliente autoriza</button>
+          </form>
+          <form action={recordQuoteClientDecisionAction}>
+            <input type="hidden" name="quoteId" value={quote.id} />
+            <input type="hidden" name="decision" value="RECHAZADA" />
+            <button type="submit" className="rounded border px-3 py-1">Cliente rechaza</button>
+          </form>
+        </div>
+      )}
+      {quote.linkedQuoteId && (
+        <p className="text-xs text-slate-600">Vinculada Servomotores: {quote.linkedQuoteId.slice(0, 8)}…</p>
       )}
 
       {contacts.length > 0 && quote.finalPriceMxn != null && (

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { getDb } from "./client";
 import { clients, companies, companySettings, integrationSettings, suppliers, userCompanyAccess, users } from "./schema";
 import { seedDemoUsers } from "./seed-demo-users";
+import { seedDemoEmployees } from "./seed-demo-employees";
 
 export async function seedBase() {
   const db = getDb();
@@ -94,6 +95,8 @@ async function main() {
     } else {
       console.log(`Demo users: created=${demo.created} updated=${demo.updated}`);
     }
+    const emp = await seedDemoEmployees();
+    if (!emp.skipped) console.log(`Demo employees upserted=${emp.upserted}`);
   } else {
     console.log("Demo users skipped: set SYGOS_SEED_DEMO_USERS=1 to create staging demo accounts");
   }

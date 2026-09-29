@@ -5,6 +5,7 @@ import {
   invoices,
   payments,
   payableBalances,
+  pendingReceipts,
   purchaseOrders,
   purchases,
   quotes,
@@ -81,5 +82,10 @@ export async function gerenteSmPanelSnapshot(companyId: string) {
     .where(eq(purchases.companyId, companyId))
     .orderBy(sql`${purchases.createdAt} desc`)
     .limit(10);
-  return { pendingQuotes, production, purchases: buys };
+  const pendingReceiptsRows = await db
+    .select()
+    .from(pendingReceipts)
+    .where(and(eq(pendingReceipts.companyId, companyId), eq(pendingReceipts.status, "PENDIENTE")))
+    .limit(10);
+  return { pendingQuotes, production, purchases: buys, pendingReceipts: pendingReceiptsRows };
 }

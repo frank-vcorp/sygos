@@ -369,7 +369,18 @@ export const quotePendingOriginEnum = pgEnum("quote_pending_origin", [
   "REPARACION_PENDIENTE_PRECIO",
   "GARANTIA_NO_PROCEDENTE",
   "MOT_INTERCOMPANIA",
+  "VENTA_EQUIPO",
+  "SERVICIO_EN_CAMPO",
 ]);
+
+export const creditNoteStatusEnum = pgEnum("credit_note_status", [
+  "PENDIENTE_AUTORIZACION",
+  "AUTORIZADA",
+  "TIMBRADA",
+  "CANCELADA",
+]);
+
+export const pendingReceiptStatusEnum = pgEnum("pending_receipt_status", ["PENDIENTE", "REGULARIZADA"]);
 
 export const invoiceStatusEnum = pgEnum("invoice_status", ["BORRADOR", "TIMBRADA", "CANCELADA", "CANCELACION_PENDIENTE"]);
 
@@ -859,6 +870,7 @@ export const purchaseOrders = pgTable(
     amountMxn: integer("amount_mxn").notNull(),
     status: purchaseOrderStatusEnum("status").notNull().default("PENDIENTE_AUTORIZACION"),
     authorizedByUserId: uuid("authorized_by_user_id").references(() => users.id),
+    authorizedAmountMxn: integer("authorized_amount_mxn"),
     cancelReason: text("cancel_reason"),
     createdByUserId: uuid("created_by_user_id").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -880,6 +892,8 @@ export const purchases = pgTable(
     calendarMonth: text("calendar_month").notNull(),
     status: purchaseStatusEnum("status").notNull().default("REGISTRADA"),
     requiresCeoAuth: boolean("requires_ceo_auth").notNull().default(false),
+    payableBalanceId: uuid("payable_balance_id"),
+    cashDisbursementId: uuid("cash_disbursement_id"),
     createdByUserId: uuid("created_by_user_id").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -1025,4 +1039,89 @@ export const attendancePunches = pgTable("attendance_punches", {
     .references(() => employees.id),
   punchedAt: timestamp("punched_at", { withTimezone: true }).notNull().defaultNow(),
   direction: text("direction").notNull(),
+});
+
+export const cashDisbursements = pgTable("cash_disbursements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  folio: text("folio").notNull(),
+  amountMxn: integer("amount_mxn").notNull(),
+  description: text("description").notNull(),
+  supplierId: uuid("supplier_id").references(() => suppliers.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const pendingReceipts = pgTable("pending_receipts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  supplierId: uuid("supplier_id")
+    .notNull()
+    .references(() => suppliers.id),
+  amountMxn: integer("amount_mxn").notNull(),
+  status: pendingReceiptStatusEnum("status").notNull().default("PENDIENTE"),
+  cashDisbursementId: uuid("cash_disbursement_id").references(() => cashDisbursements.id),
+  invoiceId: uuid("invoice_id").references(() => invoices.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const creditNotes = pgTable("credit_notes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  invoiceId: uuid("invoice_id")
+    .notNull()
+    .references(() => invoices.id),
+  amountMxn: integer("amount_mxn").notNull(),
+  status: creditNoteStatusEnum("status").notNull().default("PENDIENTE_AUTORIZACION"),
+  authorizedByUserId: uuid("authorized_by_user_id").references(() => users.id),
+  facturapiUuid: text("facturapi_uuid"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const storedDocuments = pgTable(
+  "stored_documents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    entityType: text("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    fileName: text("file_name").notNull(),
+    storagePath: text("storage_path").notNull(),
+    mimeType: text("mime_type"),
+    uploadedByUserId: uuid("uploaded_by_user_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("stored_documents_entity_idx").on(t.entityType, t.entityId)],
+);
+
+export const commissionEntries = pgTable("commission_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
+  quoteId: uuid("quote_id").references(() => quotes.id),
+  invoiceId: uuid("invoice_id").references(() => invoices.id),
+  amountMxn: integer("amount_mxn").notNull(),
+  weekKey: text("week_key").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const testSessionMutations = pgTable("test_session_mutations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  sessionId: uuid("session_id")
+    .notNull()
+    .references(() => testSessions.id, { onDelete: "cascade" }),
+  tableName: text("table_name").notNull(),
+  rowId: uuid("row_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

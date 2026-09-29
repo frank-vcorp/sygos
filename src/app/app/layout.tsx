@@ -63,7 +63,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     navItems.push({ href: "/app/paneles/reportes", label: "Reportes" });
   }
   if (session.role === "VENTAS_SYSTRON") {
-    navItems.push({ href: "/app/paneles/ventas", label: "Mis ventas" });
+    navItems.push(
+      { href: "/app/paneles/ventas", label: "Mis ventas" },
+      { href: "/app/ventas/equipo", label: "Venta equipo" },
+      { href: "/app/ventas/campo", label: "Servicio campo" },
+    );
   }
   if (session.role === "KIOSCO_ASISTENCIA" || session.role === "ADMINISTRADOR") {
     navItems.push({ href: "/app/kiosco", label: "Kiosco" });

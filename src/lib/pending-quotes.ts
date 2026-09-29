@@ -53,6 +53,22 @@ export async function ensureQuoteFromValidatedDiagnosis(attendanceId: string, co
       createdByUserId: userId,
     })
     .returning();
+
+  if (origin === "MOT_INTERCOMPANIA" && attendanceId) {
+    const { companies } = await import("@/db/schema");
+    const allQuotes = await db
+      .select()
+      .from(quotes)
+      .where(eq(quotes.attendanceId, attendanceId));
+    const [coRow] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+    const other = allQuotes.find((q) => q.id !== row.id && q.companyId !== companyId);
+    if (other && coRow?.code === "SYSTRON") {
+      await db.update(quotes).set({ linkedQuoteId: row.id }).where(eq(quotes.id, other.id));
+    } else if (other && coRow?.code === "SERVOMOTORES") {
+      await db.update(quotes).set({ linkedQuoteId: other.id }).where(eq(quotes.id, row.id));
+    }
+  }
+
   return row;
 }
 

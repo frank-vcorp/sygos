@@ -9,6 +9,7 @@ import {
   createPurchaseAction,
   createPurchaseOrderAction,
   editDirectPurchaseAction,
+  editPurchaseOrderAction,
   getPurchaseBudgetSummary,
   listPurchaseOrders,
   listPurchases,
@@ -59,7 +60,11 @@ export default async function ComprasPage() {
                     <option value="">Sin proveedor</option>
                     {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
-                  <button type="submit" className="text-xs text-accent">Validar → CxP</button>
+                  <select name="settlement" className="rounded border text-xs">
+                    <option value="CXP">CxP</option>
+                    <option value="EGRESO">Egreso</option>
+                  </select>
+                  <button type="submit" className="text-xs text-accent">Validar</button>
                 </form>
                 <form action={editDirectPurchaseAction} className="flex gap-1">
                   <input type="hidden" name="purchaseId" value={p.id} />
@@ -101,7 +106,19 @@ export default async function ComprasPage() {
                 <select name="supplierId" className="rounded border text-xs">
                   {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
+                <select name="settlement" className="rounded border text-xs">
+                  <option value="CXP">CxP</option>
+                  <option value="EGRESO">Egreso</option>
+                </select>
                 <button type="submit" className="text-xs text-accent">Procesar</button>
+              </form>
+            )}
+            {canAccessPurchases(session) && o.status !== "PROCESADA" && o.status !== "CANCELADA" && (
+              <form action={editPurchaseOrderAction} className="mt-1 flex gap-1 text-xs">
+                <input type="hidden" name="purchaseOrderId" value={o.id} />
+                <input name="description" defaultValue={o.description} className="rounded border" />
+                <input name="amountMxn" type="number" defaultValue={o.amountMxn} className="w-20 rounded border" />
+                <button type="submit">Editar O.C.</button>
               </form>
             )}
             {(canAuthorizePurchaseOrder(session) || canProcessPurchaseOrder(session)) && o.status === "AUTORIZADA" && (

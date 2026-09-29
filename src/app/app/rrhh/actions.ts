@@ -13,6 +13,7 @@ import {
   vacationRequests,
 } from "@/db/schema";
 import { countBusinessDays, isoWeekKey, splitOvertimeHours, vacationPremiumMxn } from "@/lib/payroll-rules";
+import { users } from "@/db/schema";
 import { getSession } from "@/lib/session";
 
 export async function listEmployees(companyId: string) {
@@ -111,6 +112,15 @@ export async function requestOvertimeAction(formData: FormData) {
   const hours = Number(formData.get("hours") ?? 0);
   const weekKey = isoWeekKey();
   const db = getDb();
+  const [emp] = await db.select().from(employees).where(eq(employees.id, employeeId)).limit(1);
+  if (emp?.userId) {
+    const [u] = await db.select().from(users).where(eq(users.id, emp.userId)).limit(1);
+    if (u?.role === "AYUDANTE_GENERAL_SERVOMOTORES") {
+      if (session.role !== "GERENTE_OPERATIVO_SERVOMOTORES" && !["CEO", "ADMINISTRADOR"].includes(session.role)) {
+        throw new Error("Horas extra del ayudante solo las origina el Gerente Operativo");
+      }
+    }
+  }
   const prior = await db
     .select()
     .from(overtimeRequests)
@@ -172,12 +182,22 @@ export async function createWeeklyPayrollAction(formData: FormData) {
     const stamped = e.salaryStampedMxn ?? 0;
     const cash = e.salaryCashMxn ?? 0;
     const gross = Math.round((stamped + cash) / 4);
-    const [vac] = await db
+    const vacations = await db
       .select()
       .from(vacationRequests)
-      .where(and(eq(vacationRequests.employeeId, e.id), eq(vacationRequests.status, "AUTORIZADA")))
-      .limit(1);
-    const premium = vac ? vacationPremiumMxn(stamped, cash, Math.min(vac.businessDays, 5)) : 0;
+      .where(and(eq(vacationRequests.employeeId, e.id), eq(vacationRequests.status, "AUTORIZADA")));
+    let premium = 0;
+    for (const vac of vacations) {
+      const start = new Date(vac.startDate);
+      const end = new Date(vac.endDate);
+      const daysInWeek = countBusinessDays(
+        start > new Date(weekKey) ? start : new Date(),
+        end,
+      );
+      if (daysInWeek > 0) {
+        premium += vacationPremiumMxn(stamped, cash, Math.min(daysInWeek, vac.businessDays));
+      }
+    }
     await db.insert(payrollLines).values({
       payrollRunId: payrollRun.id,
       employeeId: e.id,

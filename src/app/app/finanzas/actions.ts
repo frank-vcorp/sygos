@@ -4,13 +4,17 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/db/client";
 import {
+  cashDisbursements,
   clients,
+  creditNotes,
   customerCreditBalances,
   documentRequests,
   invoices,
   payments,
+  pendingReceipts,
   receivableBalances,
   remissions,
+  storedDocuments,
 } from "@/db/schema";
 import {
   applyIntercompanyPayment,
@@ -35,6 +39,9 @@ import { getSession } from "@/lib/session";
 async function requireCoord() {
   const session = await getSession();
   if (!session || !canGenerateFiscalDocuments(session)) throw new Error("Sin permiso");
+  const { isUserInTestMode } = await import("@/lib/test-mode-guard");
+  const test = await isUserInTestMode(session.id);
+  if (test.active) throw new Error("Modo pruebas: finanzas reales bloqueadas para este usuario");
   return session;
 }
 
@@ -287,4 +294,99 @@ export async function intercompanyPaymentAction(formData: FormData) {
     throw new Error("El pago SYSTRON→Servomotores se registra desde SYSTRON");
   }
   revalidatePath("/app/finanzas");
+}
+
+export async function listPendingReceipts(companyId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(pendingReceipts)
+    .where(and(eq(pendingReceipts.companyId, companyId), eq(pendingReceipts.status, "PENDIENTE")))
+    .limit(50);
+}
+
+export async function registerPendingReceiptAction(formData: FormData) {
+  const session = await requireCoord();
+  const supplierId = String(formData.get("supplierId") ?? "");
+  const amountMxn = Number(formData.get("amountMxn") ?? 0);
+  const db = getDb();
+  const n = await nextCompanyFolio(session.activeCompany.id, "EGR");
+  const [eg] = await db
+    .insert(cashDisbursements)
+    .values({
+      companyId: session.activeCompany.id,
+      folio: `EGR-${n.padStart(4, "0")}`,
+      amountMxn,
+      description: "Pago pendiente de comprobación",
+      supplierId,
+    })
+    .returning();
+  await db.insert(pendingReceipts).values({
+    companyId: session.activeCompany.id,
+    supplierId,
+    amountMxn,
+    cashDisbursementId: eg.id,
+  });
+  revalidatePath("/app/finanzas/comprobaciones");
+}
+
+export async function regularizePendingReceiptAction(formData: FormData) {
+  await requireCoord();
+  const receiptId = String(formData.get("receiptId") ?? "");
+  const invoiceId = String(formData.get("invoiceId") ?? "") || null;
+  const db = getDb();
+  await db
+    .update(pendingReceipts)
+    .set({ status: "REGULARIZADA", invoiceId })
+    .where(eq(pendingReceipts.id, receiptId));
+  revalidatePath("/app/finanzas/comprobaciones");
+}
+
+export async function requestCreditNoteAction(formData: FormData) {
+  const session = await requireCoord();
+  const invoiceId = String(formData.get("invoiceId") ?? "");
+  const amountMxn = Number(formData.get("amountMxn") ?? 0);
+  const db = getDb();
+  await db.insert(creditNotes).values({
+    companyId: session.activeCompany.id,
+    invoiceId,
+    amountMxn,
+    status: "PENDIENTE_AUTORIZACION",
+  });
+  revalidatePath("/app/finanzas");
+}
+
+export async function authorizeCreditNoteAction(formData: FormData) {
+  const session = await getSession();
+  if (!session || !["CEO", "ADMINISTRADOR"].includes(session.role)) throw new Error("Solo CEO/Admin");
+  const noteId = String(formData.get("creditNoteId") ?? "");
+  const db = getDb();
+  await db
+    .update(creditNotes)
+    .set({ status: "AUTORIZADA", authorizedByUserId: session.id })
+    .where(eq(creditNotes.id, noteId));
+  revalidatePath("/app/finanzas");
+}
+
+export async function attachStoredDocumentAction(formData: FormData) {
+  const session = await requireCoord();
+  const entityType = String(formData.get("entityType") ?? "");
+  const entityId = String(formData.get("entityId") ?? "");
+  const fileName = String(formData.get("fileName") ?? "").trim();
+  const storagePath = String(formData.get("storagePath") ?? "").trim();
+  const db = getDb();
+  await db.insert(storedDocuments).values({
+    companyId: session.activeCompany.id,
+    entityType,
+    entityId,
+    fileName,
+    storagePath,
+    uploadedByUserId: session.id,
+  });
+  revalidatePath("/app/finanzas");
+}
+
+export async function listCreditNotes(companyId: string) {
+  const db = getDb();
+  return db.select().from(creditNotes).where(eq(creditNotes.companyId, companyId)).limit(30);
 }

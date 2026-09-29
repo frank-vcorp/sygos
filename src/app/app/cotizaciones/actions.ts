@@ -6,7 +6,9 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { clientContacts, quotePriceRevisions, quoteSendContacts, quotes, users } from "@/db/schema";
 import { nextCompanyFolio } from "@/lib/folio";
+import { propagateClientDecisionToLinkedQuote } from "@/lib/quote-link";
 import { canApplyQuoteDiscount, canSetQuotePrice } from "@/lib/permissions-commercial";
+import { isUserInTestMode, logTestMutation } from "@/lib/test-mode-guard";
 import { getSession } from "@/lib/session";
 
 async function requireCommercial() {
@@ -44,7 +46,8 @@ export async function createQuoteAction(formData: FormData) {
   const session = await requireCommercial();
   const clientId = String(formData.get("clientId") ?? "");
   if (!clientId) throw new Error("Cliente requerido");
-  const n = await nextCompanyFolio(session.activeCompany.id, "QUOTE");
+  const test = await isUserInTestMode(session.id);
+  const n = await nextCompanyFolio(session.activeCompany.id, "QUOTE", { testMode: test.active });
   const folio = `COT-${n.padStart(4, "0")}`;
   const db = getDb();
   const [row] = await db.insert(quotes).values({
@@ -57,8 +60,47 @@ export async function createQuoteAction(formData: FormData) {
     commercialReference: String(formData.get("commercialReference") ?? "").trim() || null,
     createdByUserId: session.id,
   }).returning();
+  if (test.sessionId) await logTestMutation(test.sessionId, "quotes", row.id);
   revalidatePath("/app/cotizaciones");
   redirect(`/app/cotizaciones/${row.id}`);
+}
+
+export async function createSpecialCommercialQuoteAction(formData: FormData) {
+  const session = await requireCommercial();
+  const origin = String(formData.get("origin") ?? "VENTA_EQUIPO") as "VENTA_EQUIPO" | "SERVICIO_EN_CAMPO";
+  const clientId = String(formData.get("clientId") ?? "");
+  if (!clientId) throw new Error("Cliente requerido");
+  const test = await isUserInTestMode(session.id);
+  const n = await nextCompanyFolio(session.activeCompany.id, "QUOTE", { testMode: test.active });
+  const db = getDb();
+  const [row] = await db.insert(quotes).values({
+    companyId: session.activeCompany.id,
+    clientId,
+    folio: `COT-${n.padStart(4, "0")}`,
+    status: "BORRADOR",
+    pendingPricing: true,
+    pendingOrigin: origin,
+    createdByUserId: session.id,
+  }).returning();
+  if (test.sessionId) await logTestMutation(test.sessionId, "quotes", row.id);
+  revalidatePath(origin === "VENTA_EQUIPO" ? "/app/ventas/equipo" : "/app/ventas/campo");
+  redirect(`/app/cotizaciones/${row.id}`);
+}
+
+export async function recordQuoteClientDecisionAction(formData: FormData) {
+  const session = await requireCommercial();
+  const quoteId = String(formData.get("quoteId") ?? "");
+  const decision = String(formData.get("decision") ?? "") as "AUTORIZADA" | "RECHAZADA";
+  if (!["AUTORIZADA", "RECHAZADA"].includes(decision)) throw new Error("Decisión inválida");
+  const db = getDb();
+  await db
+    .update(quotes)
+    .set({ status: decision })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.companyId, session.activeCompany.id)));
+  if (session.activeCompany.code === "SYSTRON") {
+    await propagateClientDecisionToLinkedQuote(quoteId, decision);
+  }
+  revalidatePath(`/app/cotizaciones/${quoteId}`);
 }
 
 export async function sendQuoteAction(formData: FormData) {

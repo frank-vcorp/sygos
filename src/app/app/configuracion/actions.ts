@@ -69,6 +69,8 @@ export async function endTestSessionAction() {
   if (!session || session.role !== "ADMINISTRADOR") throw new Error("Solo Administrador");
   const active = await getActiveTestSession();
   if (!active) return;
+  const { discardTestSessionMutations } = await import("@/lib/test-mode-guard");
+  await discardTestSessionMutations(active.id);
   const db = getDb();
   await db
     .update(testSessions)

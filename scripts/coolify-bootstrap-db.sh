@@ -49,12 +49,13 @@ if [ ! -f "${REPO_ROOT}/drizzle/meta/_journal.json" ]; then
   echo "Falta ${REPO_ROOT}/drizzle/meta (ejecuta npm run db:generate)." >&2
   exit 1
 fi
-VPS_META="/tmp/sygos-drizzle-meta"
-echo "Sincronizando drizzle/meta al VPS (${VPS_META})..." >&2
-ssh -o BatchMode=yes -i "$SSH_KEY" "$VPS" "rm -rf $(printf '%q' "$VPS_META") && mkdir -p $(printf '%q' "$VPS_META")"
-scp -o BatchMode=yes -i "$SSH_KEY" -r "${REPO_ROOT}/drizzle/meta/"* "${VPS}:${VPS_META}/"
+VPS_DRIZZLE="/tmp/sygos-drizzle"
+echo "Sincronizando drizzle/ al VPS (${VPS_DRIZZLE})..." >&2
+ssh -o BatchMode=yes -i "$SSH_KEY" "$VPS" "rm -rf $(printf '%q' "$VPS_DRIZZLE") && mkdir -p $(printf '%q' "$VPS_DRIZZLE")/meta"
+scp -o BatchMode=yes -i "$SSH_KEY" -r "${REPO_ROOT}/drizzle/meta/"* "${VPS}:${VPS_DRIZZLE}/meta/"
+scp -o BatchMode=yes -i "$SSH_KEY" "${REPO_ROOT}"/drizzle/*.sql "${VPS}:${VPS_DRIZZLE}/"
 
-META_MOUNT="-v ${VPS_META}:/app/drizzle/meta:ro"
+META_MOUNT="-v ${VPS_DRIZZLE}:/app/drizzle:ro"
 
 ssh -o BatchMode=yes -i "$SSH_KEY" "$VPS" \
   "docker run --rm --network coolify --entrypoint sh \

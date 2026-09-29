@@ -31,6 +31,12 @@ export default async function PanelGerenteSmPage() {
           ))}
         </ul>
       </section>
+      {snap.pendingReceipts.length > 0 && (
+        <section className="text-sm">
+          <h2 className="font-medium">Pendientes de comprobación</h2>
+          <Link href="/app/finanzas/comprobaciones" className="text-accent">{snap.pendingReceipts.length} abiertos</Link>
+        </section>
+      )}
       <section className="text-sm">
         <h2 className="font-medium">Compras recientes</h2>
         <ul>

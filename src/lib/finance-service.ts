@@ -88,6 +88,10 @@ export async function applyValidatedPayment(paymentId: string) {
       .where(eq(receivableBalances.id, recv.id));
   }
   await db.update(payments).set({ validationStatus: "VALIDADO" }).where(eq(payments.id, paymentId));
+  if (p.invoiceId) {
+    const { accrueSystronSaleCommission } = await import("@/lib/commissions-systron");
+    await accrueSystronSaleCommission(p.invoiceId);
+  }
 }
 
 export async function createIntercompanyInvoice(smCompanyId: string, systronCompanyId: string, amountMxn: number) {

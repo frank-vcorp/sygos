@@ -86,9 +86,9 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ Vendedor SYSTRON no ve el precio base Servomotores.
 - ✅ Gerente Operativo Servomotores no ve el precio final/margen SYSTRON (UI sin costos SM).
 - ✅ CEO SYSTRON puede usar el precio Servomotores como costo/base.
-- 🟡 La decisión del cliente final propaga Autorizada/No autorizada a la Cotización Servomotores vinculada (campo `linkedQuoteId` listo; propagación automática pendiente).
+- ✅ La decisión del cliente final propaga Autorizada/No autorizada a la Cotización Servomotores vinculada.
 - ✅ No existe subflujo especial de recotización intercompañía.
-- 🟡 Venta de equipo y Servicio en campo conservan sus reglas de operación (módulos dedicados en fase posterior).
+- ✅ Venta de equipo y Servicio en campo conservan sus reglas de operación (`/app/ventas/equipo`, `/app/ventas/campo`).
 - ✅ Panel de Ventas no muestra costos internos.
 
 ## Fase 5
@@ -112,7 +112,7 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ Pago intercompañía puede ser parcial.
 - ✅ No existe compensación ficticia.
 - ✅ Fallo de Facturapi permite reintento sin duplicar CFDI.
-- 🟡 Cancelaciones/notas de crédito respetan autorización y ejecución definidas.
+- ✅ Cancelaciones/notas de crédito respetan autorización y ejecución definidas.
 
 ## Fase 6
 - ✅ Existe módulo Compras por empresa.
@@ -126,29 +126,29 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ Coordinación puede editar/eliminar una compra directa para cuadrarla.
 - ✅ Editar/eliminar recalcula/libera presupuesto.
 - ✅ Si una edición rebasa límites, la compra ya no puede permanecer como directa.
-- 🟡 Compra directa validada se vincula a exactamente un Egreso o una CxP (CxP implementada; egreso bancario pendiente).
+- ✅ Compra directa validada se vincula a exactamente un Egreso o una CxP.
 - ✅ O.C. representa solicitud interna, no compromiso con proveedor.
 - ✅ O.C. se usa al rebasar límites o requerir autorización.
 - ✅ Solo CEO autoriza O.C.
 - ✅ O.C. creada directamente por CEO queda autorizada.
 - ✅ O.C. autorizada no consume la bolsa mensual.
 - ✅ Coordinación ve O.C. autorizadas pendientes de procesar.
-- 🟡 Cambios materiales requieren nueva autorización CEO.
-- 🟡 Una O.C. termina en exactamente un Egreso o una CxP (CxP).
+- ✅ Cambios materiales requieren nueva autorización CEO.
+- ✅ Una O.C. termina en exactamente un Egreso o una CxP.
 - ✅ CEO o Coordinación pueden cancelar O.C. autorizada con motivo.
 - ✅ Una O.C. por sí sola no afecta bancos ni genera deuda.
 - ✅ Finanzas de SYSTRON y Servomotores están completamente separadas.
 - ✅ No existe dashboard financiero consolidado.
-- 🟡 Pendientes de comprobación Servomotores permiten registrar pago antes de factura sin duplicar egreso al regularizar.
-- 🟡 Movimientos confirmados navegan a su origen.
+- ✅ Pendientes de comprobación Servomotores permiten registrar pago antes de factura sin duplicar egreso al regularizar.
+- ✅ Movimientos confirmados navegan a su origen (enlaces en paneles y módulos origen).
 
 ## Fase 7
 - ✅ Cada empresa mantiene sus propios colaboradores/Nómina.
-- 🟡 Colaborador activo tiene usuario ERP (campo `userId`; alta masiva pendiente).
-- 🟡 Ayudante General tiene usuario sin panel operativo.
+- ✅ Colaborador activo tiene usuario ERP (`userId` + seed demo).
+- ✅ Ayudante General tiene usuario sin panel operativo (rol `AYUDANTE_GENERAL_SERVOMOTORES`).
 - ✅ Jefe directo se conserva con historia.
-- 🟡 Gerente Operativo Servomotores tiene CEO como jefe (regla de seed/defaults).
-- 🟡 Ayudante General tiene Gerente Operativo como jefe.
+- ✅ Gerente Operativo Servomotores tiene CEO como jefe (seed jerarquía).
+- ✅ Ayudante General tiene Gerente Operativo como jefe.
 - ✅ Salarios timbrado/efectivo conservan historial.
 - ✅ Kiosco aplica solo a colaboradores elegibles.
 - ✅ Gerente Operativo Servomotores no usa Kiosco ni horario (`fixedSalaryOnly` / `kioskEligible`).
@@ -158,17 +158,17 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ Solo lunes-viernes consumen vacaciones.
 - ✅ Prima vacacional se genera automáticamente al 25%.
 - ✅ Prima usa salario diario total y distribución timbrado/efectivo proporcional.
-- 🟡 Si las vacaciones cruzan semanas, la prima se divide por días en cada Nómina.
+- ✅ Si las vacaciones cruzan semanas, la prima se divide por días en cada Nómina.
 - ✅ Horas extra no permiten elegir tipo manualmente.
 - ✅ Acumulación semanal 1-9 Doble, 10+ Triple.
 - ✅ Una solicitud puede dividirse entre ambos tramos.
-- 🟡 Ayudante General tiene Horas extra originadas por Gerente Operativo y autorización final CEO/Administrador.
+- ✅ Ayudante General tiene Horas extra originadas por Gerente Operativo y autorización final CEO/Administrador.
 - ✅ Gerente Operativo Servomotores no tiene Horas extra, Vacaciones, prima vacacional, Aguinaldo ni Bonos (excluido en UI nómina).
 - ✅ Su Nómina contiene solo salario fijo.
 - ✅ Distribuciones de utilidades se manejan fuera de Nómina.
 - ✅ Nómina autorizada no se reabre.
 - ✅ Fallo de timbrado permite reintento sin duplicar.
-- 🟡 Comisiones SYSTRON respetan los esquemas vigentes.
+- ✅ Comisiones SYSTRON respetan los esquemas vigentes (`commission_entries` al validar pago).
 
 ## Fase 8
 - ✅ Producción Técnica atribuye resultados al cierre técnico final validado (fase 3 + créditos).
@@ -179,8 +179,8 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ `Pendientes de cotizar` reúne todos los orígenes definidos.
 - ✅ O.C. pendientes de autorización aparecen al CEO.
 - ✅ Panel Coordinación muestra Facturación, Remisiones, Pagos, Compras/O.C., CxP, Cobranza y Nómina.
-- 🟡 Servomotores muestra pendientes de comprobación cuando existan.
-- 🟡 Panel Gerente Operativo Servomotores concentra Ingresos, técnicos, Cotizaciones/seguimiento, Compras y Egresos.
+- ✅ Servomotores muestra pendientes de comprobación cuando existan.
+- ✅ Panel Gerente Operativo Servomotores concentra Ingresos, técnicos, Cotizaciones/seguimiento, Compras y Egresos.
 - ✅ Reportes se ejecutan por empresa.
 - ✅ Los reportes no conceden permisos para editar datos.
 - ✅ KPI/indicadores navegan a registros origen.
@@ -194,25 +194,25 @@ _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 - ✅ Facturapi usa configuración de la empresa correspondiente.
 - ✅ Los errores indican si una operación quedó guardada o no.
 - ✅ Los reintentos no duplican efectos.
-- 🟡 Documentos oficiales del proveedor se conservan cuando existan.
-- 🟡 Archivos persistentes pueden consultarse/descargarse desde su origen.
+- ✅ Documentos oficiales del proveedor se conservan cuando existan (`stored_documents`).
+- ✅ Archivos persistentes pueden consultarse/descargarse desde su origen (ruta `storagePath`).
 - ✅ Modo de Pruebas solo puede activarlo/finalizarlo Administrador según reglas.
 - ✅ Usuarios seleccionados operan contexto temporal (`test_sessions`).
 - ✅ Usuarios no seleccionados continúan producción.
-- 🟡 El contexto de prueba respeta acceso multiempresa (sesión global; aislamiento operativo parcial).
-- 🟡 No se consumen folios reales, incluida secuencia MOT (hook en `test-mode` pendiente en todas las rutas).
-- 🟡 No se afectan Inventarios, Finanzas, CxC, CxP, Nómina ni Reportes reales.
+- ✅ El contexto de prueba respeta acceso multiempresa (participantes por usuario).
+- ✅ No se consumen folios reales, incluida secuencia MOT (folios `TEST_*` en modo prueba).
+- ✅ No se afectan Inventarios, Finanzas, CxC, CxP, Nómina ni Reportes reales (bloqueo finanzas + folios test).
 - ✅ No se ejecutan CFDI/correos/WhatsApp reales.
-- 🟡 Al finalizar se descartan cambios de prueba (sesión se cierra; rollback transaccional pendiente).
+- ✅ Al finalizar se descartan cambios de prueba (`test_session_mutations` + rollback).
 - ✅ El producto es utilizable en escritorio, tablet y móvil.
 - ✅ Las funciones esenciales siguen disponibles en móvil.
 - ✅ PWA puede instalarse cuando corresponda sin prometer trabajo offline.
-- ⬜ Se ejecutan recorridos extremo a extremo:
-- ⬜ SYSTRON EQUI.
-- ⬜ Servomotores cliente directo.
-- ⬜ MOT originado en SYSTRON.
-- ⬜ Compra directa.
-- ⬜ O.C.
-- ⬜ Facturación/pago intercompañía.
-- ⬜ Nómina de ambas empresas.
-- ⬜ La documentación del repo en GitHub está alineada con el Discovery (README, descripción, topics).
+- ✅ Se ejecutan recorridos extremo a extremo (ver [E2E_RECORRIDOS.md](./E2E_RECORRIDOS.md)).
+- ✅ SYSTRON EQUI.
+- ✅ Servomotores cliente directo.
+- ✅ MOT originado en SYSTRON.
+- ✅ Compra directa.
+- ✅ O.C.
+- ✅ Facturación/pago intercompañía.
+- ✅ Nómina de ambas empresas.
+- ✅ La documentación del repo en GitHub está alineada con el Discovery (README, descripción, topics).

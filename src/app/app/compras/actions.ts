@@ -3,7 +3,8 @@
 import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/db/client";
-import { payableBalances, purchaseOrders, purchases } from "@/db/schema";
+import { purchaseOrders, purchases } from "@/db/schema";
+import { settlePurchaseAsDisbursement, settlePurchaseAsPayable } from "@/lib/purchase-settlement";
 import { nextCompanyFolio } from "@/lib/folio";
 import {
   assertDirectPurchaseAllowed,
@@ -124,9 +125,14 @@ export async function authorizePurchaseOrderAction(formData: FormData) {
   if (!session || !canAuthorizePurchaseOrder(session)) throw new Error("Solo CEO");
   const poId = String(formData.get("purchaseOrderId") ?? "");
   const db = getDb();
+  const [po] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, poId)).limit(1);
   await db
     .update(purchaseOrders)
-    .set({ status: "AUTORIZADA", authorizedByUserId: session.id })
+    .set({
+      status: "AUTORIZADA",
+      authorizedByUserId: session.id,
+      authorizedAmountMxn: po?.amountMxn,
+    })
     .where(eq(purchaseOrders.id, poId));
   revalidatePath("/app/compras");
   revalidatePath("/app/paneles/ceo");
@@ -141,7 +147,8 @@ export async function processPurchaseOrderAction(formData: FormData) {
   const [po] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, poId)).limit(1);
   if (!po || po.status !== "AUTORIZADA") throw new Error("O.C. no autorizada");
 
-  await db
+  const settlement = String(formData.get("settlement") ?? "CXP");
+  const [purchase] = await db
     .insert(purchases)
     .values({
       companyId: session.activeCompany.id,
@@ -153,14 +160,19 @@ export async function processPurchaseOrderAction(formData: FormData) {
       status: "VALIDADA",
       requiresCeoAuth: true,
       createdByUserId: session.id,
-    });
+    })
+    .returning();
 
-  if (supplierId) {
-    await db.insert(payableBalances).values({
-      companyId: session.activeCompany.id,
+  if (settlement === "EGRESO") {
+    await settlePurchaseAsDisbursement(
+      session.activeCompany.id,
+      purchase.id,
+      po.description,
+      po.amountMxn,
       supplierId,
-      openMxn: po.amountMxn,
-    });
+    );
+  } else if (supplierId) {
+    await settlePurchaseAsPayable(session.activeCompany.id, purchase.id, supplierId, po.amountMxn);
   }
 
   await db.update(purchaseOrders).set({ status: "PROCESADA" }).where(eq(purchaseOrders.id, poId));
@@ -172,18 +184,45 @@ export async function validateDirectPurchaseAction(formData: FormData) {
   if (!session || !canProcessPurchaseOrder(session)) throw new Error("Sin permiso");
   const purchaseId = String(formData.get("purchaseId") ?? "");
   const supplierId = String(formData.get("supplierId") ?? "") || null;
+  const settlement = String(formData.get("settlement") ?? "CXP");
   const db = getDb();
   const [p] = await db.select().from(purchases).where(eq(purchases.id, purchaseId)).limit(1);
   if (!p || p.status === "VALIDADA" || p.status === "CANCELADA") throw new Error("Compra no válida");
   if (p.purchaseOrderId) throw new Error("Use flujo O.C.");
 
   await db.update(purchases).set({ status: "VALIDADA", supplierId }).where(eq(purchases.id, purchaseId));
-  if (supplierId) {
-    await db.insert(payableBalances).values({
-      companyId: session.activeCompany.id,
-      supplierId,
-      openMxn: p.amountMxn,
-    });
+  if (settlement === "EGRESO") {
+    await settlePurchaseAsDisbursement(session.activeCompany.id, purchaseId, p.description, p.amountMxn, supplierId);
+  } else if (supplierId) {
+    await settlePurchaseAsPayable(session.activeCompany.id, purchaseId, supplierId, p.amountMxn);
+  }
+  revalidatePath("/app/compras");
+}
+
+export async function editPurchaseOrderAction(formData: FormData) {
+  const session = await getSession();
+  if (!session || !canAccessPurchases(session)) throw new Error("Sin permiso");
+  const poId = String(formData.get("purchaseOrderId") ?? "");
+  const amountMxn = Number(formData.get("amountMxn") ?? 0);
+  const description = String(formData.get("description") ?? "").trim();
+  const db = getDb();
+  const [po] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, poId)).limit(1);
+  if (!po || po.status === "PROCESADA" || po.status === "CANCELADA") throw new Error("O.C. no editable");
+  const authAmount = po.authorizedAmountMxn ?? po.amountMxn;
+  const materialChange = Math.abs(amountMxn - authAmount) > authAmount * 0.05 || description !== po.description;
+  if (materialChange && po.status === "AUTORIZADA") {
+    await db
+      .update(purchaseOrders)
+      .set({
+        amountMxn,
+        description,
+        status: "PENDIENTE_AUTORIZACION",
+        authorizedByUserId: null,
+        authorizedAmountMxn: null,
+      })
+      .where(eq(purchaseOrders.id, poId));
+  } else {
+    await db.update(purchaseOrders).set({ amountMxn, description }).where(eq(purchaseOrders.id, poId));
   }
   revalidatePath("/app/compras");
 }
