@@ -1,7 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { changePasswordAction } from "./actions";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card } from "@/components/ui/surface";
+import { buttonVariants } from "@/components/ui/button";
 
 const errors: Record<string, string> = {
   current: "La contraseña actual no coincide.",
@@ -22,14 +24,12 @@ export default async function CuentaPage({
 
   return (
     <div className="mx-auto max-w-md space-y-6">
+      <PageHeader
+        eyebrow="Sistema"
+        title="Mi cuenta"
+        description={`${session.displayName} · ${session.username} · ${session.role.replaceAll("_", " ")}`}
+      />
       <div>
-        <Link href="/app" className="text-sm text-accent hover:underline">
-          ← Inicio
-        </Link>
-        <h1 className="mt-2 text-xl font-semibold">Mi cuenta</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          {session.displayName} · {session.username} · {session.role.replaceAll("_", " ")}
-        </p>
         {session.username !== "Vectoria" && (
           <p className="mt-2 text-xs text-slate-500">
             Usuarios demo: la contraseña actual es la de staging{" "}
@@ -53,11 +53,9 @@ export default async function CuentaPage({
         </p>
       )}
 
-      <form
-        action={changePasswordAction}
-        className="space-y-4 rounded-xl border border-border bg-card p-6"
-        hidden={Boolean(session.impersonator)}
-      >
+      {!session.impersonator && (
+      <Card className="p-6">
+      <form action={changePasswordAction} className="space-y-4">
         <h2 className="text-sm font-semibold">Cambiar contraseña</h2>
         <label className="block text-sm">
           <span className="font-medium">Contraseña actual</span>
@@ -91,10 +89,12 @@ export default async function CuentaPage({
             className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
           />
         </label>
-        <button type="submit" className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white">
+        <button type="submit" className={buttonVariants({ variant: "primary" })}>
           Guardar contraseña
         </button>
       </form>
+      </Card>
+      )}
     </div>
   );
 }

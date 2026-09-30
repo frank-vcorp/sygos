@@ -1,5 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card, StatusBadge } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import { canApplyQuoteDiscount, canSeeSupplierCost, canSetQuotePrice } from "@/lib/permissions-commercial";
 import {
@@ -33,12 +34,14 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
   const hideCostFromVendedor = session.role === "VENTAS_SYSTRON";
 
   return (
-    <div className="space-y-4">
-      <Link href="/app/cotizaciones" className="text-sm text-accent">← Cotizaciones</Link>
-      <h1 className="font-mono text-xl">{quote.folio}</h1>
-      <p className="text-sm">
-        Estado: {quote.status} {quote.pendingPricing && "· pendiente precio"}
-      </p>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Comercial"
+        title={quote.folio}
+        description={quote.pendingPricing ? "Pendiente de precio" : "Detalle de cotización"}
+        breadcrumbs={[{ label: "Cotizaciones", href: "/app/cotizaciones" }, { label: quote.folio }]}
+        actions={<StatusBadge status={quote.status} />}
+      />
       {quote.pendingOrigin && (
         <p className="text-xs text-slate-600">Origen bandeja: {ORIGIN_LABEL[quote.pendingOrigin] ?? quote.pendingOrigin}</p>
       )}

@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card } from "@/components/ui/surface";
+import { buttonVariants } from "@/components/ui/button";
 import { getCompanySettings } from "@/lib/company-settings";
 import { getActiveTestSession } from "@/lib/test-mode";
 import { getSession } from "@/lib/session";
@@ -20,10 +23,15 @@ export default async function ConfiguracionPage() {
   const allUsers = session.role === "ADMINISTRADOR" ? await listUsersForTestSelect() : [];
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <h1 className="text-xl font-semibold">Configuración — {session.activeCompany.displayName}</h1>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <PageHeader
+        eyebrow="Sistema"
+        title="Configuración"
+        description={`Parámetros fiscales y operativos de ${session.activeCompany.displayName}.`}
+      />
 
-      <form action={updateFiscalSettingsAction} className="space-y-2 rounded-xl border bg-card p-4 text-sm">
+      <Card className="space-y-2 p-5 text-sm">
+      <form action={updateFiscalSettingsAction} className="space-y-2">
         <h2 className="font-medium">Fiscal y compras</h2>
         <input
           name="fiscalLegalName"
@@ -55,20 +63,23 @@ export default async function ConfiguracionPage() {
             className="w-full rounded border px-2 py-1"
           />
         </label>
-        <button type="submit" className="rounded bg-accent px-3 py-1 text-white">Guardar</button>
+        <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Guardar</button>
       </form>
+      </Card>
 
       {session.role === "ADMINISTRADOR" && (
         <>
-          <form action={toggleTestModeAction} className="rounded-xl border bg-card p-4">
+          <Card className="p-5">
+          <form action={toggleTestModeAction}>
             <p className="mb-2 text-xs text-slate-600">Bandera local por empresa (preferencia UI).</p>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" name="enabled" defaultChecked={settings.testModeEnabled} />
               Modo de pruebas (bandera)
             </label>
-            <button type="submit" className="mt-2 rounded border px-3 py-1 text-sm">Guardar</button>
+            <button type="submit" className={`${buttonVariants({ variant: "secondary", size: "sm" })} mt-2`}>Guardar</button>
           </form>
-          <section className="rounded-xl border border-dashed bg-card p-4 text-sm">
+          </Card>
+          <Card className="border-dashed p-5 text-sm">
             <h2 className="font-medium">Modo de pruebas (sesión)</h2>
             {testSession ? (
               <>
@@ -85,21 +96,23 @@ export default async function ConfiguracionPage() {
                     <option key={u.id} value={u.id}>{u.displayName} ({u.username})</option>
                   ))}
                 </select>
-                <button type="submit" className="rounded bg-accent px-3 py-1 text-white">Iniciar sesión de pruebas</button>
+                <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Iniciar sesión de pruebas</button>
               </form>
             )}
-          </section>
+          </Card>
         </>
       )}
 
       {session.activeCompany.code === "SERVOMOTORES" && (
-        <form action={toggleServomotoresInventoryAction} className="rounded-xl border bg-card p-4">
+        <Card className="p-5">
+        <form action={toggleServomotoresInventoryAction}>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="enabled" defaultChecked={settings.servomotoresInventoryEnabled} />
             Habilitar inventario Servomotores
           </label>
-          <button type="submit" className="mt-2 rounded border px-3 py-1 text-sm">Guardar</button>
+          <button type="submit" className={`${buttonVariants({ variant: "secondary", size: "sm" })} mt-2`}>Guardar</button>
         </form>
+        </Card>
       )}
     </div>
   );

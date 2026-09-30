@@ -123,9 +123,6 @@ export default async function IntegracionesPage() {
             </>
           )}
         </p>
-        <Link href="/app" className="mt-3 inline-block text-accent hover:underline">
-          ← Volver al inicio
-        </Link>
       </section>
     </div>
   );

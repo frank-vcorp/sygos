@@ -1,8 +1,12 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { canManageClients } from "@/lib/permissions";
 import { ClientContactsEditor } from "@/components/client-contacts-editor";
 import { createClientAction } from "../../maestros/actions";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card } from "@/components/ui/surface";
+import { buttonVariants } from "@/components/ui/button";
 
 export default async function NuevoClientePage() {
   const session = await getSession();
@@ -10,9 +14,14 @@ export default async function NuevoClientePage() {
   if (!canManageClients(session.role, session.activeCompany.code)) redirect("/app/clientes");
 
   return (
-    <div className="mx-auto max-w-lg space-y-4">
-      <h1 className="text-xl font-semibold">Nuevo cliente</h1>
-      <form action={createClientAction} className="space-y-4 rounded-xl border border-border bg-card p-6">
+    <div className="mx-auto max-w-lg">
+      <PageHeader
+        eyebrow="Comercial"
+        title="Nuevo cliente"
+        breadcrumbs={[{ label: "Clientes", href: "/app/clientes" }, { label: "Nuevo" }]}
+      />
+      <Card className="p-6">
+      <form action={createClientAction} className="space-y-4">
         <label className="block text-sm">
           <span className="font-medium">Nombre / razón social</span>
           <input name="name" required className="mt-1 w-full rounded-md border border-border px-3 py-2" />
@@ -26,10 +35,12 @@ export default async function NuevoClientePage() {
           Requiere factura
         </label>
         <ClientContactsEditor minRows={1} maxRows={8} />
-        <button type="submit" className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white">
-          Guardar
-        </button>
+        <div className="flex gap-2">
+          <button type="submit" className={buttonVariants({ variant: "primary" })}>Guardar</button>
+          <Link href="/app/clientes" className={buttonVariants({ variant: "secondary" })}>Cancelar</Link>
+        </div>
       </form>
+      </Card>
     </div>
   );
 }

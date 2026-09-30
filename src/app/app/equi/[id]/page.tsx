@@ -1,5 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import { listEquiWarehouseEvents } from "@/lib/custody-events";
 import { canViewEqui, getEqui } from "../../activos/actions";
@@ -22,15 +23,14 @@ export default async function EquiDetallePage({ params }: { params: Promise<{ id
   const events = await listEquiWarehouseEvents(equi.id);
 
   return (
-    <div className="space-y-4">
-      <Link href="/app/equi" className="text-sm text-accent hover:underline">
-        ← EQUI
-      </Link>
-      <h1 className="font-mono text-xl font-semibold">{equi.folio}</h1>
-      <p className="text-sm text-slate-600">
-        Identidad del equipo = folio <strong>EQUI</strong> (permanente). El serial de fabricante no sustituye al folio.
-      </p>
-      <dl className="grid gap-3 rounded-xl border border-border bg-card p-6 text-sm sm:grid-cols-2">
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Activos"
+        title={equi.folio}
+        description="Identidad permanente del equipo (folio EQUI). El serial de fabricante no sustituye al folio."
+        breadcrumbs={[{ label: "Equipos", href: "/app/equi" }, { label: equi.folio }]}
+      />
+      <Card className="grid gap-3 p-6 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs uppercase text-slate-500">Almacén</dt>
           <dd>{WH_LABEL[equi.warehouseStatus] ?? equi.warehouseStatus}</dd>
@@ -57,7 +57,7 @@ export default async function EquiDetallePage({ params }: { params: Promise<{ id
             <dd>{equi.description}</dd>
           </div>
         )}
-      </dl>
+      </Card>
       {events.length > 0 && (
         <section className="rounded-xl border border-border bg-card p-6">
           <h2 className="text-sm font-semibold">Historial almacén</h2>

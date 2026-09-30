@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getCompanySettings } from "@/lib/company-settings";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card, EmptyState } from "@/components/ui/surface";
+import { DataTable } from "@/components/patterns/data-table";
+import { buttonVariants } from "@/components/ui/button";
+import { Package } from "lucide-react";
 import { adjustStockAction, createPartAction, listInventoryParts } from "./actions";
 
 export default async function InventarioPage() {
@@ -9,9 +14,11 @@ export default async function InventarioPage() {
   const settings = await getCompanySettings(session.activeCompany.id);
   if (session.activeCompany.code === "SERVOMOTORES" && !settings.servomotoresInventoryEnabled) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6 text-sm">
-        <h1 className="text-xl font-semibold">Inventario Servomotores</h1>
-        <p className="mt-2 text-slate-600">Deshabilitado por defecto. Un Administrador puede habilitarlo en Configuración.</p>
+      <div>
+        <PageHeader eyebrow="Operación" title="Inventario Servomotores" description="Módulo deshabilitado para esta empresa." />
+        <Card className="p-6 text-sm text-slate-600">
+          Un Administrador puede habilitarlo en Configuración.
+        </Card>
       </div>
     );
   }
@@ -19,45 +26,59 @@ export default async function InventarioPage() {
   const parts = await listInventoryParts(session.activeCompany.id);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Inventario — {session.activeCompany.displayName}</h1>
-      <p className="text-sm text-slate-600">Mín/máx informativos; sin reservas ni compras automáticas.</p>
-      <form action={createPartAction} className="grid gap-2 rounded-xl border border-border bg-card p-4 sm:grid-cols-2">
-        <input name="partNumber" required placeholder="Número de parte" className="rounded border px-3 py-2 text-sm" />
-        <input name="description" required placeholder="Descripción" className="rounded border px-3 py-2 text-sm sm:col-span-2" />
-        <input name="minQuantity" type="number" placeholder="Mín (opcional)" className="rounded border px-3 py-2 text-sm" />
-        <input name="maxQuantity" type="number" placeholder="Máx (opcional)" className="rounded border px-3 py-2 text-sm" />
-        <button type="submit" className="rounded-md bg-accent px-3 py-2 text-sm text-white sm:col-span-2 sm:w-fit">Alta refacción</button>
-      </form>
-      <table className="min-w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-xs uppercase text-slate-500">
-            <th className="py-2">Parte</th>
-            <th>Existencia</th>
-            <th>Mín/Máx</th>
-            <th>Ajuste</th>
-          </tr>
-        </thead>
-        <tbody>
-          {parts.map((p) => (
-            <tr key={p.id} className="border-b border-border">
-              <td className="py-2">
-                <span className="font-mono">{p.partNumber}</span>
-                <p className="text-slate-600">{p.description}</p>
-              </td>
-              <td>{p.quantityOnHand}</td>
-              <td>{p.minQuantity ?? "—"} / {p.maxQuantity ?? "—"}</td>
-              <td>
-                <form action={adjustStockAction} className="flex gap-1">
-                  <input type="hidden" name="id" value={p.id} />
-                  <input name="delta" type="number" placeholder="+/-" className="w-16 rounded border px-1" />
-                  <button type="submit" className="text-xs text-accent">Aplicar</button>
-                </form>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div>
+      <PageHeader
+        eyebrow="Operación"
+        title={`Inventario — ${session.activeCompany.displayName}`}
+        description="Existencias informativas; sin reservas ni compras automáticas."
+      />
+      <Card className="mb-6 p-5">
+        <h2 className="text-sm font-semibold">Alta de refacción</h2>
+        <form action={createPartAction} className="mt-3 grid gap-3 sm:grid-cols-2">
+          <input name="partNumber" required placeholder="Número de parte" className="rounded-md border border-border px-3 py-2 text-sm" />
+          <input name="description" required placeholder="Descripción" className="rounded-md border border-border px-3 py-2 text-sm sm:col-span-2" />
+          <input name="minQuantity" type="number" placeholder="Mín (opcional)" className="rounded-md border border-border px-3 py-2 text-sm" />
+          <input name="maxQuantity" type="number" placeholder="Máx (opcional)" className="rounded-md border border-border px-3 py-2 text-sm" />
+          <button type="submit" className={`${buttonVariants({ variant: "primary", size: "sm" })} sm:col-span-2 sm:w-fit`}>
+            Guardar refacción
+          </button>
+        </form>
+      </Card>
+      {parts.length === 0 ? (
+        <EmptyState icon={<Package className="size-7" />} title="Sin refacciones" description="Registra la primera pieza en el formulario superior." />
+      ) : (
+        <DataTable title="Existencias" description={`${parts.length} partes registradas`}>
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr>
+                <th className="px-4 py-3">Parte</th>
+                <th className="px-4 py-3">Existencia</th>
+                <th className="px-4 py-3">Mín / Máx</th>
+                <th className="px-4 py-3">Ajuste</th>
+              </tr>
+            </thead>
+            <tbody>
+              {parts.map((p) => (
+                <tr key={p.id}>
+                  <td className="px-4 py-3">
+                    <span className="font-mono font-medium">{p.partNumber}</span>
+                    <p className="text-slate-600">{p.description}</p>
+                  </td>
+                  <td className="px-4 py-3">{p.quantityOnHand}</td>
+                  <td className="px-4 py-3">{p.minQuantity ?? "—"} / {p.maxQuantity ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <form action={adjustStockAction} className="flex gap-1">
+                      <input type="hidden" name="id" value={p.id} />
+                      <input name="delta" type="number" placeholder="+/-" className="w-16 rounded-md border border-border px-2 py-1 text-xs" />
+                      <button type="submit" className="text-xs font-semibold text-accent">Aplicar</button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </DataTable>
+      )}
     </div>
   );
 }

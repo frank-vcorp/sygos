@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import { canConfirmMotIngress, listMotByCustody, motDefinitiveEgressAction, motTrialExitAction } from "../../activos/actions";
 
@@ -18,9 +20,13 @@ export default async function MotServomotoresCustodiaPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/app/mot" className="text-sm text-accent hover:underline">← MOT</Link>
-      <h1 className="text-xl font-semibold">Ingresos / Resguardo / Egresos</h1>
-      <section>
+      <PageHeader
+        eyebrow="Activos"
+        title="Custodia MOT — Servomotores"
+        description="Ingresos, resguardo, salidas a prueba y egresos definitivos."
+        breadcrumbs={[{ label: "Motores", href: "/app/mot" }, { label: "Custodia SM" }]}
+      />
+      <Card className="p-4">
         <h2 className="text-sm font-semibold">En resguardo</h2>
         <ul className="mt-2 space-y-2 text-sm">
           {resguardo.map((m) => (
@@ -43,8 +49,8 @@ export default async function MotServomotoresCustodiaPage() {
             </li>
           ))}
         </ul>
-      </section>
-      <section>
+      </Card>
+      <Card className="p-4">
         <h2 className="text-sm font-semibold">Salida a prueba (sin cerrar proceso)</h2>
         <ul className="mt-2 space-y-2 text-sm">
           {prueba.map((m) => (
@@ -62,8 +68,8 @@ export default async function MotServomotoresCustodiaPage() {
           ))}
           {prueba.length === 0 && <li className="text-slate-500">Ninguno en prueba.</li>}
         </ul>
-      </section>
-      <section>
+      </Card>
+      <Card className="p-4">
         <h2 className="text-sm font-semibold">Pendientes de ingreso ({ingresos.length})</h2>
         <ul className="mt-2 text-sm">
           {ingresos.map((m) => (
@@ -72,15 +78,15 @@ export default async function MotServomotoresCustodiaPage() {
             </li>
           ))}
         </ul>
-      </section>
-      <section>
+      </Card>
+      <Card className="p-4">
         <h2 className="text-sm font-semibold">Egresados recientes</h2>
         <ul className="mt-2 text-sm text-slate-600">
           {egresos.slice(0, 10).map((m) => (
             <li key={m.id}>{m.folio}</li>
           ))}
         </ul>
-      </section>
+      </Card>
     </div>
   );
 }

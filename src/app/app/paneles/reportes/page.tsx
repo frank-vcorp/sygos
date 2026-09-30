@@ -3,6 +3,9 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { invoices, purchases, quotes } from "@/db/schema";
 import { getSession } from "@/lib/session";
+import { PageHeader } from "@/components/patterns/page-header";
+import { MetricCard } from "@/components/patterns/metric-card";
+import { FileText, ShoppingCart, Target } from "lucide-react";
 
 export default async function ReportesPage() {
   const session = await getSession();
@@ -21,31 +24,26 @@ export default async function ReportesPage() {
   const csvInv = ["folio,total,status", ...inv.map((i) => `${i.folio},${i.totalMxn},${i.status}`)].join("\n");
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Reportes — {session.activeCompany.displayName}</h1>
-      <p className="text-sm text-slate-600">Solo lectura; filtros por empresa activa. Sin consolidado multiempresa.</p>
-      <dl className="grid gap-2 text-sm sm:grid-cols-3">
-        <div className="rounded border p-3">
-          <dt className="text-slate-500">Facturas</dt>
-          <dd className="text-lg font-semibold">{inv.length}</dd>
-          <a
-            href={`data:text/csv;charset=utf-8,${encodeURIComponent(csvInv)}`}
-            download={`facturas-${session.activeCompany.code}.csv`}
-            className="text-accent text-xs"
-          >
-            Exportar CSV
-          </a>
-        </div>
-        <div className="rounded border p-3">
-          <dt className="text-slate-500">Compras</dt>
-          <dd className="text-lg font-semibold">{pur.length}</dd>
-        </div>
-        <div className="rounded border p-3">
-          <dt className="text-slate-500">Cotizaciones</dt>
-          <dd className="text-lg font-semibold">{quo.length}</dd>
-        </div>
-      </dl>
-      <p className="text-xs text-slate-500">Los KPI enlazan a módulos de origen (finanzas, compras, cotizaciones).</p>
+    <div>
+      <PageHeader
+        eyebrow="Análisis"
+        title="Reportes"
+        description={`Solo lectura para ${session.activeCompany.displayName}. Sin consolidado multiempresa.`}
+      />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard label="Facturas" value={inv.length} icon={FileText} hint="Export CSV disponible" />
+        <MetricCard label="Compras" value={pur.length} icon={ShoppingCart} />
+        <MetricCard label="Cotizaciones" value={quo.length} icon={Target} />
+      </div>
+      <p className="mt-6">
+        <a
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent(csvInv)}`}
+          download={`facturas-${session.activeCompany.code}.csv`}
+          className="text-sm font-semibold text-accent hover:underline"
+        >
+          Descargar facturas (CSV)
+        </a>
+      </p>
     </div>
   );
 }

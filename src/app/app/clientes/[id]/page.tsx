@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import { canManageClients } from "@/lib/permissions";
 import {
@@ -36,14 +38,13 @@ export default async function ClienteDetallePage({
   const canEdit = canManageClients(session.role, session.activeCompany.code) && !client.isIntercompany;
 
   return (
-    <div className="space-y-4">
-      <Link href="/app/clientes" className="text-sm text-accent hover:underline">
-        ← Clientes
-      </Link>
-      <div className="flex flex-wrap items-baseline gap-3">
-        <h1 className="text-xl font-semibold">{client.name}</h1>
-        {client.folio && <span className="font-mono text-sm text-slate-500">{client.folio}</span>}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Comercial"
+        title={client.name}
+        description={client.folio ? `Folio ${client.folio}` : undefined}
+        breadcrumbs={[{ label: "Clientes", href: "/app/clientes" }, { label: client.name }]}
+      />
 
       {conflict === "1" && (
         <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -51,7 +52,7 @@ export default async function ClienteDetallePage({
         </p>
       )}
 
-      <dl className="grid gap-3 rounded-xl border border-border bg-card p-6 text-sm sm:grid-cols-2">
+      <Card className="grid gap-3 p-6 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs uppercase text-slate-500">Crédito</dt>
           <dd>{client.creditDays} días</dd>
@@ -68,10 +69,10 @@ export default async function ClienteDetallePage({
           <dt className="text-xs uppercase text-slate-500">Intercompañía</dt>
           <dd>{client.isIntercompany ? "Sí" : "No"}</dd>
         </div>
-      </dl>
+      </Card>
 
       {canEdit && (
-        <section className="rounded-xl border border-border bg-card p-6">
+        <Card className="p-6">
           <h2 className="text-sm font-semibold">Editar</h2>
           <form action={updateClientAction} className="mt-3 grid gap-3 sm:grid-cols-2">
             <input type="hidden" name="id" value={client.id} />
@@ -122,10 +123,10 @@ export default async function ClienteDetallePage({
               Dar de baja cliente
             </button>
           </form>
-        </section>
+        </Card>
       )}
 
-      <section className="rounded-xl border border-border bg-card p-6">
+      <Card className="p-6">
         <h2 className="text-sm font-semibold">Contactos</h2>
         <ul className="mt-3 space-y-2 text-sm">
           {contacts.length === 0 && <li className="text-slate-500">Sin contactos registrados.</li>}
@@ -179,9 +180,9 @@ export default async function ClienteDetallePage({
             </button>
           </form>
         )}
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-border bg-card p-6">
+      <Card className="p-6">
         <h2 className="text-sm font-semibold">Comunicaciones</h2>
         <p className="mt-1 text-xs text-slate-500">
           Elige uno o varios contactos; el contacto principal del cliente no cambia.
@@ -231,10 +232,10 @@ export default async function ClienteDetallePage({
         {canEdit && contacts.length === 0 && (
           <p className="mt-2 text-xs text-amber-800">Agrega contactos antes de registrar una comunicación.</p>
         )}
-      </section>
+      </Card>
 
       {history.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-6">
+        <Card className="p-6">
           <h2 className="text-sm font-semibold">Historial</h2>
           <ul className="mt-3 space-y-2 text-sm">
             {history.map((h) => (
@@ -246,7 +247,7 @@ export default async function ClienteDetallePage({
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       )}
     </div>
   );

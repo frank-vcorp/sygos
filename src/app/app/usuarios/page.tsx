@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card, StatusBadge } from "@/components/ui/surface";
+import { buttonVariants } from "@/components/ui/button";
 import { getSession } from "@/lib/session";
 import { canManageAdministratorAccounts, canManageOperationalUsers, ROLE_LABELS } from "@/lib/permissions-users";
 import {
@@ -20,19 +23,21 @@ export default async function UsuariosPage() {
   });
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold">Usuarios</h1>
-        <p className="text-sm text-slate-600">
-          {session.role === "CEO"
-            ? "CEO puede administrar usuarios operativos. Las cuentas Administrador no se listan."
-            : "Administrador gestiona todas las cuentas, incluidas otras cuentas Administrador."}
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Sistema"
+        title="Usuarios"
+        description={
+          session.role === "CEO"
+            ? "CEO administra usuarios operativos. Las cuentas Administrador no se listan."
+            : "Administrador gestiona todas las cuentas, incluidas otras cuentas Administrador."
+        }
+      />
 
-      <form action={createUserAction} className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2">
-        <h2 className="sm:col-span-2 text-sm font-medium">Nuevo usuario</h2>
-        <input name="username" required placeholder="Usuario" className="rounded border px-3 py-2 text-sm" />
+      <Card className="p-5">
+      <form action={createUserAction} className="grid gap-3 sm:grid-cols-2">
+        <h2 className="sm:col-span-2 text-sm font-semibold">Nuevo usuario</h2>
+        <input name="username" required placeholder="Usuario" className="rounded-md border border-border px-3 py-2 text-sm" />
         <input name="displayName" required placeholder="Nombre visible" className="rounded border px-3 py-2 text-sm" />
         <input
           name="password"
@@ -61,21 +66,20 @@ export default async function UsuariosPage() {
           placeholder="% descuento máx. (Ventas)"
           className="rounded border px-3 py-2 text-sm"
         />
-        <button type="submit" className="rounded bg-accent px-4 py-2 text-sm text-white sm:col-span-2">
+        <button type="submit" className={`${buttonVariants({ variant: "primary", size: "sm" })} sm:col-span-2 sm:w-fit`}>
           Crear usuario
         </button>
       </form>
+      </Card>
 
-      <ul className="divide-y rounded-xl border bg-card">
+      <Card className="divide-y">
         {users.map((u) => (
           <li key={u.id} className="space-y-2 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <span className="font-medium">{u.displayName}</span>
                 <span className="ml-2 text-sm text-slate-500">@{u.username}</span>
-                {!u.active && (
-                  <span className="ml-2 rounded bg-slate-200 px-1.5 text-xs">Inactivo</span>
-                )}
+                {!u.active && <StatusBadge status="CANCELADA" className="ml-2" />}
               </div>
               <span className="text-sm text-slate-600">{ROLE_LABELS[u.role]}</span>
             </div>
@@ -107,7 +111,7 @@ export default async function UsuariosPage() {
             )}
           </li>
         ))}
-      </ul>
+      </Card>
     </div>
   );
 }

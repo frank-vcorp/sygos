@@ -2,7 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { canManageProspects } from "@/lib/permissions";
-import { createProspectAction, listProspects } from "../maestros/actions";
+import { listProspects } from "../maestros/actions";
+import { PageHeader } from "@/components/patterns/page-header";
+import { DataTable } from "@/components/patterns/data-table";
+import { EmptyState, StatusBadge } from "@/components/ui/surface";
+import { buttonVariants } from "@/components/ui/button";
+import { Plus, Target } from "lucide-react";
 
 export default async function ProspectosPage() {
   const session = await getSession();
@@ -11,33 +16,56 @@ export default async function ProspectosPage() {
   const canCreate = canManageProspects(session.role, session.activeCompany.code);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Prospectos</h1>
-      {canCreate && (
-        <form action={createProspectAction} className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2">
-          <input name="name" required placeholder="Empresa / nombre" className="rounded-md border border-border px-3 py-2 text-sm sm:col-span-2" />
-          <input name="source" placeholder="Fuente" className="rounded-md border border-border px-3 py-2 text-sm" />
-          <input name="note" placeholder="Nota" className="rounded-md border border-border px-3 py-2 text-sm" />
-          <button type="submit" className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white sm:col-span-2 sm:w-fit">
-            Agregar prospecto
-          </button>
-        </form>
-      )}
-      <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-        {rows.map((row) => (
-          <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-            <Link href={`/app/prospectos/${row.id}`} className="font-medium text-accent hover:underline">
-              {row.name}
+    <div>
+      <PageHeader
+        eyebrow="Comercial"
+        title="Prospectos"
+        description={`Pipeline comercial de ${session.activeCompany.displayName}.`}
+        actions={
+          canCreate && (
+            <Link href="/app/prospectos/nuevo" className={buttonVariants({ variant: "primary" })}>
+              <Plus className="size-4" />
+              Nuevo prospecto
             </Link>
-            <span className="font-mono text-xs text-slate-500">{row.folio ?? "—"}</span>
-            <span className="text-xs uppercase text-slate-500">{row.status.replaceAll("_", " ")}</span>
-          </li>
-        ))}
-        {rows.length === 0 && <li className="px-4 py-8 text-center text-slate-500">Sin prospectos.</li>}
-      </ul>
-      <Link href="/app" className="text-sm text-accent hover:underline">
-        Volver al inicio
-      </Link>
+          )
+        }
+      />
+      {rows.length === 0 ? (
+        <EmptyState
+          icon={<Target className="size-7" />}
+          title="Sin prospectos"
+          description="Registra oportunidades antes de convertirlas en clientes."
+        />
+      ) : (
+        <DataTable title="Pipeline" description={`${rows.length} prospectos activos`}>
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr>
+                <th className="px-4 py-3">Folio</th>
+                <th className="px-4 py-3">Nombre</th>
+                <th className="px-4 py-3">Fuente</th>
+                <th className="px-4 py-3">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.folio ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <Link href={`/app/prospectos/${row.id}`} className="font-medium text-accent hover:underline">
+                      {row.name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{row.source ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <StatusBadge status={row.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </DataTable>
+      )}
     </div>
   );
 }

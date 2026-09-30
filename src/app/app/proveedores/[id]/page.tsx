@@ -1,5 +1,7 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card } from "@/components/ui/surface";
+import { buttonVariants } from "@/components/ui/button";
 import { getSession } from "@/lib/session";
 import { canManageSuppliers } from "@/lib/permissions";
 import {
@@ -28,14 +30,13 @@ export default async function ProveedorDetallePage({
   const canEdit = canManageSuppliers(session.role) && !supplier.isIntercompany;
 
   return (
-    <div className="space-y-4">
-      <Link href="/app/proveedores" className="text-sm text-accent hover:underline">
-        ← Proveedores
-      </Link>
-      <div className="flex flex-wrap items-baseline gap-3">
-        <h1 className="text-xl font-semibold">{supplier.name}</h1>
-        {supplier.folio && <span className="font-mono text-sm text-slate-500">{supplier.folio}</span>}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Operación"
+        title={supplier.name}
+        description={supplier.folio ? `Folio ${supplier.folio}` : undefined}
+        breadcrumbs={[{ label: "Proveedores", href: "/app/proveedores" }, { label: supplier.name }]}
+      />
       {conflict === "1" && (
         <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
           El registro cambió en otra sesión. Recarga antes de guardar.
@@ -43,7 +44,7 @@ export default async function ProveedorDetallePage({
       )}
 
       {canEdit && (
-        <section className="rounded-xl border border-border bg-card p-6">
+        <Card className="p-6">
           <form action={updateSupplierAction} className="grid gap-3 sm:grid-cols-2">
             <input type="hidden" name="id" value={supplier.id} />
             <input type="hidden" name="version" value={supplier.version} />
@@ -63,7 +64,7 @@ export default async function ProveedorDetallePage({
               <span className="font-medium">Correo</span>
               <input name="email" type="email" defaultValue={supplier.email ?? ""} className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm" />
             </label>
-            <button type="submit" className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white sm:w-fit">
+            <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>
               Guardar
             </button>
           </form>
@@ -75,11 +76,11 @@ export default async function ProveedorDetallePage({
               Dar de baja proveedor
             </button>
           </form>
-        </section>
+        </Card>
       )}
 
       {history.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-6 text-sm">
+        <Card className="p-6 text-sm">
           <h2 className="font-semibold">Historial</h2>
           <ul className="mt-2 space-y-2">
             {history.map((h) => (
@@ -89,7 +90,7 @@ export default async function ProveedorDetallePage({
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       )}
     </div>
   );

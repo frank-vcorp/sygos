@@ -1,5 +1,7 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card } from "@/components/ui/surface";
+import { buttonVariants } from "@/components/ui/button";
 import { getSession } from "@/lib/session";
 import { canManageProspects } from "@/lib/permissions";
 import {
@@ -28,14 +30,13 @@ export default async function ProspectoDetallePage({
   const canEdit = canManageProspects(session.role, session.activeCompany.code);
 
   return (
-    <div className="space-y-4">
-      <Link href="/app/prospectos" className="text-sm text-accent hover:underline">
-        ← Prospectos
-      </Link>
-      <div className="flex flex-wrap items-baseline gap-3">
-        <h1 className="text-xl font-semibold">{prospect.name}</h1>
-        {prospect.folio && <span className="font-mono text-sm text-slate-500">{prospect.folio}</span>}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Comercial"
+        title={prospect.name}
+        description={prospect.folio ? `Folio ${prospect.folio}` : undefined}
+        breadcrumbs={[{ label: "Prospectos", href: "/app/prospectos" }, { label: prospect.name }]}
+      />
       {conflict === "1" && (
         <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
           El registro cambió en otra sesión. Recarga antes de guardar.
@@ -43,7 +44,7 @@ export default async function ProspectoDetallePage({
       )}
 
       {canEdit && (
-        <section className="rounded-xl border border-border bg-card p-6">
+        <Card className="p-6">
           <form action={updateProspectAction} className="grid gap-3 sm:grid-cols-2">
             <input type="hidden" name="id" value={prospect.id} />
             <input type="hidden" name="version" value={prospect.version} />
@@ -59,7 +60,7 @@ export default async function ProspectoDetallePage({
               <span className="font-medium">Nota</span>
               <input name="note" defaultValue={prospect.note ?? ""} className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm" />
             </label>
-            <button type="submit" className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white sm:col-span-2 sm:w-fit">
+            <button type="submit" className={`${buttonVariants({ variant: "primary" })} sm:col-span-2 sm:w-fit`}>
               Guardar
             </button>
           </form>
@@ -71,11 +72,11 @@ export default async function ProspectoDetallePage({
               Dar de baja prospecto
             </button>
           </form>
-        </section>
+        </Card>
       )}
 
       {history.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-6 text-sm">
+        <Card className="p-6 text-sm">
           <h2 className="font-semibold">Historial</h2>
           <ul className="mt-2 space-y-2">
             {history.map((h) => (
@@ -85,7 +86,7 @@ export default async function ProspectoDetallePage({
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       )}
     </div>
   );

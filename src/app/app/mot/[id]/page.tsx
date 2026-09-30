@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
 import { getSession } from "@/lib/session";
 import {
   canConfirmMotIngress,
@@ -48,12 +49,13 @@ export default async function MotDetallePage({
   const canIngress = canConfirmMotIngress(session) && mot.custodyStatus === "PENDIENTE_INGRESO_SERVOMOTORES";
 
   return (
-    <div className="space-y-4">
-      <Link href="/app/mot" className="text-sm text-accent hover:underline">
-        ← MOT
-      </Link>
-      <h1 className="font-mono text-xl font-semibold">{mot.folio}</h1>
-      <p className="text-sm text-slate-600">Identidad global MOT — el serial no sustituye al folio.</p>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Activos"
+        title={mot.folio}
+        description="Identidad global MOT — el serial no sustituye al folio."
+        breadcrumbs={[{ label: "Motores", href: "/app/mot" }, { label: mot.folio }]}
+      />
       {conflict === "1" && (
         <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">Conflicto de versión; recarga e intenta de nuevo.</p>
       )}

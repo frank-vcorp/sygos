@@ -1,5 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PageHeader } from "@/components/patterns/page-header";
+import { Card } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import { canAssignExternalService, canManageTechnicalState, canReturnDiagnosis, canValidateDiagnosis } from "@/lib/permissions-tecnica";
 import { listSuppliers } from "../../maestros/actions";
@@ -38,13 +39,16 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
     session.activeCompany.code === "SYSTRON" ? await listSuppliers(session.activeCompany.id) : [];
 
   return (
-    <div className="space-y-4">
-      <Link href="/app/tecnica" className="text-sm text-accent">← Técnica</Link>
-      <h1 className="text-xl font-semibold">{att.attentionType.replaceAll("_", " ")}</h1>
-      <p className="text-sm text-slate-600">{att.reportedFault ?? "—"}</p>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Operación"
+        title={att.attentionType.replaceAll("_", " ")}
+        description={att.reportedFault ?? "Atención técnica"}
+        breadcrumbs={[{ label: "Técnica", href: "/app/tecnica" }, { label: "Detalle" }]}
+      />
 
       {diag && (
-        <section className="rounded-xl border border-border bg-card p-4 text-sm">
+        <Card className="p-4 text-sm">
           <h2 className="font-semibold">Diagnóstico</h2>
           <p>
             {diag.priority} · {DIAG_STATUS[diag.status] ?? diag.status} · snapshot ${diag.snapshotPriceMxn} / SLA{" "}
@@ -120,11 +124,11 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
               ))}
             </ul>
           )}
-        </section>
+        </Card>
       )}
 
       {repair && (
-        <section className="rounded-xl border border-border bg-card p-4 text-sm">
+        <Card className="p-4 text-sm">
           <h2 className="font-semibold">Reparación preautorizada</h2>
           <p>
             Prioridad {repair.priority} · +{repair.snapshotIncrementPercent}% · SLA {repair.snapshotSlaDays}d ·{" "}
@@ -141,7 +145,7 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
               ))}
             </div>
           )}
-        </section>
+        </Card>
       )}
 
       {os[0] && <p className="text-sm">OS: {os[0].folio} — {os[0].status.replaceAll("_", " ")}</p>}
@@ -153,7 +157,7 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
       )}
 
       {canAssignExternalService(session) && att.attentionType !== "REPARACION" && (
-        <section className="rounded-xl border border-dashed border-border p-4 text-sm">
+        <Card className="border-dashed p-4 text-sm">
           <h2 className="font-semibold">Servicio externo (SYSTRON)</h2>
           <ul className="mt-2 space-y-1">
             {externalCases.map((c) => (
@@ -181,10 +185,10 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
             <input name="note" placeholder="Motivo salida" className="rounded border px-2 py-1 text-xs" />
             <button type="submit" className="text-xs underline">Registrar salida a proveedor</button>
           </form>
-        </section>
+        </Card>
       )}
 
-      <section className="rounded-xl border border-border bg-card p-4">
+      <Card className="p-4">
         <h2 className="text-sm font-semibold">Bitácora técnica (inmutable)</h2>
         <ul className="mt-2 space-y-2 text-sm">
           {logs.map((b) => (
@@ -202,7 +206,7 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
             <button type="submit" className="text-sm text-accent">Agregar</button>
           </form>
         )}
-      </section>
+      </Card>
     </div>
   );
 }
