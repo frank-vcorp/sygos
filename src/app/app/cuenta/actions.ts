@@ -10,6 +10,9 @@ import { getSession } from "@/lib/session";
 export async function changePasswordAction(formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.impersonator) {
+    redirect("/app/cuenta?error=impersonating");
+  }
 
   const current = String(formData.get("currentPassword") ?? "").trim();
   const next = String(formData.get("newPassword") ?? "").trim();

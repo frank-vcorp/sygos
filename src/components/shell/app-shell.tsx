@@ -30,6 +30,8 @@ import type { SessionUser } from "@/lib/session";
 import { cn } from "@/lib/cn";
 import { CompanySwitcher } from "@/components/company-switcher";
 import { GlobalSearch } from "@/components/global-search";
+import { ViewAsSwitcher } from "@/components/view-as-switcher";
+import type { ViewAsOption } from "@/lib/impersonation";
 import { logoutAction } from "@/app/login/actions";
 
 const icons: Record<NavIcon, LucideIcon> = {
@@ -113,12 +115,14 @@ export function AppShell({
   groups,
   canSearch,
   notices,
+  viewAsOptions,
   children,
 }: {
   session: SessionUser;
   groups: NavGroup[];
   canSearch: boolean;
   notices?: ReactNode;
+  viewAsOptions?: ViewAsOption[];
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -222,6 +226,15 @@ export function AppShell({
           <div className="hidden md:block">
             <CompanySwitcher session={session} />
           </div>
+          {viewAsOptions && viewAsOptions.length > 0 && (
+            <div className="hidden lg:block">
+              <ViewAsSwitcher
+                options={viewAsOptions}
+                effectiveUserId={session.id}
+                impersonating={Boolean(session.impersonator)}
+              />
+            </div>
+          )}
           <div className="relative">
             <button
               onClick={() => setUserOpen((open) => !open)}
@@ -256,8 +269,15 @@ export function AppShell({
             )}
           </div>
         </div>
-        <div className="border-t border-border px-4 py-2 md:hidden">
+        <div className="space-y-2 border-t border-border px-4 py-2 lg:hidden">
           <CompanySwitcher session={session} />
+          {viewAsOptions && viewAsOptions.length > 0 && (
+            <ViewAsSwitcher
+              options={viewAsOptions}
+              effectiveUserId={session.id}
+              impersonating={Boolean(session.impersonator)}
+            />
+          )}
         </div>
       </header>
 

@@ -7,6 +7,7 @@ const errors: Record<string, string> = {
   current: "La contraseña actual no coincide.",
   mismatch: "La confirmación no coincide con la nueva contraseña.",
   short: "La nueva contraseña debe tener al menos 10 caracteres.",
+  impersonating: "Sal de «Ver como» antes de cambiar la contraseña de tu cuenta admin.",
 };
 
 export default async function CuentaPage({
@@ -45,7 +46,18 @@ export default async function CuentaPage({
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-danger">{errors[error]}</p>
       )}
 
-      <form action={changePasswordAction} className="space-y-4 rounded-xl border border-border bg-card p-6">
+      {session.impersonator && (
+        <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Estás en modo revisión como <strong>{session.displayName}</strong>. Para cambiar tu contraseña de
+          administrador, vuelve a tu usuario desde el banner o el selector «Ver como».
+        </p>
+      )}
+
+      <form
+        action={changePasswordAction}
+        className="space-y-4 rounded-xl border border-border bg-card p-6"
+        hidden={Boolean(session.impersonator)}
+      >
         <h2 className="text-sm font-semibold">Cambiar contraseña</h2>
         <label className="block text-sm">
           <span className="font-medium">Contraseña actual</span>
