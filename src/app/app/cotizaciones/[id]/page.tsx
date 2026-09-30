@@ -1,13 +1,30 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import {
+  Banknote,
+  FileOutput,
+  Gavel,
+  Inbox,
+  Percent,
+  Send,
+  Truck,
+  Users,
+} from "lucide-react";
 import { PageHeader } from "@/components/patterns/page-header";
-import { Card, StatusBadge } from "@/components/ui/surface";
+import { DetailGrid, DetailItem } from "@/components/patterns/detail-grid";
+import { MetricCard } from "@/components/patterns/metric-card";
+import { SectionCard } from "@/components/patterns/section-card";
+import { WorkflowStrip } from "@/components/patterns/workflow-strip";
+import { buttonVariants } from "@/components/ui/button";
+import { Field, FormActions, Input } from "@/components/ui/form-fields";
+import { Card, EmptyState, StatusBadge } from "@/components/ui/surface";
+import { formatMxnDisplay } from "@/lib/format-currency";
 import { getSession } from "@/lib/session";
 import { canApplyQuoteDiscount, canSeeSupplierCost, canSetQuotePrice } from "@/lib/permissions-commercial";
 import {
   applyQuoteDiscountAction,
   authorizeWithoutEquipmentAction,
-  getQuote,
+  getQuoteDetail,
   recordQuoteClientDecisionAction,
   listContactsForClient,
   sendQuoteAction,
@@ -28,119 +45,269 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
   const session = await getSession();
   if (!session) redirect("/login");
   const { id } = await params;
-  const quote = await getQuote(session.activeCompany.id, id);
+  const quote = await getQuoteDetail(session.activeCompany.id, id);
   if (!quote) notFound();
   const contacts = await listContactsForClient(quote.clientId);
   const showSupplierCost = canSeeSupplierCost(session);
   const hideCostFromVendedor = session.role === "VENTAS_SYSTRON";
+  const hasPrice = quote.finalPriceMxn != null || quote.priceMxn != null;
+  const displayTotal = quote.finalPriceMxn ?? quote.priceMxn;
+
+  const workflowSteps = [
+    {
+      id: "price",
+      label: "Precio",
+      detail: quote.pendingPricing ? "CEO/Admin debe fijar importe" : `Total ${formatMxnDisplay(displayTotal)}`,
+      done: !quote.pendingPricing && hasPrice,
+      current: quote.pendingPricing,
+    },
+    {
+      id: "send",
+      label: "Envío",
+      detail: quote.status === "ENVIADA" ? "Documento enviado al cliente" : "Selecciona contactos y canales",
+      done: ["ENVIADA", "AUTORIZADA", "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO", "RECHAZADA"].includes(quote.status),
+      current: hasPrice && quote.status !== "ENVIADA" && !quote.pendingPricing,
+    },
+    {
+      id: "decision",
+      label: "Decisión",
+      detail:
+        quote.status === "AUTORIZADA" || quote.status === "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO"
+          ? "Cliente autorizó"
+          : quote.status === "RECHAZADA"
+            ? "Cliente no autorizó"
+            : "Pendiente respuesta del cliente",
+      done: ["AUTORIZADA", "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO", "RECHAZADA"].includes(quote.status),
+      current: quote.status === "ENVIADA",
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Comercial"
         title={quote.folio}
-        description={quote.pendingPricing ? "Pendiente de precio" : "Detalle de cotización"}
+        description={
+          quote.pendingPricing
+            ? "Bandeja pendiente de cotizar — falta precio para enviar al cliente."
+            : "Seguimiento comercial, envío de documento y decisión del cliente."
+        }
         breadcrumbs={[{ label: "Cotizaciones", href: "/app/cotizaciones" }, { label: quote.folio }]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={quote.status} />
-            {(quote.finalPriceMxn != null || quote.priceMxn != null) && (
+            {hasPrice && (
               <Link
                 href={`/api/documents/cotizacion/${quote.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-accent hover:bg-slate-50"
+                className={buttonVariants({ variant: "secondary", size: "sm" })}
               >
+                <FileOutput className="size-4" />
                 Ver documento
               </Link>
             )}
+            <Link href={`/app/clientes/${quote.clientId}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              Ir al cliente
+            </Link>
           </div>
         }
       />
-      {quote.pendingOrigin && (
-        <p className="text-xs text-slate-600">Origen bandeja: {ORIGIN_LABEL[quote.pendingOrigin] ?? quote.pendingOrigin}</p>
-      )}
-      {!hideCostFromVendedor && quote.priceMxn != null && (
-        <p className="text-sm">Precio base: ${quote.priceMxn} MXN</p>
-      )}
-      {showSupplierCost && quote.systronSupplierCostMxn != null && (
-        <p className="text-sm text-slate-600">Costo base Servomotores (CEO): ${quote.systronSupplierCostMxn} MXN</p>
-      )}
-      {quote.finalPriceMxn != null && <p className="text-sm font-medium">Precio final: ${quote.finalPriceMxn} MXN</p>}
+
+      <Card className="p-4 sm:p-5">
+        <WorkflowStrip steps={workflowSteps} />
+      </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Precio final"
+          value={formatMxnDisplay(displayTotal)}
+          hint="Lo que ve el cliente en el PDF"
+          icon={Banknote}
+          tone={hasPrice ? "green" : "amber"}
+        />
+        <MetricCard
+          label="Descuento"
+          value={quote.discountPercent ? `${quote.discountPercent}%` : "Sin descuento"}
+          icon={Percent}
+        />
+        <MetricCard
+          label="Origen"
+          value={quote.pendingOrigin ? (ORIGIN_LABEL[quote.pendingOrigin] ?? quote.pendingOrigin) : "Directo"}
+          hint="Bandeja de pendientes"
+          icon={Inbox}
+        />
+        <MetricCard label="Contactos activos" value={contacts.length} hint="Destinatarios de envío" icon={Users} />
+      </div>
+
+      <DetailGrid title="Resumen" description="Contexto comercial de la cotización">
+        <DetailItem
+          label="Cliente"
+          value={
+            <Link href={`/app/clientes/${quote.clientId}`} className="text-accent hover:underline">
+              {quote.clientName}
+            </Link>
+          }
+        />
+        <DetailItem
+          label="Referencia comercial"
+          value={quote.commercialReference?.trim() || "—"}
+        />
+        {!hideCostFromVendedor && quote.priceMxn != null && (
+          <DetailItem label="Precio base" value={formatMxnDisplay(quote.priceMxn)} />
+        )}
+        {showSupplierCost && quote.systronSupplierCostMxn != null && (
+          <DetailItem label="Base Servomotores (CEO)" value={formatMxnDisplay(quote.systronSupplierCostMxn)} />
+        )}
+        {quote.linkedQuoteId && (
+          <DetailItem label="Vinculación intercompañía" value={`Cotización SM · ${quote.linkedQuoteId.slice(0, 8)}…`} />
+        )}
+        {quote.authorizedWithoutEquipment && (
+          <DetailItem label="Equipo físico" value="Autorizada — pendiente ingreso" />
+        )}
+      </DetailGrid>
 
       {canSetQuotePrice(session.role) && quote.pendingPricing && (
-        <form action={setQuotePriceAction} className="flex flex-wrap gap-2 rounded border bg-card p-4 text-sm">
-          <input type="hidden" name="quoteId" value={quote.id} />
-          <input name="priceMxn" type="number" required placeholder="Precio MXN" className="rounded border px-2 py-1" />
-          {showSupplierCost && (
-            <input name="systronSupplierCostMxn" type="number" placeholder="Costo SM (opcional)" className="rounded border px-2 py-1" />
-          )}
-          <button type="submit" className="rounded bg-accent px-3 py-1 text-white">Fijar precio</button>
-        </form>
+        <SectionCard
+          icon={Banknote}
+          title="Fijar precio"
+          description="Solo CEO o Administrador. El vendedor podrá enviar y dar seguimiento después."
+          tone="accent"
+        >
+          <form action={setQuotePriceAction} className="grid gap-4 sm:grid-cols-2 lg:max-w-2xl">
+            <input type="hidden" name="quoteId" value={quote.id} />
+            <Field label="Precio al cliente (MXN)" hint="Antes de IVA, según política comercial">
+              <Input name="priceMxn" type="number" required min={0} placeholder="Ej. 12000" />
+            </Field>
+            {showSupplierCost && (
+              <Field label="Costo base SM (opcional)" hint="Solo visible para CEO/Admin SYSTRON">
+                <Input name="systronSupplierCostMxn" type="number" min={0} placeholder="Referencia interna" />
+              </Field>
+            )}
+            <FormActions className="sm:col-span-2">
+              <button type="submit" className={buttonVariants({ variant: "primary" })}>Guardar precio</button>
+            </FormActions>
+          </form>
+        </SectionCard>
       )}
 
       {canApplyQuoteDiscount(session.role) && quote.priceMxn != null && (
-        <form action={applyQuoteDiscountAction} className="flex gap-2 text-sm">
-          <input type="hidden" name="quoteId" value={quote.id} />
-          <input name="discountPercent" type="number" min={0} max={100} placeholder="% descuento" className="w-24 rounded border px-2" />
-          <button type="submit" className="rounded border px-2 py-1">Aplicar descuento</button>
-        </form>
+        <SectionCard icon={Percent} title="Descuento comercial" description="Respeta el tope del vendedor si aplica.">
+          <form action={applyQuoteDiscountAction} className="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="quoteId" value={quote.id} />
+            <Field label="% descuento" className="w-32">
+              <Input name="discountPercent" type="number" min={0} max={100} placeholder="0" />
+            </Field>
+            <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+              Aplicar al total
+            </button>
+          </form>
+        </SectionCard>
       )}
 
       {canSetQuotePrice(session.role) && (
-        <form action={authorizeWithoutEquipmentAction}>
-          <input type="hidden" name="quoteId" value={quote.id} />
-          <button type="submit" className="text-xs text-accent underline">
-            Autorizar sin equipo físico (pendiente ingreso)
-          </button>
-        </form>
+        <SectionCard
+          icon={Truck}
+          title="Sin equipo en almacén"
+          description="Autoriza la operación antes del ingreso físico de EQUI/MOT (Discovery §20.6)."
+          tone="muted"
+        >
+          <form action={authorizeWithoutEquipmentAction}>
+            <input type="hidden" name="quoteId" value={quote.id} />
+            <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+              Marcar: autorizada pendiente de ingreso
+            </button>
+          </form>
+        </SectionCard>
       )}
 
       {quote.status === "ENVIADA" && (
-        <div className="flex gap-2 text-sm">
-          <form action={recordQuoteClientDecisionAction}>
-            <input type="hidden" name="quoteId" value={quote.id} />
-            <input type="hidden" name="decision" value="AUTORIZADA" />
-            <button type="submit" className="rounded bg-green-700 px-3 py-1 text-white">Cliente autoriza</button>
-          </form>
-          <form action={recordQuoteClientDecisionAction}>
-            <input type="hidden" name="quoteId" value={quote.id} />
-            <input type="hidden" name="decision" value="RECHAZADA" />
-            <button type="submit" className="rounded border px-3 py-1">Cliente rechaza</button>
-          </form>
-        </div>
-      )}
-      {quote.linkedQuoteId && (
-        <p className="text-xs text-slate-600">Vinculada Servomotores: {quote.linkedQuoteId.slice(0, 8)}…</p>
+        <SectionCard
+          icon={Gavel}
+          title="Decisión del cliente"
+          description="Registra si el cliente autorizó o rechazó la propuesta enviada."
+          tone="accent"
+        >
+          <div className="flex flex-wrap gap-2">
+            <form action={recordQuoteClientDecisionAction}>
+              <input type="hidden" name="quoteId" value={quote.id} />
+              <input type="hidden" name="decision" value="AUTORIZADA" />
+              <button type="submit" className={buttonVariants({ variant: "primary" })}>Cliente autoriza</button>
+            </form>
+            <form action={recordQuoteClientDecisionAction}>
+              <input type="hidden" name="quoteId" value={quote.id} />
+              <input type="hidden" name="decision" value="RECHAZADA" />
+              <button type="submit" className={buttonVariants({ variant: "secondary" })}>Cliente rechaza</button>
+            </form>
+          </div>
+        </SectionCard>
       )}
 
-      {contacts.length > 0 && quote.finalPriceMxn != null && (
-        <form action={sendQuoteAction} className="space-y-3 rounded-xl border bg-card p-4">
-          <p className="text-sm font-medium">Enviar documento — contactos y canales</p>
-          {contacts.map((c) => (
-            <label key={c.id} className="flex gap-2 text-sm">
-              <input type="checkbox" name="contactIds" value={c.id} />
-              {c.name}{c.isPrimary ? " (principal)" : ""}
-              <span className="text-xs text-slate-500">
-                {[c.email && "correo", c.phone && "tel."].filter(Boolean).join(" · ")}
-              </span>
-            </label>
-          ))}
-          <div className="flex flex-wrap gap-4 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="sendEmail" defaultChecked />
-              Correo (SendGrid)
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="sendWhatsapp" />
-              WhatsApp
-            </label>
-          </div>
-          <input type="hidden" name="quoteId" value={quote.id} />
-          <button type="submit" className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white">
-            Enviar cotización
-          </button>
-        </form>
+      {quote.finalPriceMxn != null && (
+        <SectionCard
+          icon={Send}
+          title="Enviar documento"
+          description="Correo con PDF adjunto (SendGrid) y/o WhatsApp. Configura integraciones si aparece aviso en la barra superior."
+          tone="accent"
+        >
+          {contacts.length === 0 ? (
+            <EmptyState
+              title="Sin contactos en el cliente"
+              description="Agrega al menos un contacto con correo o teléfono en la ficha del cliente."
+              action={
+                <Link href={`/app/clientes/${quote.clientId}`} className={buttonVariants({ variant: "primary", size: "sm" })}>
+                  Gestionar contactos
+                </Link>
+              }
+            />
+          ) : (
+            <form action={sendQuoteAction} className="space-y-4">
+              <input type="hidden" name="quoteId" value={quote.id} />
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Destinatarios</p>
+                <ul className="divide-y rounded-xl border border-border bg-slate-50/50">
+                  {contacts.map((c) => (
+                    <li key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                      <label className="flex flex-1 cursor-pointer items-start gap-3 text-sm">
+                        <input
+                          type="checkbox"
+                          name="contactIds"
+                          value={c.id}
+                          defaultChecked={c.isPrimary}
+                          className="mt-1"
+                        />
+                        <span>
+                          <span className="font-semibold">{c.name}</span>
+                          {c.isPrimary && (
+                            <span className="ml-2 rounded-full bg-accent-muted px-2 py-0.5 text-[10px] font-bold uppercase text-accent">
+                              Principal
+                            </span>
+                          )}
+                          <span className="mt-0.5 block text-xs text-slate-500">
+                            {[c.email, c.phone].filter(Boolean).join(" · ") || "Sin correo ni teléfono"}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex flex-wrap gap-6 text-sm">
+                <label className="flex items-center gap-2 font-medium">
+                  <input type="checkbox" name="sendEmail" defaultChecked />
+                  Correo (SendGrid)
+                </label>
+                <label className="flex items-center gap-2 font-medium">
+                  <input type="checkbox" name="sendWhatsapp" />
+                  WhatsApp
+                </label>
+              </div>
+              <button type="submit" className={buttonVariants({ variant: "primary" })}>
+                Enviar cotización ahora
+              </button>
+            </form>
+          )}
+        </SectionCard>
       )}
     </div>
   );

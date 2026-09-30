@@ -50,6 +50,20 @@ export async function listInvoices(companyId: string) {
   return db.select().from(invoices).where(eq(invoices.companyId, companyId)).orderBy(desc(invoices.createdAt)).limit(100);
 }
 
+export async function listInvoicesWithClients(companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      invoice: invoices,
+      clientName: clients.name,
+    })
+    .from(invoices)
+    .innerJoin(clients, eq(invoices.clientId, clients.id))
+    .where(eq(invoices.companyId, companyId))
+    .orderBy(desc(invoices.createdAt))
+    .limit(100);
+}
+
 export async function listDocumentRequests(companyId: string) {
   const db = getDb();
   return db.select().from(documentRequests).where(eq(documentRequests.companyId, companyId)).orderBy(desc(documentRequests.createdAt)).limit(50);

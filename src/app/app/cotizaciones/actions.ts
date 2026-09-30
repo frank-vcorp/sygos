@@ -4,7 +4,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { clientContacts, quotePriceRevisions, quoteSendContacts, quotes, users } from "@/db/schema";
+import { clientContacts, clients, quotePriceRevisions, quoteSendContacts, quotes, users } from "@/db/schema";
 import { nextCompanyFolio } from "@/lib/folio";
 import { propagateClientDecisionToLinkedQuote } from "@/lib/quote-link";
 import { canApplyQuoteDiscount, canSetQuotePrice } from "@/lib/permissions-commercial";
@@ -203,6 +203,22 @@ export async function getQuote(companyId: string, id: string) {
     .where(and(eq(quotes.id, id), eq(quotes.companyId, companyId)))
     .limit(1);
   return rows[0] ?? null;
+}
+
+export async function getQuoteDetail(companyId: string, id: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      quote: quotes,
+      clientName: clients.name,
+      clientId: clients.id,
+    })
+    .from(quotes)
+    .innerJoin(clients, eq(quotes.clientId, clients.id))
+    .where(and(eq(quotes.id, id), eq(quotes.companyId, companyId)))
+    .limit(1);
+  if (!row) return null;
+  return { ...row.quote, clientName: row.clientName, clientId: row.clientId };
 }
 
 export async function listContactsForClient(clientId: string) {
