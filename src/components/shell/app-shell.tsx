@@ -143,7 +143,7 @@ export function AppShell({
     return (
       <div className="min-h-screen bg-[var(--sidebar)] p-4 sm:p-8">
         <header className="mx-auto flex max-w-3xl items-center justify-between text-white">
-          <SygosLogo href="/app/kiosco" size="md" onDark />
+          <SygosLogo href="/app/kiosco" variant="brand" size="md" />
           <form action={logoutAction}>
             <button className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15">
               <LogOut className="size-4" /> Salir
@@ -160,8 +160,8 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-background lg:pl-[272px]">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[272px] flex-col bg-[var(--sidebar)] lg:flex">
-        <div className="flex h-[76px] items-center border-b border-white/8 px-6">
-          <SygosLogo href="/app" size="md" onDark />
+        <div className="flex min-h-[84px] items-center border-b border-white/8 px-5 py-4">
+          <SygosLogo href="/app" variant="brand" size="md" className="w-full" />
         </div>
         <Navigation groups={groups} pathname={pathname} />
         <div className="border-t border-white/8 p-4">
@@ -181,7 +181,7 @@ export function AppShell({
           />
           <aside className="relative flex h-full w-[min(86vw,320px)] flex-col bg-[var(--sidebar)] shadow-2xl">
             <div className="flex h-[72px] items-center justify-between border-b border-white/8 px-5 text-white">
-              <SygosLogo href="/app" size="sm" onDark />
+              <SygosLogo href="/app" variant="brand" size="sm" />
               <button className="rounded-lg p-2 hover:bg-white/10" onClick={() => setMobileOpen(false)}>
                 <X className="size-5" />
               </button>

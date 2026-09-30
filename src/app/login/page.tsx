@@ -21,7 +21,7 @@ async function LoginForm({ errorPromise }: { errorPromise: Promise<{ error?: str
         <div className="absolute -right-20 -top-20 size-96 rounded-full bg-[var(--brand-teal)]/12 blur-3xl" />
         <div className="absolute -bottom-32 -left-16 size-[30rem] rounded-full bg-white/5 blur-3xl" />
         <div className="relative">
-          <SygosLogo size="hero" onDark priority />
+          <SygosLogo variant="brand" size="hero" priority />
         </div>
         <div className="relative max-w-xl">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--brand-teal)]">Operación conectada</p>
