@@ -1,9 +1,18 @@
 {
-  "name": "SYGOS 3.0",
-  "short_name": "SYGOS",
+  "name": "Sygos",
+  "short_name": "Sygos",
+  "description": "Monitoreo inteligente para Systron",
   "start_url": "/app",
   "display": "standalone",
   "background_color": "#f4f6f9",
   "theme_color": "#0d2741",
-  "lang": "es-MX"
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "/brand/sygos-lockup.png",
+      "sizes": "200x93",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }

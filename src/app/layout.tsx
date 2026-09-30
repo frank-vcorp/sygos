@@ -13,10 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SYGOS 3.0",
-  description: "ERP operativo SYSTRON / Servomotores",
-  applicationName: "SYGOS",
+  title: "Sygos",
+  description: "Monitoreo inteligente y operación SYSTRON / Servomotores",
+  applicationName: "Sygos",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/brand/sygos-lockup.png", type: "image/png" }],
+    apple: "/brand/sygos-lockup.png",
+  },
 };
 
 export const viewport: Viewport = {

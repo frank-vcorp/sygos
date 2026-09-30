@@ -7,6 +7,8 @@
   --accent: #123a63;
   --accent-hover: #0b2d4e;
   --accent-muted: #eaf0f6;
+  --brand-teal: #00b8c8;
+  --brand-teal-muted: #e6f7f9;
   --border: #dce3eb;
   --muted: #64748b;
   --muted-surface: #f8fafc;
@@ -28,6 +30,8 @@
   --color-card: var(--card);
   --color-accent: var(--accent);
   --color-accent-muted: var(--accent-muted);
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-teal-muted: var(--brand-teal-muted);
   --color-border: var(--border);
   --color-muted: var(--muted);
   --color-muted-surface: var(--muted-surface);

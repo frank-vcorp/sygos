@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Factory, ShieldCheck } from "lucide-react";
+import { SygosLogo } from "@/components/brand/sygos-logo";
 import { loginAction } from "./actions";
 
 export default function LoginPage({
@@ -17,19 +18,13 @@ async function LoginForm({ errorPromise }: { errorPromise: Promise<{ error?: str
   return (
     <main className="grid min-h-screen bg-white lg:grid-cols-[1.1fr_.9fr]">
       <section className="relative hidden overflow-hidden bg-[var(--sidebar)] px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="absolute -right-20 -top-20 size-96 rounded-full bg-blue-400/10 blur-3xl" />
+        <div className="absolute -right-20 -top-20 size-96 rounded-full bg-[var(--brand-teal)]/12 blur-3xl" />
         <div className="absolute -bottom-32 -left-16 size-[30rem] rounded-full bg-white/5 blur-3xl" />
         <div className="relative">
-          <div className="flex items-center gap-3">
-            <span className="flex size-12 items-center justify-center rounded-2xl bg-white text-lg font-black text-accent">S</span>
-            <div>
-              <p className="text-xl font-bold tracking-[0.18em]">SYGOS</p>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Control operativo</p>
-            </div>
-          </div>
+          <SygosLogo size="hero" onDark priority />
         </div>
         <div className="relative max-w-xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Operación conectada</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--brand-teal)]">Operación conectada</p>
           <h1 className="mt-5 text-5xl font-semibold leading-[1.08] tracking-[-0.045em] text-white">
             Claridad para decidir.<br />Control para crecer.
           </h1>
@@ -53,8 +48,8 @@ async function LoginForm({ errorPromise }: { errorPromise: Promise<{ error?: str
 
       <section className="flex items-center justify-center bg-[#f7f9fb] px-6 py-12">
       <div className="w-full max-w-md">
-        <div className="mb-8 lg:hidden">
-          <span className="text-xl font-black tracking-[0.18em] text-accent">SYGOS</span>
+        <div className="mb-8 flex justify-center lg:hidden">
+          <SygosLogo size="lg" priority />
         </div>
         <div className="rounded-2xl border border-border bg-card p-7 shadow-[0_16px_50px_rgba(15,23,42,.08)] sm:p-9">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Bienvenido</p>

@@ -32,6 +32,7 @@ import { CompanySwitcher } from "@/components/company-switcher";
 import { GlobalSearch } from "@/components/global-search";
 import { ViewAsSwitcher } from "@/components/view-as-switcher";
 import type { ViewAsOption } from "@/lib/impersonation";
+import { SygosLogo } from "@/components/brand/sygos-logo";
 import { logoutAction } from "@/app/login/actions";
 
 const icons: Record<NavIcon, LucideIcon> = {
@@ -142,7 +143,7 @@ export function AppShell({
     return (
       <div className="min-h-screen bg-[var(--sidebar)] p-4 sm:p-8">
         <header className="mx-auto flex max-w-3xl items-center justify-between text-white">
-          <Link href="/app/kiosco" className="text-lg font-black tracking-[0.16em]">SYGOS</Link>
+          <SygosLogo href="/app/kiosco" size="md" onDark />
           <form action={logoutAction}>
             <button className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15">
               <LogOut className="size-4" /> Salir
@@ -160,17 +161,7 @@ export function AppShell({
     <div className="min-h-screen bg-background lg:pl-[272px]">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[272px] flex-col bg-[var(--sidebar)] lg:flex">
         <div className="flex h-[76px] items-center border-b border-white/8 px-6">
-          <Link href="/app" className="flex items-center gap-3 text-white">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-white text-sm font-black tracking-tight text-accent shadow-lg">
-              S
-            </span>
-            <span>
-              <span className="block text-[17px] font-bold tracking-[0.16em]">SYGOS</span>
-              <span className="block text-[10px] uppercase tracking-[0.17em] text-slate-400">
-                Control operativo
-              </span>
-            </span>
-          </Link>
+          <SygosLogo href="/app" size="md" onDark />
         </div>
         <Navigation groups={groups} pathname={pathname} />
         <div className="border-t border-white/8 p-4">
@@ -190,7 +181,7 @@ export function AppShell({
           />
           <aside className="relative flex h-full w-[min(86vw,320px)] flex-col bg-[var(--sidebar)] shadow-2xl">
             <div className="flex h-[72px] items-center justify-between border-b border-white/8 px-5 text-white">
-              <span className="font-bold tracking-[0.15em]">SYGOS</span>
+              <SygosLogo href="/app" size="sm" onDark />
               <button className="rounded-lg p-2 hover:bg-white/10" onClick={() => setMobileOpen(false)}>
                 <X className="size-5" />
               </button>
