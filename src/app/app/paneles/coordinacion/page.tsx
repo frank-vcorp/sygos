@@ -1,7 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { coordinationPanelSnapshot } from "@/lib/panel-queries";
 import { getSession } from "@/lib/session";
+import { PageHeader } from "@/components/patterns/page-header";
+import { MetricCard } from "@/components/patterns/metric-card";
+import { Card, EmptyState } from "@/components/ui/surface";
+import { ClipboardList, FileText, ReceiptText, ShoppingCart, WalletCards } from "lucide-react";
 
 export default async function PanelCoordinacionPage() {
   const session = await getSession();
@@ -10,38 +13,31 @@ export default async function PanelCoordinacionPage() {
   const snap = await coordinationPanelSnapshot(session.activeCompany.id);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Panel coordinación — {session.activeCompany.displayName}</h1>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
-        <Link href="/app/finanzas" className="rounded border bg-card p-4 hover:border-accent">
-          Facturas <span className="font-mono">{snap.invoices}</span>
-        </Link>
-        <Link href="/app/finanzas" className="rounded border bg-card p-4 hover:border-accent">
-          Remisiones <span className="font-mono">{snap.remissions}</span>
-        </Link>
-        <Link href="/app/finanzas" className="rounded border bg-card p-4 hover:border-accent">
-          Pagos por validar <span className="font-mono">{snap.paymentsPending.length}</span>
-        </Link>
-        <Link href="/app/compras" className="rounded border bg-card p-4 hover:border-accent">
-          Compras abiertas <span className="font-mono">{snap.purchasesOpen.length}</span>
-        </Link>
-        <Link href="/app/compras" className="rounded border bg-card p-4 hover:border-accent">
-          O.C. autorizadas <span className="font-mono">{snap.purchaseOrdersAuthorized.length}</span>
-        </Link>
-        <Link href="/app/rrhh" className="rounded border bg-card p-4 hover:border-accent">Nómina</Link>
+    <div>
+      <PageHeader
+        eyebrow="Panel operativo"
+        title="Coordinación administrativa"
+        description={`Pendientes financieros y administrativos de ${session.activeCompany.displayName}.`}
+      />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Facturas" value={snap.invoices} icon={FileText} href="/app/finanzas" />
+        <MetricCard label="Remisiones" value={snap.remissions} icon={ReceiptText} href="/app/finanzas" tone="green" />
+        <MetricCard label="Pagos por validar" value={snap.paymentsPending.length} icon={WalletCards} href="/app/finanzas" tone="amber" />
+        <MetricCard label="O.C. autorizadas" value={snap.purchaseOrdersAuthorized.length} icon={ShoppingCart} href="/app/compras" />
       </div>
-      <section className="text-sm">
-        <h2 className="font-medium">Solicitudes documento</h2>
-        <ul>
+      <Card className="mt-6 overflow-hidden">
+        <div className="border-b px-5 py-4">
+          <h2 className="font-semibold">Solicitudes de documento</h2>
+          <p className="text-xs text-slate-500">Documentos pendientes de atención</p>
+        </div>
+        {snap.documentRequests.length === 0 ? (
+          <EmptyState icon={<ClipboardList className="size-6" />} title="Sin solicitudes pendientes" />
+        ) : <ul className="divide-y text-sm">
           {snap.documentRequests.map((d) => (
-            <li key={d.id}>{d.requestType}</li>
+            <li key={d.id} className="px-5 py-3 font-medium">{d.requestType}</li>
           ))}
-        </ul>
-      </section>
-      <section className="text-sm">
-        <h2 className="font-medium">CxC / CxP</h2>
-        <p>CxC abiertas: {snap.receivables.length} · CxP: {snap.payables.length}</p>
-      </section>
+        </ul>}
+      </Card>
     </div>
   );
 }

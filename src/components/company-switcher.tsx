@@ -1,6 +1,7 @@
 import { switchCompanyAction } from "@/app/app/actions";
 import { canSwitchActiveCompany } from "@/lib/permissions-company";
 import type { SessionUser } from "@/lib/session";
+import { Building2 } from "lucide-react";
 
 export function CompanySwitcher({ session }: { session: SessionUser }) {
   if (!canSwitchActiveCompany(session.role) || session.allowedCompanies.length < 2) {
@@ -8,8 +9,11 @@ export function CompanySwitcher({ session }: { session: SessionUser }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-white px-2 py-1">
-      <span className="text-xs text-slate-500">Empresa:</span>
+    <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border bg-white p-1 shadow-sm">
+      <span className="flex items-center gap-1 px-1.5 text-[11px] font-medium text-slate-500">
+        <Building2 className="size-3.5" />
+        Empresa
+      </span>
       {session.allowedCompanies.map((company) => {
         const active = company.id === session.activeCompany.id;
         return (
@@ -17,8 +21,8 @@ export function CompanySwitcher({ session }: { session: SessionUser }) {
             <button
               type="submit"
               disabled={active}
-              className={`rounded px-2 py-0.5 text-xs font-medium ${
-                active ? "bg-accent text-white" : "text-slate-700 hover:bg-slate-100"
+              className={`min-h-8 rounded-lg px-2.5 text-xs font-semibold ${
+                active ? "bg-accent text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               {company.displayName}

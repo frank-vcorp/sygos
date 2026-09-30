@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { canAccessPurchases, canAuthorizePurchaseOrder, canProcessPurchaseOrder } from "@/lib/permissions-purchases";
 import { listSuppliers } from "../maestros/actions";
+import { PageHeader } from "@/components/patterns/page-header";
+import { MetricCard } from "@/components/patterns/metric-card";
+import { Card, StatusBadge } from "@/components/ui/surface";
+import { CircleDollarSign, Gauge, ShoppingCart } from "lucide-react";
 import {
   authorizePurchaseOrderAction,
   cancelDirectPurchaseAction,
@@ -31,27 +35,50 @@ export default async function ComprasPage() {
   ]);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Compras — {session.activeCompany.displayName}</h1>
-      <p className="rounded border bg-slate-50 p-3 text-sm">
-        Mes {budget.month}: usado ${budget.usedMxn} / ${budget.monthlyBudgetMxn} · máx. directa ${budget.maxDirectMxn}.
-        El sobrante no se acumula al mes siguiente.
-      </p>
-      <form action={createPurchaseAction} className="flex flex-wrap gap-2 rounded border bg-card p-4">
-        <input name="description" required placeholder="Descripción" className="rounded border px-2 py-1 text-sm" />
-        <input name="amountMxn" type="number" required placeholder="MXN" className="rounded border px-2 py-1 text-sm" />
-        <button type="submit" className="rounded bg-accent px-3 py-1 text-sm text-white">Registrar compra</button>
-      </form>
-      <form action={createPurchaseOrderAction} className="flex flex-wrap gap-2 rounded border border-dashed p-4 text-sm">
-        <input name="description" required placeholder="O.C. descripción" className="rounded border px-2 py-1" />
-        <input name="amountMxn" type="number" required placeholder="MXN" className="rounded border px-2 py-1" />
-        <button type="submit" className="rounded border px-3 py-1">Nueva O.C.</button>
-      </form>
-      <h2 className="font-medium">Compras</h2>
-      <ul className="text-sm">
+    <div>
+      <PageHeader
+        eyebrow="Abastecimiento"
+        title="Compras y órdenes"
+        description={`Control presupuestal y autorizaciones de ${session.activeCompany.displayName}.`}
+      />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard label="Presupuesto mensual" value={`$${budget.monthlyBudgetMxn}`} hint={budget.month} icon={Gauge} />
+        <MetricCard label="Presupuesto utilizado" value={`$${budget.usedMxn}`} icon={CircleDollarSign} tone="amber" />
+        <MetricCard label="Máximo compra directa" value={`$${budget.maxDirectMxn}`} icon={ShoppingCart} />
+      </div>
+      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold">Registrar compra directa</h2>
+          <p className="mt-1 text-xs text-slate-500">Para gastos dentro del límite autorizado.</p>
+          <form action={createPurchaseAction} className="mt-4 grid gap-3 sm:grid-cols-[1fr_140px_auto]">
+            <input name="description" required placeholder="Descripción de la compra" />
+            <input name="amountMxn" type="number" required placeholder="Importe MXN" />
+            <button type="submit" className="rounded-lg bg-accent px-4 text-sm font-semibold text-white">Registrar</button>
+          </form>
+        </Card>
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold">Nueva orden de compra</h2>
+          <p className="mt-1 text-xs text-slate-500">Solicitud sujeta al flujo de autorización.</p>
+          <form action={createPurchaseOrderAction} className="mt-4 grid gap-3 sm:grid-cols-[1fr_140px_auto]">
+            <input name="description" required placeholder="Descripción de la O.C." />
+            <input name="amountMxn" type="number" required placeholder="Importe MXN" />
+            <button type="submit" className="rounded-lg border border-border bg-white px-4 text-sm font-semibold">Crear O.C.</button>
+          </form>
+        </Card>
+      </div>
+      <Card className="mt-6 overflow-hidden">
+        <div className="border-b px-5 py-4">
+          <h2 className="font-semibold">Compras directas</h2>
+          <p className="text-xs text-slate-500">{rows.length} movimientos en el periodo</p>
+        </div>
+        <ul className="divide-y text-sm">
         {rows.map((p) => (
-          <li key={p.id} className="border-b py-2">
-            {p.description} — ${p.amountMxn} — {p.status} ({p.calendarMonth})
+          <li key={p.id} className="px-5 py-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold">{p.description}</span>
+              <span className="text-slate-500">${p.amountMxn} · {p.calendarMonth}</span>
+              <StatusBadge status={p.status} />
+            </div>
             {canProcessPurchaseOrder(session) && !p.purchaseOrderId && p.status !== "CANCELADA" && p.status !== "VALIDADA" && (
               <div className="mt-1 flex flex-wrap gap-2">
                 <form action={validateDirectPurchaseAction} className="flex gap-1">
@@ -88,12 +115,22 @@ export default async function ComprasPage() {
             )}
           </li>
         ))}
-      </ul>
-      <h2 className="font-medium">Órdenes de compra</h2>
-      <ul className="text-sm">
+        </ul>
+      </Card>
+      <Card className="mt-6 overflow-hidden">
+        <div className="border-b px-5 py-4">
+          <h2 className="font-semibold">Órdenes de compra</h2>
+          <p className="text-xs text-slate-500">{orders.length} órdenes registradas</p>
+        </div>
+        <ul className="divide-y text-sm">
         {orders.map((o) => (
-          <li key={o.id} className="border-b py-2">
-            {o.folio} — {o.description} — ${o.amountMxn} — {o.status}
+          <li key={o.id} className="px-5 py-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-xs font-bold text-accent">{o.folio}</span>
+              <span className="font-semibold">{o.description}</span>
+              <span className="text-slate-500">${o.amountMxn}</span>
+              <StatusBadge status={o.status} />
+            </div>
             {canAuthorizePurchaseOrder(session) && o.status === "PENDIENTE_AUTORIZACION" && (
               <form action={authorizePurchaseOrderAction} className="inline ml-2">
                 <input type="hidden" name="purchaseOrderId" value={o.id} />
@@ -130,7 +167,8 @@ export default async function ComprasPage() {
             )}
           </li>
         ))}
-      </ul>
+        </ul>
+      </Card>
     </div>
   );
 }

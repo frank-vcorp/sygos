@@ -27,6 +27,9 @@ import {
   canRequestInvoice,
   canRequestRemission,
 } from "@/lib/permissions-finance";
+import { PageHeader } from "@/components/patterns/page-header";
+import { MetricCard } from "@/components/patterns/metric-card";
+import { FileText, ReceiptText, WalletCards, Workflow } from "lucide-react";
 
 export default async function FinanzasPage() {
   const session = await getSession();
@@ -48,11 +51,19 @@ export default async function FinanzasPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Finanzas — {session.activeCompany.displayName}</h1>
-      <p className="text-sm text-slate-600">
-        Identidad fiscal: {fiscal.fiscalLegalName ?? "Sin razón social"} · RFC {fiscal.fiscalRfc ?? "—"}. Solo empresa
-        activa.
-      </p>
+      <PageHeader
+        eyebrow="Administración"
+        title="Finanzas"
+        description={`Identidad fiscal: ${fiscal.fiscalLegalName ?? "Sin razón social"} · RFC ${fiscal.fiscalRfc ?? "—"} · ${session.activeCompany.displayName}`}
+      />
+      {canCoord && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard label="Facturas registradas" value={invoices.length} icon={FileText} />
+          <MetricCard label="Remisiones" value={remissions.length} icon={ReceiptText} tone="green" />
+          <MetricCard label="Pagos por validar" value={pendingPay.length} icon={WalletCards} tone="amber" />
+          <MetricCard label="CxC abiertas" value={receivables.length} icon={Workflow} />
+        </div>
+      )}
 
       {canRequest && (
         <form action={requestDocumentAction} className="flex flex-wrap gap-2 rounded border bg-card p-4">

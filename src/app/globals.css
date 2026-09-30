@@ -1,13 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f6f8;
-  --foreground: #111827;
+  --background: #f4f6f9;
+  --foreground: #172033;
   --card: #ffffff;
-  --accent: #0f4c81;
-  --accent-muted: #e8eef4;
-  --border: #d8dee6;
+  --accent: #123a63;
+  --accent-hover: #0b2d4e;
+  --accent-muted: #eaf0f6;
+  --border: #dce3eb;
+  --muted: #64748b;
+  --muted-surface: #f8fafc;
+  --success: #13795b;
+  --success-muted: #e8f6f1;
+  --warning: #a15c07;
+  --warning-muted: #fff6df;
   --danger: #b42318;
+  --danger-muted: #fff0ee;
+  --ring: #5c88b2;
+  --sidebar: #0d2741;
+  --sidebar-muted: #a8b9c9;
+  --sidebar-active: #173f65;
 }
 
 @theme inline {
@@ -17,13 +29,128 @@
   --color-accent: var(--accent);
   --color-accent-muted: var(--accent-muted);
   --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-surface: var(--muted-surface);
+  --color-success: var(--success);
+  --color-success-muted: var(--success-muted);
+  --color-warning: var(--warning);
+  --color-warning-muted: var(--warning-muted);
   --color-danger: var(--danger);
+  --color-danger-muted: var(--danger-muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  background: var(--background);
+  text-rendering: optimizeLegibility;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  min-height: 100vh;
+  letter-spacing: -0.008em;
+}
+
+::selection {
+  background: #cbddeb;
+  color: var(--accent-hover);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition-duration: 160ms;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Cohesive treatment for legacy screens while they migrate to primitives. */
+main input:not([type="checkbox"]):not([type="radio"]),
+main select,
+main textarea {
+  min-height: 2.5rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border);
+  background: white;
+  padding: 0.5rem 0.75rem;
+  color: var(--foreground);
+  box-shadow: 0 1px 1px rgb(15 23 42 / 0.03);
+}
+
+main input:hover,
+main select:hover,
+main textarea:hover {
+  border-color: #bdc9d6;
+}
+
+main input:focus,
+main select:focus,
+main textarea:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px rgb(92 136 178 / 0.16);
+  outline: none;
+}
+
+main table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+main th {
+  background: var(--muted-surface);
+  color: #526174;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+main th,
+main td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.8rem 1rem;
+  text-align: left;
+}
+
+main tbody tr {
+  transition: background-color 140ms ease;
+}
+
+main tbody tr:hover {
+  background: #f8fafc;
+}
+
+main h1 {
+  font-size: clamp(1.4rem, 2vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+main h2 {
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 767px) {
+  main th,
+  main td {
+    padding: 0.7rem 0.75rem;
+  }
 }

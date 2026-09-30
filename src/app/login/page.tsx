@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight, CheckCircle2, Factory, ShieldCheck } from "lucide-react";
 import { loginAction } from "./actions";
 
 export default function LoginPage({
@@ -14,39 +15,80 @@ export default function LoginPage({
 async function LoginForm({ errorPromise }: { errorPromise: Promise<{ error?: string }> }) {
   const { error } = await errorPromise;
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-      <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
-        <h1 className="text-xl font-semibold">Iniciar sesión</h1>
-        <p className="mt-1 text-sm text-slate-600">Acceso operativo SYGOS 3.0</p>
+    <main className="grid min-h-screen bg-white lg:grid-cols-[1.1fr_.9fr]">
+      <section className="relative hidden overflow-hidden bg-[var(--sidebar)] px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between">
+        <div className="absolute -right-20 -top-20 size-96 rounded-full bg-blue-400/10 blur-3xl" />
+        <div className="absolute -bottom-32 -left-16 size-[30rem] rounded-full bg-white/5 blur-3xl" />
+        <div className="relative">
+          <div className="flex items-center gap-3">
+            <span className="flex size-12 items-center justify-center rounded-2xl bg-white text-lg font-black text-accent">S</span>
+            <div>
+              <p className="text-xl font-bold tracking-[0.18em]">SYGOS</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Control operativo</p>
+            </div>
+          </div>
+        </div>
+        <div className="relative max-w-xl">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Operación conectada</p>
+          <h1 className="mt-5 text-5xl font-semibold leading-[1.08] tracking-[-0.045em] text-white">
+            Claridad para decidir.<br />Control para crecer.
+          </h1>
+          <p className="mt-6 max-w-lg text-base leading-7 text-slate-300">
+            Gestión integral para SYSTRON y Servomotores, con trazabilidad, permisos y operación en tiempo real.
+          </p>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+            <div className="flex items-center gap-3 text-sm text-slate-300">
+              <ShieldCheck className="size-5 text-blue-300" /> Acceso seguro por rol
+            </div>
+            <div className="flex items-center gap-3 text-sm text-slate-300">
+              <Factory className="size-5 text-blue-300" /> Operación multiempresa
+            </div>
+            <div className="flex items-center gap-3 text-sm text-slate-300">
+              <CheckCircle2 className="size-5 text-blue-300" /> Procesos trazables
+            </div>
+          </div>
+        </div>
+        <p className="relative text-xs text-slate-500">SYGOS 3.0 · Plataforma empresarial</p>
+      </section>
+
+      <section className="flex items-center justify-center bg-[#f7f9fb] px-6 py-12">
+      <div className="w-full max-w-md">
+        <div className="mb-8 lg:hidden">
+          <span className="text-xl font-black tracking-[0.18em] text-accent">SYGOS</span>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-7 shadow-[0_16px_50px_rgba(15,23,42,.08)] sm:p-9">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Bienvenido</p>
+        <h1 className="mt-2 text-2xl font-bold">Inicia sesión</h1>
+        <p className="mt-2 text-sm text-slate-500">Accede a tu espacio de trabajo operativo.</p>
         {error === "credenciales" && (
-          <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-danger">Credenciales inválidas</p>
+          <p className="mt-4 rounded-xl bg-danger-muted px-4 py-3 text-sm font-medium text-danger">El usuario o la contraseña no son válidos.</p>
         )}
-        <form action={loginAction} className="mt-6 space-y-4">
+        <form action={loginAction} className="mt-7 space-y-5">
           <label className="block text-sm">
-            <span className="font-medium">Usuario</span>
+            <span className="font-semibold text-slate-700">Usuario</span>
             <input
               name="username"
               autoComplete="username"
               required
               placeholder="Vectoria"
-              className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
+              className="mt-2 h-12 w-full rounded-xl border border-border bg-slate-50 px-4 text-sm outline-none focus:border-[var(--ring)] focus:bg-white focus:ring-4 focus:ring-blue-100/70"
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">Contraseña</span>
+            <span className="font-semibold text-slate-700">Contraseña</span>
             <input
               name="password"
               type="password"
               autoComplete="current-password"
               required
-              className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
+              className="mt-2 h-12 w-full rounded-xl border border-border bg-slate-50 px-4 text-sm outline-none focus:border-[var(--ring)] focus:bg-white focus:ring-4 focus:ring-blue-100/70"
             />
           </label>
           <button
             type="submit"
-            className="w-full rounded-md bg-accent py-2 text-sm font-medium text-white hover:opacity-95"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-white shadow-lg shadow-blue-950/10 hover:bg-[#0b2d4e]"
           >
-            Entrar
+            Entrar al sistema <ArrowRight className="size-4" />
           </button>
         </form>
         <p className="mt-4 text-center text-xs text-slate-500">
@@ -54,7 +96,9 @@ async function LoginForm({ errorPromise }: { errorPromise: Promise<{ error?: str
             Volver al inicio
           </Link>
         </p>
+        </div>
       </div>
+      </section>
     </main>
   );
 }

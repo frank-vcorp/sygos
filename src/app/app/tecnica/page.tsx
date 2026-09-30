@@ -2,6 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listAttendances } from "./actions";
+import { PageHeader } from "@/components/patterns/page-header";
+import { EmptyState, Card } from "@/components/ui/surface";
+import { buttonVariants } from "@/components/ui/button";
+import { ArrowRight, Plus, Wrench } from "lucide-react";
 
 export default async function TecnicaPage() {
   const session = await getSession();
@@ -9,22 +13,38 @@ export default async function TecnicaPage() {
   const rows = await listAttendances(session.activeCompany.id);
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between gap-3">
-        <h1 className="text-xl font-semibold">Operación técnica</h1>
-        <Link href="/app/tecnica/nueva" className="rounded-md bg-accent px-3 py-2 text-sm text-white">Nueva atención</Link>
-      </div>
-      <ul className="divide-y rounded-xl border border-border bg-card">
+    <div>
+      <PageHeader
+        eyebrow="Operación"
+        title="Operación técnica"
+        description="Atenciones, diagnósticos y reparaciones con trazabilidad de principio a fin."
+        actions={
+          <Link href="/app/tecnica/nueva" className={buttonVariants({ variant: "primary" })}>
+            <Plus className="size-4" />
+            Nueva atención
+          </Link>
+        }
+      />
+      {rows.length === 0 ? (
+        <EmptyState icon={<Wrench className="size-7" />} title="Sin atenciones activas" />
+      ) : (
+      <Card className="divide-y overflow-hidden">
         {rows.map((a) => (
-          <li key={a.id} className="px-4 py-3 text-sm">
-            <Link href={`/app/tecnica/${a.id}`} className="font-medium text-accent hover:underline">
-              {a.attentionType.replaceAll("_", " ")}
+          <Link key={a.id} href={`/app/tecnica/${a.id}`} className="group flex items-center gap-4 px-5 py-4 text-sm hover:bg-slate-50">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-accent-muted text-accent">
+              <Wrench className="size-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-foreground">
+                {a.attentionType.replaceAll("_", " ")}
+              </span>
+              <span className="mt-0.5 block truncate text-slate-500">{a.reportedFault ?? "Sin falla reportada"}</span>
+            </span>
+            <ArrowRight className="size-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-accent" />
             </Link>
-            <p className="text-slate-600">{a.reportedFault ?? "—"}</p>
-          </li>
         ))}
-        {rows.length === 0 && <li className="px-4 py-8 text-center text-slate-500">Sin atenciones.</li>}
-      </ul>
+      </Card>
+      )}
     </div>
   );
 }

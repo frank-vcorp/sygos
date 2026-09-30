@@ -2,6 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { canCreateEqui, canViewEqui, listEquiForCompany } from "../activos/actions";
+import { PageHeader } from "@/components/patterns/page-header";
+import { DataTable } from "@/components/patterns/data-table";
+import { buttonVariants } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default async function EquiPage() {
   const session = await getSession();
@@ -11,19 +15,21 @@ export default async function EquiPage() {
   const rows = await listEquiForCompany(session.activeCompany.id);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Equipos (EQUI)</h1>
-        {canCreateEqui(session) && (
-          <Link href="/app/equi/nuevo" className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white">
+    <div>
+      <PageHeader
+        eyebrow="Activos"
+        title="Equipos EQUI"
+        description="Identidad y trazabilidad de equipos SYSTRON que no pertenecen al flujo MOT."
+        actions={canCreateEqui(session) && (
+          <Link href="/app/equi/nuevo" className={buttonVariants({ variant: "primary" })}>
+            <Plus className="inline size-4" />{" "}
             Nuevo EQUI
           </Link>
         )}
-      </div>
-      <p className="text-sm text-slate-600">Identidad física SYSTRON (no MOT). Folio y etiqueta interna son la identidad principal.</p>
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
+      />
+      <DataTable title="Registro de equipos" description={`${rows.length} equipos registrados`}>
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-border bg-slate-50 text-xs uppercase text-slate-500">
+          <thead>
             <tr>
               <th className="px-4 py-3">Folio</th>
               <th className="px-4 py-3">Modelo</th>
@@ -53,7 +59,7 @@ export default async function EquiPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </DataTable>
     </div>
   );
 }
