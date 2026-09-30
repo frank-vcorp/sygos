@@ -163,9 +163,9 @@ export function AppShell({
         <SygosLogo
           href="/app"
           variant="lockup"
-          size="md"
+          fill
           centered
-          className="flex w-full shrink-0 justify-center border-b border-slate-200 bg-white px-4 py-5"
+          className="shrink-0 border-b border-slate-200 bg-white px-3 py-4"
         />
         <Navigation groups={groups} pathname={pathname} />
         <div className="border-t border-white/8 p-4">
@@ -188,9 +188,9 @@ export function AppShell({
               <SygosLogo
                 href="/app"
                 variant="lockup"
-                size="sm"
+                fill
                 centered
-                className="flex w-full justify-center px-4 py-4"
+                className="px-3 py-3.5 pr-12"
               />
               <button
                 type="button"
