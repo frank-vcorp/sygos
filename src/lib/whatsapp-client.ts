@@ -1,7 +1,8 @@
-/** Implementación Baileys en commit dedicado; stub para compilación incremental. */
+import { sendWhatsAppText } from "@/lib/whatsapp-manager";
+
 export async function sendWhatsAppDocument(
-  _companyId: string,
-  _input: { toPhone: string; message: string },
+  companyId: string,
+  input: { toPhone: string; message: string },
 ) {
-  return { ok: false as const, error: "WhatsApp aún no vinculado" };
+  return sendWhatsAppText(companyId, input.toPhone, input.message);
 }

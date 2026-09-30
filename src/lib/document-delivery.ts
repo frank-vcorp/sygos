@@ -2,6 +2,7 @@ import { getIntegrationConfig, isIntegrationConfigured } from "@/lib/integration
 import { sendEmailViaSendGrid } from "@/lib/sendgrid-client";
 import { logDocumentDelivery } from "@/lib/document-delivery-log";
 import { sendWhatsAppDocument } from "@/lib/whatsapp-client";
+import { getWhatsAppSnapshot } from "@/lib/whatsapp-manager";
 
 export type DocumentDeliveryChannel = "EMAIL" | "WHATSAPP";
 
@@ -45,7 +46,10 @@ export async function deliverDocument(input: DeliverDocumentInput) {
     return { ok: false as const, error };
   }
 
-  const configured = await isIntegrationConfigured(input.companyId, input.channel === "EMAIL" ? "SENDGRID" : "WHATSAPP");
+  const configured =
+    input.channel === "EMAIL"
+      ? await isIntegrationConfigured(input.companyId, "SENDGRID")
+      : (await getWhatsAppSnapshot(input.companyId)).status === "CONNECTED";
   if (!configured) {
     const error =
       input.channel === "EMAIL"

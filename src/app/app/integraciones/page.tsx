@@ -7,7 +7,9 @@ import { canConfigureIntegrations } from "@/lib/permissions";
 import { FacturapiConfigForm } from "@/components/integrations/facturapi-config-form";
 import { SendGridConfigForm } from "@/components/integrations/sendgrid-config-form";
 import { getFacturapiConfigView } from "./facturapi-actions";
+import { WhatsAppConfigPanel } from "@/components/integrations/whatsapp-config-panel";
 import { getSendGridConfigView } from "./sendgrid-actions";
+import { getWhatsAppPanelState } from "./whatsapp-actions";
 import { getMotSequenceState, listIntegrations } from "../maestros/actions";
 
 const LABELS: Record<string, string> = {
@@ -27,11 +29,12 @@ export default async function IntegracionesPage() {
   if (!session) redirect("/login");
   if (!canConfigureIntegrations(session.role)) redirect("/app");
 
-  const [rows, mot, facturapiView, sendgridView] = await Promise.all([
+  const [rows, mot, facturapiView, sendgridView, whatsappPanel] = await Promise.all([
     listIntegrations(session.activeCompany.id),
     getMotSequenceState(),
     getFacturapiConfigView(session.activeCompany.id),
     getSendGridConfigView(session.activeCompany.id),
+    getWhatsAppPanelState(session.activeCompany.id),
   ]);
 
   const encryptionReady = Boolean(
@@ -88,7 +91,12 @@ export default async function IntegracionesPage() {
               />
             )}
             {row.integration === "WHATSAPP" && (
-              <p className="mt-auto text-xs text-slate-500">Vinculación QR (Baileys) en el módulo WhatsApp.</p>
+              <WhatsAppConfigPanel
+                status={whatsappPanel.status}
+                linkedPhone={whatsappPanel.linkedPhone}
+                lastError={whatsappPanel.lastError}
+                qrDataUrl={whatsappPanel.qrDataUrl}
+              />
             )}
           </Card>
         ))}
