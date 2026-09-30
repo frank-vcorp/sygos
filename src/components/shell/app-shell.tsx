@@ -33,6 +33,7 @@ import { GlobalSearch } from "@/components/global-search";
 import { ViewAsSwitcher } from "@/components/view-as-switcher";
 import type { ViewAsOption } from "@/lib/impersonation";
 import { SygosLogo } from "@/components/brand/sygos-logo";
+import { SygosWatermark } from "@/components/brand/sygos-watermark";
 import { logoutAction } from "@/app/login/actions";
 
 const icons: Record<NavIcon, LucideIcon> = {
@@ -287,8 +288,13 @@ export function AppShell({
         </div>
       </header>
 
-      {notices}
-      <main className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+      <SygosWatermark />
+      <div className="relative z-10">
+        {notices}
+        <main className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
