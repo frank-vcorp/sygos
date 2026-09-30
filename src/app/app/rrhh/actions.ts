@@ -236,7 +236,12 @@ export async function retryPayrollStampAction(formData: FormData) {
 
 export async function kioskPunchAction(formData: FormData) {
   const session = await getSession();
-  if (!session || session.role !== "KIOSCO_ASISTENCIA") throw new Error("Solo kiosco");
+  if (
+    !session ||
+    (session.role !== "KIOSCO_ASISTENCIA" && session.role !== "ADMINISTRADOR")
+  ) {
+    throw new Error("Sin permiso para kiosco");
+  }
   const employeeId = String(formData.get("employeeId") ?? "");
   const direction = String(formData.get("direction") ?? "IN");
   const db = getDb();

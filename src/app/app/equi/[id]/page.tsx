@@ -1,9 +1,14 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ClipboardList } from "lucide-react";
 import { PageHeader } from "@/components/patterns/page-header";
-import { Card } from "@/components/ui/surface";
+import { DetailGrid, DetailItem } from "@/components/patterns/detail-grid";
+import { SectionCard } from "@/components/patterns/section-card";
+import { buttonVariants } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import { listEquiWarehouseEvents } from "@/lib/custody-events";
-import { canViewEqui, getEqui } from "../../activos/actions";
+import { canViewEqui, getEquiDetail } from "../../activos/actions";
 
 const WH_LABEL: Record<string, string> = {
   SIN_ENTRADA: "Sin entrada",
@@ -18,7 +23,7 @@ export default async function EquiDetallePage({ params }: { params: Promise<{ id
   if (!canViewEqui(session)) redirect("/app");
 
   const { id } = await params;
-  const equi = await getEqui(session.activeCompany.id, id);
+  const equi = await getEquiDetail(session.activeCompany.id, id);
   if (!equi || !equi.active) notFound();
   const events = await listEquiWarehouseEvents(equi.id);
 
@@ -27,54 +32,65 @@ export default async function EquiDetallePage({ params }: { params: Promise<{ id
       <PageHeader
         eyebrow="Activos"
         title={equi.folio}
-        description="Identidad permanente del equipo (folio EQUI). El serial de fabricante no sustituye al folio."
+        description="Identidad permanente del equipo — el serial de fabricante no sustituye al folio EQUI."
         breadcrumbs={[{ label: "Equipos", href: "/app/equi" }, { label: equi.folio }]}
-      />
-      <Card className="grid gap-3 p-6 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Almacén</dt>
-          <dd>{WH_LABEL[equi.warehouseStatus] ?? equi.warehouseStatus}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Modelo</dt>
-          <dd>{equi.model}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Marca</dt>
-          <dd>{equi.brand ?? "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Tipo</dt>
-          <dd>{equi.equipmentType ?? "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Serial fabricante</dt>
-          <dd>{equi.manufacturerSerial ?? "—"}</dd>
-        </div>
-        {equi.description && (
-          <div className="sm:col-span-2">
-            <dt className="text-xs uppercase text-slate-500">Descripción</dt>
-            <dd>{equi.description}</dd>
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge status={equi.warehouseStatus} />
+            <Link href={`/app/clientes/${equi.clientId}`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+              Cliente: {equi.clientName}
+            </Link>
           </div>
+        }
+      />
+
+      <DetailGrid title="Placa y almacén" description="Datos operativos del equipo en SYSTRON.">
+        <DetailItem label="Estado almacén" value={WH_LABEL[equi.warehouseStatus] ?? equi.warehouseStatus} />
+        <DetailItem label="Modelo" value={equi.model} />
+        <DetailItem label="Marca" value={equi.brand ?? "—"} />
+        <DetailItem label="Tipo" value={equi.equipmentType ?? "—"} />
+        <DetailItem label="Serial fabricante" value={equi.manufacturerSerial ?? "—"} />
+        <DetailItem
+          label="Cliente"
+          value={
+            <Link href={`/app/clientes/${equi.clientId}`} className="text-accent hover:underline">
+              {equi.clientName}
+            </Link>
+          }
+        />
+        {equi.description && (
+          <DetailItem label="Descripción" value={equi.description} className="sm:col-span-2 lg:col-span-3" />
         )}
-      </Card>
-      {events.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-semibold">Historial almacén</h2>
-          <ul className="mt-3 space-y-2 text-sm">
+      </DetailGrid>
+
+      <SectionCard
+        icon={ClipboardList}
+        title="Historial de almacén"
+        description="Movimientos de entrada, resguardo y salidas."
+        tone={events.length ? "default" : "muted"}
+      >
+        {events.length === 0 ? (
+          <p className="text-sm text-slate-500">Aún no hay movimientos registrados para este folio.</p>
+        ) : (
+          <ul className="space-y-2 text-sm">
             {events.map((ev) => (
-              <li key={ev.id} className="rounded border border-border px-3 py-2">
-                <span className="font-medium">
+              <li key={ev.id} className="rounded-xl border border-border bg-slate-50/50 px-4 py-3">
+                <span className="font-semibold">
                   {ev.fromStatus ? `${WH_LABEL[ev.fromStatus] ?? ev.fromStatus} → ` : ""}
                   {WH_LABEL[ev.toStatus] ?? ev.toStatus}
                 </span>
                 <span className="text-slate-500"> · {new Date(ev.createdAt).toLocaleString("es-MX")}</span>
-                {ev.note && <p className="text-slate-600">{ev.note}</p>}
+                {ev.note && <p className="mt-1 text-slate-600">{ev.note}</p>}
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+      </SectionCard>
+
+      <p className="text-xs text-slate-500">
+        <Link href="/app/tecnica" className="font-medium text-accent hover:underline">Operación técnica</Link>
+        {" "}y cotizaciones se vinculan desde atenciones del cliente o del equipo según el flujo comercial.
+      </p>
     </div>
   );
 }

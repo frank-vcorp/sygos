@@ -22,8 +22,18 @@ if [ -n "${DATABASE_URL:-}" ]; then
       echo "[sygos] ERROR: migrations failed or timed out"
       exit 1
     fi
+    echo "[sygos] Applying idempotent DB patches..."
+    if ! timeout 30 ./node_modules/.bin/tsx scripts/ensure-db-patches.ts; then
+      echo "[sygos] ERROR: ensure-db-patches failed"
+      exit 1
+    fi
   else
     echo "[sygos] Skipping migrations (SYGOS_SKIP_MIGRATIONS=1)"
+    echo "[sygos] Applying idempotent DB patches (migrations skipped)..."
+    if ! timeout 30 ./node_modules/.bin/tsx scripts/ensure-db-patches.ts; then
+      echo "[sygos] ERROR: ensure-db-patches failed"
+      exit 1
+    fi
   fi
   if [ "${SYGOS_AUTO_SEED:-0}" = "1" ]; then
     echo "[sygos] Running seed..."

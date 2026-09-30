@@ -8,6 +8,7 @@ import {
   attendances,
   diagnosisCorrections,
   diagnoses,
+  equiUnits,
   externalServiceCases,
   motUnits,
   repairs,
@@ -378,6 +379,24 @@ export async function listAttendances(companyId: string) {
     .from(attendances)
     .where(and(eq(attendances.companyId, companyId), eq(attendances.active, true)))
     .orderBy(desc(attendances.createdAt))
+    .limit(100);
+}
+
+export async function listAttendancesForBoard(companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      attendance: attendances,
+      diagnosisStatus: diagnoses.status,
+      equiFolio: equiUnits.folio,
+      motFolio: motUnits.folio,
+    })
+    .from(attendances)
+    .leftJoin(diagnoses, eq(diagnoses.attendanceId, attendances.id))
+    .leftJoin(equiUnits, eq(equiUnits.id, attendances.equiId))
+    .leftJoin(motUnits, eq(motUnits.id, attendances.motId))
+    .where(and(eq(attendances.companyId, companyId), eq(attendances.active, true)))
+    .orderBy(desc(attendances.updatedAt))
     .limit(100);
 }
 

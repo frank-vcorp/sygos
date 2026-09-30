@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/patterns/page-header";
-import { Card } from "@/components/ui/surface";
+import { SectionCard } from "@/components/patterns/section-card";
 import { buttonVariants } from "@/components/ui/button";
+import { Field, FormActions, Input, Select, Textarea } from "@/components/ui/form-fields";
 import { getSession } from "@/lib/session";
 import { canCreateEqui, createEquiAction, listClientsForSelect } from "../../activos/actions";
 
@@ -14,47 +15,46 @@ export default async function NuevoEquiPage() {
   const clientOptions = await listClientsForSelect(session.activeCompany.id);
 
   return (
-    <div className="mx-auto max-w-lg">
-      <PageHeader eyebrow="Activos" title="Nuevo EQUI" breadcrumbs={[{ label: "Equipos", href: "/app/equi" }, { label: "Nuevo" }]} />
-      <Card className="p-6">
-      <form action={createEquiAction} className="space-y-4">
-        <label className="block text-sm">
-          <span className="font-medium">Cliente</span>
-          <select name="clientId" required className="mt-1 w-full rounded-md border border-border px-3 py-2">
-            <option value="">Seleccionar…</option>
-            {clientOptions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium">Modelo</span>
-          <input name="model" required className="mt-1 w-full rounded-md border border-border px-3 py-2" />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium">Marca</span>
-          <input name="brand" className="mt-1 w-full rounded-md border border-border px-3 py-2" />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium">Tipo</span>
-          <input name="equipmentType" className="mt-1 w-full rounded-md border border-border px-3 py-2" />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium">Serial fabricante (opcional)</span>
-          <input name="manufacturerSerial" className="mt-1 w-full rounded-md border border-border px-3 py-2" />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium">Descripción</span>
-          <textarea name="description" rows={2} className="mt-1 w-full rounded-md border border-border px-3 py-2" />
-        </label>
-        <div className="flex gap-2">
-          <button type="submit" className={buttonVariants({ variant: "primary" })}>Crear EQUI</button>
-          <Link href="/app/equi" className={buttonVariants({ variant: "secondary" })}>Cancelar</Link>
-        </div>
-      </form>
-      </Card>
+    <div className="mx-auto max-w-xl space-y-6">
+      <PageHeader
+        eyebrow="Activos"
+        title="Nuevo EQUI"
+        description="Asigna folio permanente y vincula al cliente antes del ingreso a almacén."
+        breadcrumbs={[{ label: "Equipos", href: "/app/equi" }, { label: "Nuevo" }]}
+      />
+      <SectionCard title="Datos del equipo" description="Solo SYSTRON registra equipos EQUI." tone="accent">
+        <form action={createEquiAction} className="grid gap-4">
+          <Field label="Cliente" hint="Propietario comercial del equipo">
+            <Select name="clientId" required>
+              <option value="">Seleccionar…</option>
+              {clientOptions.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </Select>
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Modelo">
+              <Input name="model" required />
+            </Field>
+            <Field label="Marca">
+              <Input name="brand" />
+            </Field>
+          </div>
+          <Field label="Tipo de equipo">
+            <Input name="equipmentType" placeholder="Ej. Variador, PLC…" />
+          </Field>
+          <Field label="Serial fabricante" hint="Opcional; no reemplaza al folio EQUI">
+            <Input name="manufacturerSerial" />
+          </Field>
+          <Field label="Descripción">
+            <Textarea name="description" rows={3} />
+          </Field>
+          <FormActions>
+            <button type="submit" className={buttonVariants({ variant: "primary" })}>Crear EQUI</button>
+            <Link href="/app/equi" className={buttonVariants({ variant: "secondary" })}>Cancelar</Link>
+          </FormActions>
+        </form>
+      </SectionCard>
     </div>
   );
 }

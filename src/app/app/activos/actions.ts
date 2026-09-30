@@ -53,6 +53,20 @@ export async function listEquiForCompany(companyId: string) {
     .limit(200);
 }
 
+export async function listEquiWithClients(companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      equi: equiUnits,
+      clientName: clients.name,
+    })
+    .from(equiUnits)
+    .innerJoin(clients, eq(equiUnits.clientId, clients.id))
+    .where(and(eq(equiUnits.companyId, companyId), eq(equiUnits.active, true)))
+    .orderBy(desc(equiUnits.createdAt))
+    .limit(200);
+}
+
 export async function getEqui(companyId: string, id: string) {
   const db = getDb();
   const rows = await db
@@ -61,6 +75,21 @@ export async function getEqui(companyId: string, id: string) {
     .where(and(eq(equiUnits.id, id), eq(equiUnits.companyId, companyId)))
     .limit(1);
   return rows[0] ?? null;
+}
+
+export async function getEquiDetail(companyId: string, id: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      equi: equiUnits,
+      clientName: clients.name,
+    })
+    .from(equiUnits)
+    .innerJoin(clients, eq(equiUnits.clientId, clients.id))
+    .where(and(eq(equiUnits.id, id), eq(equiUnits.companyId, companyId)))
+    .limit(1);
+  if (!row) return null;
+  return { ...row.equi, clientName: row.clientName };
 }
 
 export async function createEquiAction(formData: FormData) {

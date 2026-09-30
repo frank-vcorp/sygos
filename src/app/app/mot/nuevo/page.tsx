@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/patterns/page-header";
-import { Card } from "@/components/ui/surface";
+import { SectionCard } from "@/components/patterns/section-card";
 import { buttonVariants } from "@/components/ui/button";
+import { Field, FormActions, Input, Select, Textarea } from "@/components/ui/form-fields";
 import { getSession } from "@/lib/session";
 import {
   canCreateMot,
@@ -23,50 +24,47 @@ export default async function NuevoMotPage() {
   const isSystron = session.activeCompany.code === "SYSTRON";
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="mx-auto max-w-xl space-y-6">
       <PageHeader
         eyebrow="Activos"
         title="Nuevo MOT"
         description={
           isSystron
-            ? "MOT originado en SYSTRON: operación en Servomotores (cliente intercompañía)."
+            ? "MOT originado en SYSTRON: la operación técnica corre en Servomotores."
             : "MOT directo Servomotores — cliente de esta empresa."
         }
         breadcrumbs={[{ label: "Motores", href: "/app/mot" }, { label: "Nuevo" }]}
       />
-      <Card className="p-6">
-        <form action={isSystron ? createMotSystronAction : createMotServomotoresAction} className="space-y-4">
-          <label className="block text-sm">
-            <span className="font-medium">Cliente{isSystron ? " final (SYSTRON)" : ""}</span>
-            <select name="clientId" required className="mt-1 w-full rounded-md border border-border px-3 py-2">
+      <SectionCard title="Identidad del motor" description="Se asigna folio MOT global al guardar." tone="accent">
+        <form action={isSystron ? createMotSystronAction : createMotServomotoresAction} className="grid gap-4">
+          <Field label={isSystron ? "Cliente final (SYSTRON)" : "Cliente"}>
+            <Select name="clientId" required>
               <option value="">Seleccionar…</option>
               {clientOptions.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="font-medium">Modelo</span>
-            <input name="model" required className="mt-1 w-full rounded-md border border-border px-3 py-2" />
-          </label>
-          <label className="block text-sm">
-            <span className="font-medium">Marca</span>
-            <input name="brand" className="mt-1 w-full rounded-md border border-border px-3 py-2" />
-          </label>
-          <label className="block text-sm">
-            <span className="font-medium">Serial fabricante (opcional)</span>
-            <input name="manufacturerSerial" className="mt-1 w-full rounded-md border border-border px-3 py-2" />
-          </label>
-          <label className="block text-sm">
-            <span className="font-medium">Descripción</span>
-            <textarea name="description" rows={2} className="mt-1 w-full rounded-md border border-border px-3 py-2" />
-          </label>
-          <div className="flex gap-2">
+            </Select>
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Modelo">
+              <Input name="model" required />
+            </Field>
+            <Field label="Marca">
+              <Input name="brand" />
+            </Field>
+          </div>
+          <Field label="Serial fabricante" hint="Referencia de placa; el folio MOT es la identidad en Sygos">
+            <Input name="manufacturerSerial" />
+          </Field>
+          <Field label="Descripción / falla reportada">
+            <Textarea name="description" rows={3} />
+          </Field>
+          <FormActions>
             <button type="submit" className={buttonVariants({ variant: "primary" })}>Crear MOT</button>
             <Link href="/app/mot" className={buttonVariants({ variant: "secondary" })}>Cancelar</Link>
-          </div>
+          </FormActions>
         </form>
-      </Card>
+      </SectionCard>
     </div>
   );
 }
