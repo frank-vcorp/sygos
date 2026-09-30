@@ -162,6 +162,14 @@ export default async function FinanzasPage() {
           {invoices.map((i) => (
             <li key={i.id} className="border-b py-2">
               {i.folio} — ${i.totalMxn} — {i.status}
+              <Link
+                href={`/api/documents/factura/${i.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 text-xs text-accent"
+              >
+                Ver documento
+              </Link>
               {i.requiresCashPolicy && <span className="ml-2 text-amber-700">Política efectivo SYSTRON</span>}
               {i.lastStampError && (
                 <span className="ml-2 text-red-700">Timbrado: {i.lastStampError}</span>
@@ -217,7 +225,17 @@ export default async function FinanzasPage() {
           <h2 className="font-medium">Remisiones</h2>
           <ul>
             {remissions.map((r) => (
-              <li key={r.id}>{r.folio} — ${r.totalMxn} {r.allowsPhysicalExit && "· salida"}</li>
+              <li key={r.id}>
+                {r.folio} — ${r.totalMxn} {r.allowsPhysicalExit && "· salida"}
+                <Link
+                  href={`/api/documents/remision/${r.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-xs text-accent"
+                >
+                  Ver documento
+                </Link>
+              </li>
             ))}
           </ul>
         </section>

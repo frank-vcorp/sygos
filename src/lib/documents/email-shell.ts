@@ -1,8 +1,10 @@
+import { DOC_BRAND } from "@/lib/documents/brand";
 import { escapeHtml } from "@/lib/documents/escape";
+import { buildPlainOutboundMessage } from "@/lib/documents/plain-outbound";
 import type { IssuerBrand } from "@/lib/documents/types";
 
-const BRAND_NAVY = "#123a63";
-const BRAND_TEAL = "#00b8c8";
+const BRAND_NAVY = DOC_BRAND.navy;
+const BRAND_TEAL = DOC_BRAND.teal;
 
 export function wrapEmailHtml(input: {
   issuer: IssuerBrand;
@@ -92,7 +94,12 @@ export function communicationEmailPackage(input: {
     bodyHtml: `<p style="margin:0 0 14px;font-size:15px;color:#334155;">Estimado(a) <strong>${escapeHtml(input.recipientName)}</strong>,</p>${paragraphs}`,
   });
 
-  const plainText = `${input.subject}\n\nEstimado(a) ${input.recipientName},\n\n${input.body}\n\n— ${input.issuer.displayName}`;
+  const plainText = buildPlainOutboundMessage({
+    issuer: input.issuer,
+    documentLabel: input.subject,
+    recipientName: input.recipientName,
+    introLines: input.body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean),
+  });
 
-  return { subject: input.subject, plainText, html };
+  return { subject: input.subject, plainText, html, whatsappBody: plainText };
 }

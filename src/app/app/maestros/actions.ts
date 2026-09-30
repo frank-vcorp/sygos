@@ -751,7 +751,8 @@ export async function logClientCommunicationAction(formData: FormData) {
           recipientEmail: contact.email,
           recipientPhone: contact.phone,
           subject: deliverySubject,
-          body,
+          body: mail.plainText,
+          whatsappBody: mail.whatsappBody ?? mail.plainText,
           createdByUserId: session.id,
         });
       }

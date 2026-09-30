@@ -28,5 +28,7 @@ export type DocumentEmailPackage = {
   subject: string;
   plainText: string;
   html: string;
+  /** Mensaje completo para WhatsApp (mismo formato que plainText cuando aplica). */
+  whatsappBody?: string;
   attachments?: { filename: string; contentBase64: string; mimeType: string }[];
 };

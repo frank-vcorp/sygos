@@ -174,6 +174,7 @@ export async function sendQuoteAction(formData: FormData) {
         recipientPhone: contact.phone,
         subject: package_.subject,
         body: package_.plainText,
+        whatsappBody: package_.whatsappBody ?? package_.plainText,
         createdByUserId: session.id,
       });
       if (result.ok) successCount += 1;

@@ -17,6 +17,8 @@ export type DeliverDocumentInput = {
   recipientPhone?: string | null;
   subject: string;
   body: string;
+  /** Si se define, se envía tal cual por WhatsApp (formato corporativo unificado). */
+  whatsappBody?: string;
   html?: string;
   attachments?: { filename: string; contentBase64: string; mimeType: string }[];
   createdByUserId: string;
@@ -113,7 +115,7 @@ export async function deliverDocument(input: DeliverDocumentInput) {
 
   const wa = await sendWhatsAppDocument(input.companyId, {
     toPhone: recipient,
-    message: `${input.subject}\n\n${input.body}`,
+    message: input.whatsappBody?.trim() || `${input.subject}\n\n${input.body}`,
   });
   if (!wa.ok) {
     await logDocumentDelivery({
