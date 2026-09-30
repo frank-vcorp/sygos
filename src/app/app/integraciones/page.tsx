@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/patterns/page-header";
 import { Card } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import { canConfigureIntegrations } from "@/lib/permissions";
+import { FacturapiConfigForm } from "@/components/integrations/facturapi-config-form";
+import { getFacturapiConfigView } from "./facturapi-actions";
 import { getMotSequenceState, listIntegrations } from "../maestros/actions";
 
 const LABELS: Record<string, string> = {
@@ -23,9 +25,10 @@ export default async function IntegracionesPage() {
   if (!session) redirect("/login");
   if (!canConfigureIntegrations(session.role)) redirect("/app");
 
-  const [rows, mot] = await Promise.all([
+  const [rows, mot, facturapiView] = await Promise.all([
     listIntegrations(session.activeCompany.id),
     getMotSequenceState(),
+    getFacturapiConfigView(session.activeCompany.id),
   ]);
 
   const encryptionReady = Boolean(
@@ -66,9 +69,16 @@ export default async function IntegracionesPage() {
             <p className="text-xs leading-relaxed text-slate-600">
               {DESCRIPTIONS[row.integration] ?? "Integración del sistema."}
             </p>
-            <p className="mt-auto text-xs text-slate-500">
-              Los formularios de esta integración se cargan en su módulo (Facturapi, SendGrid o WhatsApp).
-            </p>
+            {row.integration === "FACTURAPI" && (
+              <FacturapiConfigForm
+                configured={facturapiView.configured}
+                maskedKey={facturapiView.maskedKey}
+                organizationId={facturapiView.organizationId}
+              />
+            )}
+            {row.integration !== "FACTURAPI" && (
+              <p className="mt-auto text-xs text-slate-500">Configuración en el siguiente módulo desplegado.</p>
+            )}
           </Card>
         ))}
       </div>

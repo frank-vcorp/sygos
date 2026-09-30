@@ -10,6 +10,8 @@ import {
   suppliers,
 } from "@/db/schema";
 import { nextCompanyFolio } from "@/lib/folio";
+import { stampInvoiceOnFacturapi } from "@/lib/facturapi-client";
+import { getIntegrationConfig } from "@/lib/integration-store";
 
 export async function sumInvoicedForQuote(quoteId: string) {
   const db = getDb();
@@ -34,20 +36,72 @@ export async function stampInvoiceWithFacturapi(invoiceId: string, companyId: st
   if (!inv) throw new Error("Factura no encontrada");
   if (inv.facturapiUuid) return { ok: true as const, uuid: inv.facturapiUuid, saved: true };
 
-  const success = false;
-  const error = "Facturapi no configurado — operación guardada sin timbrar";
+  const config = await getIntegrationConfig(companyId, "FACTURAPI");
+  if (!config?.apiKey) {
+    const error = "Facturapi no configurado — operación guardada sin timbrar";
+    await db.insert(integrationStampAttempts).values({
+      companyId,
+      invoiceId,
+      success: false,
+      externalUuid: null,
+      errorMessage: error,
+    });
+    await db
+      .update(invoices)
+      .set({ lastStampError: error, status: "BORRADOR" })
+      .where(eq(invoices.id, invoiceId));
+    return { ok: false as const, saved: true, error };
+  }
+
+  const [client] = await db.select().from(clients).where(eq(clients.id, inv.clientId)).limit(1);
+  const taxId = client?.taxIdentity?.trim();
+  if (!taxId) {
+    const error = "Cliente sin RFC — no se puede timbrar";
+    await db.insert(integrationStampAttempts).values({
+      companyId,
+      invoiceId,
+      success: false,
+      externalUuid: null,
+      errorMessage: error,
+    });
+    await db.update(invoices).set({ lastStampError: error }).where(eq(invoices.id, invoiceId));
+    return { ok: false as const, saved: true, error };
+  }
+
+  const stamped = await stampInvoiceOnFacturapi(config, {
+    folio: inv.folio,
+    totalMxn: inv.totalMxn,
+    customerLegalName: client.name,
+    customerTaxId: taxId,
+  });
+
+  if (!stamped.ok) {
+    await db.insert(integrationStampAttempts).values({
+      companyId,
+      invoiceId,
+      success: false,
+      externalUuid: null,
+      errorMessage: stamped.error,
+    });
+    await db
+      .update(invoices)
+      .set({ lastStampError: stamped.error, status: "BORRADOR" })
+      .where(eq(invoices.id, invoiceId));
+    return { ok: false as const, saved: true, error: stamped.error };
+  }
+
   await db.insert(integrationStampAttempts).values({
     companyId,
     invoiceId,
-    success,
-    externalUuid: null,
-    errorMessage: error,
+    success: true,
+    externalUuid: stamped.uuid,
+    errorMessage: null,
   });
   await db
     .update(invoices)
-    .set({ lastStampError: error, status: "BORRADOR" })
+    .set({ facturapiUuid: stamped.uuid, lastStampError: null, status: "TIMBRADA" })
     .where(eq(invoices.id, invoiceId));
-  return { ok: false as const, saved: true, error };
+  return { ok: true as const, uuid: stamped.uuid, saved: true };
 }
 
 export async function retryStampInvoice(invoiceId: string, companyId: string) {
