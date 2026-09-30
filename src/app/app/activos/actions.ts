@@ -4,7 +4,7 @@ import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { clients, companies, equiUnits, motUnits } from "@/db/schema";
+import { attendances, clients, companies, equiUnits, motUnits, quotes } from "@/db/schema";
 import {
   addBusinessDays,
   DEFAULT_INGRESS_SLA_DAYS,
@@ -90,6 +90,29 @@ export async function getEquiDetail(companyId: string, id: string) {
     .limit(1);
   if (!row) return null;
   return { ...row.equi, clientName: row.clientName };
+}
+
+export async function listAttendancesForEqui(equiId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(attendances)
+    .where(
+      and(eq(attendances.equiId, equiId), eq(attendances.companyId, companyId), eq(attendances.active, true)),
+    )
+    .orderBy(desc(attendances.updatedAt))
+    .limit(50);
+}
+
+export async function listQuotesForEqui(equiId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select({ quote: quotes })
+    .from(quotes)
+    .innerJoin(attendances, eq(quotes.attendanceId, attendances.id))
+    .where(and(eq(attendances.equiId, equiId), eq(quotes.companyId, companyId)))
+    .orderBy(desc(quotes.createdAt))
+    .limit(50);
 }
 
 export async function createEquiAction(formData: FormData) {

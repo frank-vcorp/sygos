@@ -26,6 +26,7 @@ import {
   applyQuoteDiscountAction,
   authorizeWithoutEquipmentAction,
   getQuoteDetailForSession,
+  getQuoteOriginLinks,
   recordQuoteClientDecisionAction,
   listContactsForClient,
   sendQuoteAction,
@@ -52,7 +53,10 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
     await switchActiveCompany(session.id, quote.companyId);
     redirect(`/app/cotizaciones/${id}`);
   }
-  const contacts = await listContactsForClient(quote.clientId);
+  const [contacts, origin] = await Promise.all([
+    listContactsForClient(quote.clientId),
+    getQuoteOriginLinks(quote.attendanceId),
+  ]);
   const showSupplierCost = canSeeSupplierCost(session);
   const hideCostFromVendedor = session.role === "VENTAS_SYSTRON";
   const hasPrice = quote.finalPriceMxn != null || quote.priceMxn != null;
@@ -169,6 +173,26 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
         )}
         {quote.authorizedWithoutEquipment && (
           <DetailItem label="Equipo físico" value="Autorizada — pendiente ingreso" />
+        )}
+        {origin && (
+          <DetailItem
+            label="Atención origen"
+            value={
+              <Link href={`/app/tecnica/${origin.attendanceId}`} className="text-accent hover:underline">
+                {origin.attentionType.replaceAll("_", " ")}
+              </Link>
+            }
+          />
+        )}
+        {origin?.equiId && origin.equiFolio && (
+          <DetailItem
+            label="EQUI"
+            value={
+              <Link href={`/app/equi/${origin.equiId}`} className="font-mono text-accent hover:underline">
+                {origin.equiFolio}
+              </Link>
+            }
+          />
         )}
       </DetailGrid>
 

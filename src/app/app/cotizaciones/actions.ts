@@ -4,7 +4,17 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { clientContacts, clients, quotePriceRevisions, quoteSendContacts, quotes, users } from "@/db/schema";
+import {
+  attendances,
+  clientContacts,
+  clients,
+  equiUnits,
+  motUnits,
+  quotePriceRevisions,
+  quoteSendContacts,
+  quotes,
+  users,
+} from "@/db/schema";
 import { nextCompanyFolio } from "@/lib/folio";
 import { propagateClientDecisionToLinkedQuote } from "@/lib/quote-link";
 import { canApplyQuoteDiscount, canSetQuotePrice } from "@/lib/permissions-commercial";
@@ -245,6 +255,41 @@ export async function getQuoteDetailForSession(session: SessionUser, id: string)
     .limit(1);
   if (!row) return null;
   return { ...row.quote, clientName: row.clientName, clientId: row.clientId };
+}
+
+export async function getQuoteForAttendance(attendanceId: string, companyId: string) {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(quotes)
+    .where(and(eq(quotes.attendanceId, attendanceId), eq(quotes.companyId, companyId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function getQuoteOriginLinks(attendanceId: string | null) {
+  if (!attendanceId) return null;
+  const db = getDb();
+  const [att] = await db.select().from(attendances).where(eq(attendances.id, attendanceId)).limit(1);
+  if (!att) return null;
+  let equiFolio: string | null = null;
+  let motFolio: string | null = null;
+  if (att.equiId) {
+    const [e] = await db.select({ folio: equiUnits.folio }).from(equiUnits).where(eq(equiUnits.id, att.equiId)).limit(1);
+    equiFolio = e?.folio ?? null;
+  }
+  if (att.motId) {
+    const [m] = await db.select({ folio: motUnits.folio }).from(motUnits).where(eq(motUnits.id, att.motId)).limit(1);
+    motFolio = m?.folio ?? null;
+  }
+  return {
+    attendanceId: att.id,
+    attentionType: att.attentionType,
+    equiId: att.equiId,
+    equiFolio,
+    motId: att.motId,
+    motFolio,
+  };
 }
 
 /** @deprecated Use getQuoteDetailForSession */

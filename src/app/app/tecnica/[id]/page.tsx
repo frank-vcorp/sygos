@@ -11,6 +11,8 @@ import { StatusBadge } from "@/components/ui/surface";
 import { formatMxnDisplay } from "@/lib/format-currency";
 import { getSession } from "@/lib/session";
 import { canAssignExternalService, canManageTechnicalState, canReturnDiagnosis, canValidateDiagnosis } from "@/lib/permissions-tecnica";
+import { getEqui } from "../../activos/actions";
+import { getQuoteForAttendance } from "../../cotizaciones/actions";
 import { listSuppliers } from "../../maestros/actions";
 import {
   addTechnicalLogAction,
@@ -44,6 +46,10 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
   const detail = await getAttendanceDetail(id, session.activeCompany.id);
   if (!detail) notFound();
   const { att, diag, repair, os, corrections, externalCases, production, logs } = detail;
+  const [equiAsset, linkedQuote] = await Promise.all([
+    att.equiId ? getEqui(session.activeCompany.id, att.equiId) : Promise.resolve(null),
+    getQuoteForAttendance(att.id, session.activeCompany.id),
+  ]);
   const canEdit = canManageTechnicalState(session, att.companyId);
   const suppliers =
     session.activeCompany.code === "SYSTRON" ? await listSuppliers(session.activeCompany.id) : [];
@@ -69,9 +75,22 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
         actions={
           <div className="flex flex-wrap gap-2">
             {diag && <StatusBadge status={diag.status} />}
+            {att.equiId && equiAsset && (
+              <Link href={`/app/equi/${att.equiId}`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                EQUI {equiAsset.folio}
+              </Link>
+            )}
             {att.motId && (
               <Link href={`/app/mot/${att.motId}`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
                 Ver MOT
+              </Link>
+            )}
+            {linkedQuote && (
+              <Link
+                href={`/app/cotizaciones/${linkedQuote.id}`}
+                className={buttonVariants({ variant: "secondary", size: "sm" })}
+              >
+                Cotización {linkedQuote.folio}
               </Link>
             )}
           </div>
@@ -81,8 +100,29 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
       <DetailGrid title="Contexto de atención">
         <DetailItem label="Tipo" value={att.attentionType.replaceAll("_", " ")} />
         <DetailItem label="Falla reportada" value={att.reportedFault ?? "—"} className="sm:col-span-2" />
+        {equiAsset && (
+          <DetailItem
+            label="Equipo EQUI"
+            value={
+              <Link href={`/app/equi/${equiAsset.id}`} className="font-mono text-accent hover:underline">
+                {equiAsset.folio}
+              </Link>
+            }
+          />
+        )}
         {os[0] && (
           <DetailItem label="Orden de servicio" value={`${os[0].folio} · ${os[0].status.replaceAll("_", " ")}`} />
+        )}
+        {linkedQuote && (
+          <DetailItem
+            label="Cotización"
+            value={
+              <Link href={`/app/cotizaciones/${linkedQuote.id}`} className="font-mono text-accent hover:underline">
+                {linkedQuote.folio}
+                {linkedQuote.pendingPricing ? " · pendiente precio" : ""}
+              </Link>
+            }
+          />
         )}
       </DetailGrid>
 

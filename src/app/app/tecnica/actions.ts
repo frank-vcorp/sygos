@@ -47,6 +47,17 @@ export async function createAttendanceAction(formData: FormData) {
   if (!equiId && !motId) throw new Error("Vincula EQUI o MOT");
 
   const db = getDb();
+  if (equiId) {
+    const [equi] = await db
+      .select()
+      .from(equiUnits)
+      .where(and(eq(equiUnits.id, equiId), eq(equiUnits.companyId, session.activeCompany.id)))
+      .limit(1);
+    if (!equi) throw new Error("EQUI no encontrado");
+    if (equi.warehouseStatus === "SIN_ENTRADA") {
+      throw new Error("Registra la entrada física del equipo en Almacén antes de abrir la atención técnica.");
+    }
+  }
   let motOrigin: string | null = null;
   if (motId) {
     const [mot] = await db.select().from(motUnits).where(eq(motUnits.id, motId)).limit(1);
@@ -108,6 +119,7 @@ export async function createAttendanceAction(formData: FormData) {
   }
 
   revalidatePath("/app/tecnica");
+  if (equiId) revalidatePath(`/app/equi/${equiId}`);
   redirect(`/app/tecnica/${row.id}`);
 }
 
@@ -142,6 +154,7 @@ export async function advanceDiagnosisStatusAction(formData: FormData) {
       await creditProduction(att.id, session.id);
       await ensureQuoteFromValidatedDiagnosis(att.id, att.companyId, session.id);
       revalidatePath("/app/cotizaciones/pendientes");
+      if (att.equiId) revalidatePath(`/app/equi/${att.equiId}`);
     }
   }
   revalidatePath(`/app/tecnica/${att.id}`);
@@ -190,6 +203,7 @@ export async function validateDiagnosisAction(formData: FormData) {
     await ensureQuoteFromValidatedDiagnosis(att.id, att.companyId, session.id);
     revalidatePath(`/app/tecnica/${att.id}`);
     revalidatePath("/app/cotizaciones/pendientes");
+    if (att.equiId) revalidatePath(`/app/equi/${att.equiId}`);
   }
 }
 
