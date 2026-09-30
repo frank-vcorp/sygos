@@ -11,6 +11,7 @@ import { canApplyQuoteDiscount, canSetQuotePrice } from "@/lib/permissions-comme
 import { isUserInTestMode, logTestMutation } from "@/lib/test-mode-guard";
 import { deliverDocument } from "@/lib/document-delivery";
 import { buildQuoteDeliveryPackage } from "@/lib/documents/quote-delivery";
+import type { SessionUser } from "@/lib/session";
 import { getSession } from "@/lib/session";
 
 async function requireCommercial() {
@@ -219,6 +220,34 @@ export async function getQuote(companyId: string, id: string) {
   return rows[0] ?? null;
 }
 
+function quoteCompanyScope(session: SessionUser) {
+  const multiCompany =
+    session.role === "ADMINISTRADOR" ||
+    session.role === "CEO" ||
+    session.role === "COORDINACION_ADMIN";
+  if (multiCompany && session.allowedCompanies.length > 0) {
+    return inArray(quotes.companyId, session.allowedCompanies.map((c) => c.id));
+  }
+  return eq(quotes.companyId, session.activeCompany.id);
+}
+
+export async function getQuoteDetailForSession(session: SessionUser, id: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      quote: quotes,
+      clientName: clients.name,
+      clientId: clients.id,
+    })
+    .from(quotes)
+    .innerJoin(clients, eq(quotes.clientId, clients.id))
+    .where(and(eq(quotes.id, id), quoteCompanyScope(session)))
+    .limit(1);
+  if (!row) return null;
+  return { ...row.quote, clientName: row.clientName, clientId: row.clientId };
+}
+
+/** @deprecated Use getQuoteDetailForSession */
 export async function getQuoteDetail(companyId: string, id: string) {
   const db = getDb();
   const [row] = await db

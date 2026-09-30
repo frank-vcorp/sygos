@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { getQuoteDetailForSession } from "@/app/app/cotizaciones/actions";
 import { buildQuotePrintHtml } from "@/lib/documents/quote-delivery";
+import { canSwitchActiveCompany } from "@/lib/permissions-company";
+import { getSession, switchActiveCompany } from "@/lib/session";
 
 export async function GET(
   _request: Request,
@@ -11,7 +13,14 @@ export async function GET(
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
   const { id } = await context.params;
-  const html = await buildQuotePrintHtml(session.activeCompany.id, id);
+  const quote = await getQuoteDetailForSession(session, id);
+  if (!quote) {
+    return NextResponse.json({ error: "Cotización no encontrada" }, { status: 404 });
+  }
+  if (quote.companyId !== session.activeCompany.id && canSwitchActiveCompany(session.role)) {
+    await switchActiveCompany(session.id, quote.companyId);
+  }
+  const html = await buildQuotePrintHtml(quote.companyId, id);
   if (!html) {
     return NextResponse.json({ error: "Cotización no encontrada" }, { status: 404 });
   }

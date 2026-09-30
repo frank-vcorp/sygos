@@ -19,12 +19,13 @@ import { buttonVariants } from "@/components/ui/button";
 import { Field, FormActions, Input } from "@/components/ui/form-fields";
 import { Card, EmptyState, StatusBadge } from "@/components/ui/surface";
 import { formatMxnDisplay } from "@/lib/format-currency";
-import { getSession } from "@/lib/session";
+import { canSwitchActiveCompany } from "@/lib/permissions-company";
+import { getSession, switchActiveCompany } from "@/lib/session";
 import { canApplyQuoteDiscount, canSeeSupplierCost, canSetQuotePrice } from "@/lib/permissions-commercial";
 import {
   applyQuoteDiscountAction,
   authorizeWithoutEquipmentAction,
-  getQuoteDetail,
+  getQuoteDetailForSession,
   recordQuoteClientDecisionAction,
   listContactsForClient,
   sendQuoteAction,
@@ -45,8 +46,12 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
   const session = await getSession();
   if (!session) redirect("/login");
   const { id } = await params;
-  const quote = await getQuoteDetail(session.activeCompany.id, id);
+  const quote = await getQuoteDetailForSession(session, id);
   if (!quote) notFound();
+  if (quote.companyId !== session.activeCompany.id && canSwitchActiveCompany(session.role)) {
+    await switchActiveCompany(session.id, quote.companyId);
+    redirect(`/app/cotizaciones/${id}`);
+  }
   const contacts = await listContactsForClient(quote.clientId);
   const showSupplierCost = canSeeSupplierCost(session);
   const hideCostFromVendedor = session.role === "VENTAS_SYSTRON";
