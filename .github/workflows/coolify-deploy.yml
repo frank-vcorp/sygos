@@ -24,7 +24,8 @@ jobs:
             echo "Skip: configure COOLIFY_BASE_URL, COOLIFY_API_TOKEN and COOLIFY_APP_UUID in repo secrets."
             exit 0
           fi
-          curl -fsS -G "${COOLIFY_BASE_URL%/}/api/v1/deploy" \
-            --data-urlencode "uuid=${COOLIFY_APP_UUID}" \
-            -H "Authorization: Bearer ${COOLIFY_API_TOKEN}"
+          curl -fsS -X POST "${COOLIFY_BASE_URL%/}/api/v1/deploy" \
+            -H "Authorization: Bearer ${COOLIFY_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"uuid\":\"${COOLIFY_APP_UUID}\"}"
           echo "Deployment queued for ${GITHUB_SHA}"
