@@ -8,7 +8,7 @@ import { MetricCard } from "@/components/patterns/metric-card";
 import { DataTable } from "@/components/patterns/data-table";
 import { SectionCard } from "@/components/patterns/section-card";
 import { buttonVariants } from "@/components/ui/button";
-import { Field, FormActions, Input } from "@/components/ui/form-fields";
+import { Field, Input } from "@/components/ui/form-fields";
 import { StatusBadge } from "@/components/ui/surface";
 import { formatMxnDisplay } from "@/lib/format-currency";
 import {
