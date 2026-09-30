@@ -32,6 +32,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/scripts/docker-entrypoint.sh ./docker-entrypoint.sh
+COPY --from=builder /app/scripts/ensure-db-patches.ts ./scripts/ensure-db-patches.ts
 
 RUN chmod +x ./docker-entrypoint.sh
 
