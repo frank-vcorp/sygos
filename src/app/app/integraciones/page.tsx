@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/patterns/page-header";
 import { Card } from "@/components/ui/surface";
@@ -23,6 +22,8 @@ const DESCRIPTIONS: Record<string, string> = {
   SENDGRID: "Envío de documentos y notificaciones por correo a contactos de clientes.",
   WHATSAPP: "Envío de documentos por WhatsApp; vinculación de sesión con código QR (Baileys).",
 };
+
+const INTEGRATION_ORDER = ["FACTURAPI", "SENDGRID", "WHATSAPP"] as const;
 
 export default async function IntegracionesPage() {
   const session = await getSession();
@@ -58,11 +59,14 @@ export default async function IntegracionesPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {rows.map((row) => (
-          <Card key={row.id} className="flex flex-col gap-3 p-5">
+        {INTEGRATION_ORDER.map((integrationKey) => {
+          const row = rows.find((r) => r.integration === integrationKey);
+          const configured = row?.configured ?? false;
+          return (
+          <Card key={integrationKey} className="flex flex-col gap-3 p-5">
             <div className="flex items-start justify-between gap-2">
-              <h2 className="text-sm font-semibold">{LABELS[row.integration] ?? row.integration}</h2>
-              {row.configured ? (
+              <h2 className="text-sm font-semibold">{LABELS[integrationKey] ?? integrationKey}</h2>
+              {configured ? (
                 <span className="shrink-0 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-green-800">
                   Configurada
                 </span>
@@ -73,16 +77,16 @@ export default async function IntegracionesPage() {
               )}
             </div>
             <p className="text-xs leading-relaxed text-slate-600">
-              {DESCRIPTIONS[row.integration] ?? "Integración del sistema."}
+              {DESCRIPTIONS[integrationKey] ?? "Integración del sistema."}
             </p>
-            {row.integration === "FACTURAPI" && (
+            {integrationKey === "FACTURAPI" && (
               <FacturapiConfigForm
                 configured={facturapiView.configured}
                 maskedKey={facturapiView.maskedKey}
                 organizationId={facturapiView.organizationId}
               />
             )}
-            {row.integration === "SENDGRID" && (
+            {integrationKey === "SENDGRID" && (
               <SendGridConfigForm
                 configured={sendgridView.configured}
                 maskedKey={sendgridView.maskedKey}
@@ -90,7 +94,7 @@ export default async function IntegracionesPage() {
                 fromName={sendgridView.fromName}
               />
             )}
-            {row.integration === "WHATSAPP" && (
+            {integrationKey === "WHATSAPP" && (
               <WhatsAppConfigPanel
                 status={whatsappPanel.status}
                 linkedPhone={whatsappPanel.linkedPhone}
@@ -99,7 +103,8 @@ export default async function IntegracionesPage() {
               />
             )}
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       <Card className="p-6 text-sm">

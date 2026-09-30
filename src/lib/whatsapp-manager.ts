@@ -2,7 +2,6 @@
 import { mkdir } from "fs/promises";
 import path from "path";
 import { eq, sql } from "drizzle-orm";
-import type { WASocket } from "@whiskeysockets/baileys";
 import { getDb } from "@/db/client";
 import { whatsappSessions } from "@/db/schema";
 import { encryptJson } from "@/lib/integration-crypto";
@@ -14,7 +13,14 @@ import {
   writePairingMemory,
 } from "@/lib/whatsapp-snapshot";
 
-const sockets = new Map<string, WASocket>();
+type WhatsAppSocket = {
+  user?: { id?: string };
+  ev: { on: (event: string, listener: (...args: unknown[]) => void) => void };
+  sendMessage: (jid: string, content: { text: string }) => Promise<unknown>;
+  logout: () => Promise<void>;
+};
+
+const sockets = new Map<string, WhatsAppSocket>();
 
 function authDir(companyId: string) {
   return path.join(process.cwd(), ".data", "whatsapp-auth", companyId);
@@ -30,7 +36,7 @@ async function loadBaileys() {
   };
 }
 
-async function startSocket(companyId: string) {
+async function startSocket(companyId: string): Promise<WhatsAppSocket> {
   if (sockets.has(companyId)) return sockets.get(companyId)!;
 
   const { default: makeWASocket, DisconnectReason, fetchLatestBaileysVersion, useMultiFileAuthState } =
@@ -49,7 +55,7 @@ async function startSocket(companyId: string) {
     markOnlineOnConnect: false,
   });
 
-  sockets.set(companyId, sock);
+  sockets.set(companyId, sock as WhatsAppSocket);
 
   sock.ev.on("creds.update", async () => {
     await saveCreds();
@@ -101,7 +107,7 @@ async function startSocket(companyId: string) {
     }
   });
 
-  return sock;
+  return sock as WhatsAppSocket;
 }
 
 export async function requestWhatsAppPairing(companyId: string) {

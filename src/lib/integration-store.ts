@@ -19,21 +19,31 @@ function isConfiguredPayload(key: IntegrationKey, payload: IntegrationConfigMap[
   return false;
 }
 
+function isMissingIntegrationSchemaError(err: unknown) {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /integration_secrets|does not exist|relation/i.test(msg);
+}
+
 export async function getIntegrationConfig<K extends IntegrationKey>(
   companyId: string,
   integration: K,
 ): Promise<IntegrationConfigMap[K] | null> {
-  const db = getDb();
-  const [row] = await db
-    .select()
-    .from(integrationSecrets)
-    .where(and(eq(integrationSecrets.companyId, companyId), eq(integrationSecrets.integration, integration)))
-    .limit(1);
-  if (!row) return null;
   try {
-    return decryptJson<IntegrationConfigMap[K]>(row.ciphertext);
-  } catch {
-    return null;
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(integrationSecrets)
+      .where(and(eq(integrationSecrets.companyId, companyId), eq(integrationSecrets.integration, integration)))
+      .limit(1);
+    if (!row) return null;
+    try {
+      return decryptJson<IntegrationConfigMap[K]>(row.ciphertext);
+    } catch {
+      return null;
+    }
+  } catch (err) {
+    if (isMissingIntegrationSchemaError(err)) return null;
+    throw err;
   }
 }
 
@@ -44,7 +54,17 @@ export async function setIntegrationConfig<K extends IntegrationKey>(
   updatedByUserId: string,
 ) {
   const db = getDb();
-  const ciphertext = encryptJson(payload);
+  let ciphertext: string;
+  try {
+    ciphertext = encryptJson(payload);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("SYGOS_INTEGRATION_ENCRYPTION_KEY")) {
+      throw new Error(
+        "Configura SYGOS_INTEGRATION_ENCRYPTION_KEY en Coolify antes de guardar credenciales",
+      );
+    }
+    throw err;
+  }
   await db
     .insert(integrationSecrets)
     .values({
