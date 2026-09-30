@@ -20,6 +20,8 @@ type SygosLogoProps = {
   className?: string;
   href?: string;
   priority?: boolean;
+  /** Centra el lockup en contenedores de ancho completo (sidebar). */
+  centered?: boolean;
 };
 
 const lockupClass: Record<NonNullable<SygosLogoProps["size"]>, string> = {
@@ -115,15 +117,20 @@ export function SygosLogo({
   className,
   href,
   priority,
+  centered,
 }: SygosLogoProps) {
   const content =
     variant === "brand" ? (
-      <Brand size={size} priority={priority} className={className} />
+      <Brand size={size} priority={priority} />
     ) : (
-      <Lockup size={size} priority={priority} className={className} />
+      <Lockup
+        size={size}
+        priority={priority}
+        className={cn(centered && "mx-auto object-center")}
+      />
     );
 
-  const shell = "inline-flex max-w-full shrink-0 items-center";
+  const shell = cn("inline-flex max-w-full shrink-0 items-center", className);
 
   if (href) {
     return (

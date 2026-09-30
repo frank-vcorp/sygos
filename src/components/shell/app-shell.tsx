@@ -160,9 +160,13 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-background lg:pl-[272px]">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[272px] flex-col bg-[var(--sidebar)] lg:flex">
-        <div className="flex min-h-[84px] items-center border-b border-white/8 px-5 py-4">
-          <SygosLogo href="/app" variant="brand" size="md" className="w-full" />
-        </div>
+        <SygosLogo
+          href="/app"
+          variant="lockup"
+          size="md"
+          centered
+          className="flex w-full shrink-0 justify-center border-b border-slate-200 bg-white px-4 py-5"
+        />
         <Navigation groups={groups} pathname={pathname} />
         <div className="border-t border-white/8 p-4">
           <div className="rounded-xl bg-white/6 px-3 py-3">
@@ -180,9 +184,20 @@ export function AppShell({
             onClick={() => setMobileOpen(false)}
           />
           <aside className="relative flex h-full w-[min(86vw,320px)] flex-col bg-[var(--sidebar)] shadow-2xl">
-            <div className="flex h-[72px] items-center justify-between border-b border-white/8 px-5 text-white">
-              <SygosLogo href="/app" variant="brand" size="sm" />
-              <button className="rounded-lg p-2 hover:bg-white/10" onClick={() => setMobileOpen(false)}>
+            <div className="relative shrink-0 bg-white">
+              <SygosLogo
+                href="/app"
+                variant="lockup"
+                size="sm"
+                centered
+                className="flex w-full justify-center px-4 py-4"
+              />
+              <button
+                type="button"
+                aria-label="Cerrar navegación"
+                className="absolute right-2 top-2 rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+                onClick={() => setMobileOpen(false)}
+              >
                 <X className="size-5" />
               </button>
             </div>
