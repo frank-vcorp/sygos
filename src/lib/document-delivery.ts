@@ -2,7 +2,7 @@ import { getIntegrationConfig, isIntegrationConfigured } from "@/lib/integration
 import { sendEmailViaSendGrid } from "@/lib/sendgrid-client";
 import { logDocumentDelivery } from "@/lib/document-delivery-log";
 import { sendWhatsAppDocument } from "@/lib/whatsapp-client";
-import { getWhatsAppSnapshot } from "@/lib/whatsapp-manager";
+import { getWhatsAppSnapshot } from "@/lib/whatsapp-snapshot";
 
 export type DocumentDeliveryChannel = "EMAIL" | "WHATSAPP";
 

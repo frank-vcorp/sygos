@@ -1,88 +1,40 @@
 /* eslint-disable react-hooks/rules-of-hooks -- Baileys `useMultiFileAuthState` no es un hook de React */
 import { mkdir } from "fs/promises";
 import path from "path";
-import { and, eq, sql } from "drizzle-orm";
-import makeWASocket, {
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-  useMultiFileAuthState,
-  type WASocket,
-} from "@whiskeysockets/baileys";
+import { eq, sql } from "drizzle-orm";
+import type { WASocket } from "@whiskeysockets/baileys";
 import { getDb } from "@/db/client";
-import { integrationSettings, whatsappSessions } from "@/db/schema";
+import { whatsappSessions } from "@/db/schema";
 import { encryptJson } from "@/lib/integration-crypto";
-
-type PairingSnapshot = {
-  qr?: string;
-  status: "DISCONNECTED" | "QR_PENDING" | "CONNECTED";
-  linkedPhone?: string | null;
-  lastError?: string | null;
-};
+import {
+  clearPairingMemory,
+  getWhatsAppSnapshot,
+  setIntegrationWhatsappConfigured,
+  upsertWhatsAppSessionRow,
+  writePairingMemory,
+} from "@/lib/whatsapp-snapshot";
 
 const sockets = new Map<string, WASocket>();
-const pairing = new Map<string, PairingSnapshot>();
 
 function authDir(companyId: string) {
   return path.join(process.cwd(), ".data", "whatsapp-auth", companyId);
 }
 
-async function upsertSessionRow(
-  companyId: string,
-  patch: Partial<{ status: PairingSnapshot["status"]; linkedPhone: string | null; lastError: string | null }>,
-) {
-  const db = getDb();
-  const [existing] = await db
-    .select()
-    .from(whatsappSessions)
-    .where(eq(whatsappSessions.companyId, companyId))
-    .limit(1);
-  if (existing) {
-    await db
-      .update(whatsappSessions)
-      .set({
-        status: patch.status ?? existing.status,
-        linkedPhone: patch.linkedPhone !== undefined ? patch.linkedPhone : existing.linkedPhone,
-        lastError: patch.lastError !== undefined ? patch.lastError : existing.lastError,
-        updatedAt: sql`now()`,
-      })
-      .where(eq(whatsappSessions.companyId, companyId));
-    return;
-  }
-  await db.insert(whatsappSessions).values({
-    companyId,
-    status: patch.status ?? "DISCONNECTED",
-    linkedPhone: patch.linkedPhone ?? null,
-    lastError: patch.lastError ?? null,
-  });
-}
-
-async function setIntegrationWhatsappConfigured(companyId: string, configured: boolean) {
-  const db = getDb();
-  await db
-    .update(integrationSettings)
-    .set({ configured, updatedAt: sql`now()` })
-    .where(and(eq(integrationSettings.companyId, companyId), eq(integrationSettings.integration, "WHATSAPP")));
-}
-
-export async function getWhatsAppSnapshot(companyId: string): Promise<PairingSnapshot> {
-  const mem = pairing.get(companyId);
-  if (mem) return mem;
-  const db = getDb();
-  const [row] = await db
-    .select()
-    .from(whatsappSessions)
-    .where(eq(whatsappSessions.companyId, companyId))
-    .limit(1);
-  if (!row) return { status: "DISCONNECTED" };
+async function loadBaileys() {
+  const baileys = await import("@whiskeysockets/baileys");
   return {
-    status: row.status,
-    linkedPhone: row.linkedPhone,
-    lastError: row.lastError,
+    default: baileys.default,
+    DisconnectReason: baileys.DisconnectReason,
+    fetchLatestBaileysVersion: baileys.fetchLatestBaileysVersion,
+    useMultiFileAuthState: baileys.useMultiFileAuthState,
   };
 }
 
 async function startSocket(companyId: string) {
   if (sockets.has(companyId)) return sockets.get(companyId)!;
+
+  const { default: makeWASocket, DisconnectReason, fetchLatestBaileysVersion, useMultiFileAuthState } =
+    await loadBaileys();
 
   const dir = authDir(companyId);
   await mkdir(dir, { recursive: true });
@@ -118,14 +70,14 @@ async function startSocket(companyId: string) {
   sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, qr } = update;
     if (qr) {
-      pairing.set(companyId, { qr, status: "QR_PENDING" });
-      await upsertSessionRow(companyId, { status: "QR_PENDING", lastError: null });
+      writePairingMemory(companyId, { qr, status: "QR_PENDING" });
+      await upsertWhatsAppSessionRow(companyId, { status: "QR_PENDING", lastError: null });
       await setIntegrationWhatsappConfigured(companyId, false);
     }
     if (connection === "open") {
       const phone = sock.user?.id?.split(":")[0] ?? null;
-      pairing.set(companyId, { status: "CONNECTED", linkedPhone: phone, qr: undefined });
-      await upsertSessionRow(companyId, { status: "CONNECTED", linkedPhone: phone, lastError: null });
+      writePairingMemory(companyId, { status: "CONNECTED", linkedPhone: phone, qr: undefined });
+      await upsertWhatsAppSessionRow(companyId, { status: "CONNECTED", linkedPhone: phone, lastError: null });
       await setIntegrationWhatsappConfigured(companyId, true);
     }
     if (connection === "close") {
@@ -133,11 +85,11 @@ async function startSocket(companyId: string) {
         ?.statusCode;
       const loggedOut = code === DisconnectReason.loggedOut;
       sockets.delete(companyId);
-      pairing.set(companyId, {
+      writePairingMemory(companyId, {
         status: "DISCONNECTED",
         lastError: loggedOut ? "Sesión cerrada en el teléfono" : "Conexión cerrada",
       });
-      await upsertSessionRow(companyId, {
+      await upsertWhatsAppSessionRow(companyId, {
         status: "DISCONNECTED",
         linkedPhone: null,
         lastError: loggedOut ? "Sesión cerrada en el teléfono" : "Conexión cerrada",
@@ -153,7 +105,7 @@ async function startSocket(companyId: string) {
 }
 
 export async function requestWhatsAppPairing(companyId: string) {
-  await upsertSessionRow(companyId, { status: "QR_PENDING", lastError: null });
+  await upsertWhatsAppSessionRow(companyId, { status: "QR_PENDING", lastError: null });
   await startSocket(companyId);
   return getWhatsAppSnapshot(companyId);
 }
@@ -164,8 +116,8 @@ export async function disconnectWhatsApp(companyId: string) {
     await sock.logout();
     sockets.delete(companyId);
   }
-  pairing.delete(companyId);
-  await upsertSessionRow(companyId, {
+  clearPairingMemory(companyId);
+  await upsertWhatsAppSessionRow(companyId, {
     status: "DISCONNECTED",
     linkedPhone: null,
     lastError: null,

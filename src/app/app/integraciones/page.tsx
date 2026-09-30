@@ -9,7 +9,7 @@ import { SendGridConfigForm } from "@/components/integrations/sendgrid-config-fo
 import { getFacturapiConfigView } from "./facturapi-actions";
 import { WhatsAppConfigPanel } from "@/components/integrations/whatsapp-config-panel";
 import { getSendGridConfigView } from "./sendgrid-actions";
-import { getWhatsAppPanelState } from "./whatsapp-actions";
+import { getWhatsAppPanelState } from "./whatsapp-panel";
 import { getMotSequenceState, listIntegrations } from "../maestros/actions";
 
 const LABELS: Record<string, string> = {
