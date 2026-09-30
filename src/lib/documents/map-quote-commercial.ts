@@ -1,7 +1,7 @@
 import type { CommercialDocumentData } from "@/lib/documents/commercial-document";
 import type { QuoteDocumentData } from "@/lib/documents/types";
 
-export function quoteToCommercialDocument(data: QuoteDocumentData): CommercialDocumentData {
+export function quoteToCommercialDocument(data: QuoteDocumentData, companyId: string): CommercialDocumentData {
   const validity = new Date(data.issuedAt);
   validity.setDate(validity.getDate() + data.validityDays);
 
@@ -20,6 +20,7 @@ export function quoteToCommercialDocument(data: QuoteDocumentData): CommercialDo
   if (data.commercialReference) detailParts.push(`Ref. ${data.commercialReference}`);
 
   return {
+    companyId,
     kindTitle: "Cotización",
     folio: data.folio,
     issuedAt: data.issuedAt,

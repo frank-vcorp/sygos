@@ -9,6 +9,9 @@ strip_wrapping_quotes() {
   printf '%s' "$value"
 }
 
+DATA_DIR="${SYGOS_DATA_DIR:-/app/data}"
+mkdir -p "${DATA_DIR}/company-logos" 2>/dev/null || true
+
 if [ -n "${DATABASE_URL:-}" ]; then
   DATABASE_URL=$(strip_wrapping_quotes "$DATABASE_URL")
   export DATABASE_URL

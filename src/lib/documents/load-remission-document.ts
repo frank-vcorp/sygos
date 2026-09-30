@@ -31,6 +31,7 @@ export async function loadRemissionCommercialDocument(
     : "Sin autorización de salida física registrada.";
 
   const commercial: CommercialDocumentData = {
+    companyId,
     kindTitle: "Remisión",
     folio: row.remission.folio,
     issuedAt: row.remission.createdAt,

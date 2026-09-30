@@ -1,9 +1,12 @@
 import PDFDocument from "pdfkit";
+import { readCompanyLogoFile } from "@/lib/company-brand-logo";
 import { DOC_BRAND } from "@/lib/documents/brand";
 import { formatDateEs, formatMxn } from "@/lib/documents/format";
 import type { CommercialDocumentData } from "@/lib/documents/commercial-document";
 
 export async function renderCommercialPdfBuffer(data: CommercialDocumentData): Promise<Buffer> {
+  const logoFile = await readCompanyLogoFile(data.companyId);
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     const chunks: Buffer[] = [];
@@ -13,6 +16,12 @@ export async function renderCommercialPdfBuffer(data: CommercialDocumentData): P
 
     const pageWidth = 499;
     const left = 48;
+
+    if (logoFile) {
+      const top = doc.y;
+      doc.image(logoFile.buffer, left, top, { fit: [200, 48] });
+      doc.y = top + 56;
+    }
 
     doc.fillColor(DOC_BRAND.navy).fontSize(22).text(data.kindTitle);
     doc.moveDown(0.3);
@@ -57,7 +66,8 @@ export async function renderCommercialPdfBuffer(data: CommercialDocumentData): P
         width: 100,
         align: "right",
       });
-      doc.fillColor(row.emphasis ? DOC_BRAND.navy : DOC_BRAND.text)
+      doc
+        .fillColor(row.emphasis ? DOC_BRAND.navy : DOC_BRAND.text)
         .fontSize(row.emphasis ? 12 : 10)
         .text(`${row.prefix ?? ""}${formatMxn(row.amountMxn)}`, left + 372, y, { width: 120, align: "right" });
       doc.moveDown(0.4);

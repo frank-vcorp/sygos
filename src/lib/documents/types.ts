@@ -3,6 +3,8 @@ export type IssuerBrand = {
   legalName: string;
   rfc: string | null;
   companyCode: string;
+  /** Data URL para correos y HTML imprimible (logo de la empresa). */
+  logoDataUrl?: string | null;
 };
 
 export type QuoteDocumentData = {

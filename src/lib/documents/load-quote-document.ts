@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { clients, companies, quotes } from "@/db/schema";
-import { getCompanySettings } from "@/lib/company-settings";
 import { getPublicAppUrl } from "@/lib/documents/app-url";
+import { loadIssuerBrand } from "@/lib/documents/load-issuer";
 import { QUOTE_ORIGIN_LABEL } from "@/lib/documents/quote-origin";
 import type { QuoteDocumentData } from "@/lib/documents/types";
 
@@ -22,7 +22,7 @@ export async function loadQuoteDocumentData(companyId: string, quoteId: string):
 
   if (!row) return null;
 
-  const settings = await getCompanySettings(companyId);
+  const issuer = await loadIssuerBrand(companyId);
   const discountPercent = row.quote.discountPercent ?? 0;
   const basePrice = row.quote.priceMxn ?? row.quote.finalPriceMxn ?? 0;
   const discountMxn = discountPercent > 0 ? Math.round((basePrice * discountPercent) / 100) : 0;
@@ -49,12 +49,7 @@ export async function loadQuoteDocumentData(companyId: string, quoteId: string):
     totalMxn,
     concept,
     validityDays: 15,
-    issuer: {
-      displayName: row.company.displayName,
-      legalName: settings.fiscalLegalName?.trim() || row.company.legalName,
-      rfc: settings.fiscalRfc?.trim() || null,
-      companyCode: row.company.code,
-    },
+    issuer,
     documentUrl: `${baseUrl}/api/documents/cotizacion/${quoteId}`,
   };
 }

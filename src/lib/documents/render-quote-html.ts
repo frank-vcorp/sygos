@@ -3,8 +3,12 @@ import { renderCommercialDocumentBody } from "@/lib/documents/commercial-documen
 import { quoteToCommercialDocument } from "@/lib/documents/map-quote-commercial";
 import type { QuoteDocumentData } from "@/lib/documents/types";
 
-export function renderQuoteDocumentHtml(data: QuoteDocumentData, options?: { forPrint?: boolean }) {
-  const commercial = quoteToCommercialDocument(data);
+export function renderQuoteDocumentHtml(
+  data: QuoteDocumentData,
+  companyId: string,
+  options?: { forPrint?: boolean },
+) {
+  const commercial = quoteToCommercialDocument(data, companyId);
   if (options?.forPrint) {
     return buildCommercialPrintHtml(commercial);
   }

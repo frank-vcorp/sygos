@@ -12,7 +12,7 @@ export async function buildQuoteDeliveryPackage(
   const data = await loadQuoteDocumentData(companyId, quoteId);
   if (!data) return null;
 
-  const commercial = quoteToCommercialDocument(data);
+  const commercial = quoteToCommercialDocument(data, companyId);
 
   return buildCommercialDeliveryPackage({
     data: commercial,
@@ -29,5 +29,5 @@ export async function buildQuoteDeliveryPackage(
 export async function buildQuotePrintHtml(companyId: string, quoteId: string) {
   const data = await loadQuoteDocumentData(companyId, quoteId);
   if (!data) return null;
-  return buildCommercialPrintHtml(quoteToCommercialDocument(data));
+  return buildCommercialPrintHtml(quoteToCommercialDocument(data, companyId));
 }

@@ -1,5 +1,6 @@
 import { DOC_BRAND } from "@/lib/documents/brand";
 import { escapeHtml } from "@/lib/documents/escape";
+import { renderEmailBrandHeaderHtml } from "@/lib/documents/document-logo";
 import { buildPlainOutboundMessage } from "@/lib/documents/plain-outbound";
 import type { IssuerBrand } from "@/lib/documents/types";
 
@@ -45,7 +46,7 @@ export function wrapEmailHtml(input: {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #dce3eb;box-shadow:0 12px 40px rgba(15,23,42,.08);">
           <tr>
             <td style="padding:24px 28px;background:linear-gradient(135deg,${BRAND_NAVY} 0%,#0d2741 100%);">
-              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${BRAND_TEAL};margin-bottom:8px;">Sygos</div>
+              ${renderEmailBrandHeaderHtml(input.issuer)}
               <div style="font-size:20px;font-weight:700;color:#fff;line-height:1.2;">${issuer}</div>
               <div style="font-size:12px;color:#cbd5e1;margin-top:6px;">${legal}${rfc ? ` · RFC ${rfc}` : ""}</div>
             </td>

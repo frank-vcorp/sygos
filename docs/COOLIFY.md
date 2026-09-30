@@ -31,6 +31,7 @@ Debe responder **200**. Si responde **401**, regenera tokens en Coolify Cloud �
 | `SYGOS_VECTORIA_INITIAL_PASSWORD` | Contraseña inicial del usuario seed **Vectoria** |
 | `SYGOS_AUTO_SEED` | `0` en operación normal; `1` solo si quieres re-ejecutar seed en arranque |
 | `SYGOS_DEMO_USERS_PASSWORD` | Contraseña compartida de usuarios demo (`ceo`, `coord`, `ger.systron`, …); ejecutar `npm run db:seed-demo` tras migrar |
+| `SYGOS_DATA_DIR` | Directorio persistente para logos por empresa (`/app/data`). **Montar volumen** en Coolify en esa ruta para que los logos sobrevivan redeploys |
 
 ## Migraciones y seed en producción
 

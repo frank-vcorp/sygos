@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/db/client";
 import { companySettings, testSessionParticipants, testSessions, users } from "@/db/schema";
 import { getActiveTestSession } from "@/lib/test-mode";
+import { removeCompanyLogo, saveCompanyLogoFromUpload } from "@/lib/company-brand-logo";
 import { getSession } from "@/lib/session";
 
 export async function toggleTestModeAction(formData: FormData) {
@@ -76,6 +77,22 @@ export async function endTestSessionAction() {
     .update(testSessions)
     .set({ active: false, endedAt: sql`now()` })
     .where(eq(testSessions.id, active.id));
+  revalidatePath("/app/configuracion");
+}
+
+export async function uploadCompanyLogoAction(formData: FormData) {
+  const session = await getSession();
+  if (!session || (session.role !== "ADMINISTRADOR" && session.role !== "CEO")) throw new Error("Sin permiso");
+  const file = formData.get("logo");
+  if (!(file instanceof File)) throw new Error("Selecciona una imagen PNG, JPEG o WebP");
+  await saveCompanyLogoFromUpload(session.activeCompany.id, file);
+  revalidatePath("/app/configuracion");
+}
+
+export async function removeCompanyLogoAction() {
+  const session = await getSession();
+  if (!session || (session.role !== "ADMINISTRADOR" && session.role !== "CEO")) throw new Error("Sin permiso");
+  await removeCompanyLogo(session.activeCompany.id);
   revalidatePath("/app/configuracion");
 }
 

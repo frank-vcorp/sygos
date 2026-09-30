@@ -11,7 +11,9 @@ import {
   listUsersForTestSelect,
   startTestSessionAction,
   toggleTestModeAction,
+  removeCompanyLogoAction,
   updateFiscalSettingsAction,
+  uploadCompanyLogoAction,
 } from "./actions";
 
 export default async function ConfiguracionPage() {
@@ -29,6 +31,38 @@ export default async function ConfiguracionPage() {
         title="Configuración"
         description={`Parámetros fiscales y operativos de ${session.activeCompany.displayName}.`}
       />
+
+      <Card className="space-y-3 p-5 text-sm">
+        <h2 className="font-medium">Marca en documentos</h2>
+        <p className="text-xs text-slate-600">
+          Logo de {session.activeCompany.displayName} en cotizaciones, facturas, remisiones y correos. PNG, JPEG o WebP
+          (máx. 2 MB). Si no subes logo, se usa el lockup Sygos.
+        </p>
+        {settings.brandLogoPath ? (
+          <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-slate-50 p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/api/branding/logo"
+              alt={`Logo ${session.activeCompany.displayName}`}
+              className="max-h-14 max-w-[220px] object-contain"
+            />
+            <form action={removeCompanyLogoAction}>
+              <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                Quitar logo
+              </button>
+            </form>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-500">Aún no hay logo para esta empresa.</p>
+        )}
+        <form action={uploadCompanyLogoAction} encType="multipart/form-data" className="flex flex-wrap items-end gap-2">
+          <label className="block text-xs">
+            Subir o reemplazar
+            <input name="logo" type="file" accept="image/png,image/jpeg,image/webp" required className="mt-1 block text-sm" />
+          </label>
+          <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Guardar logo</button>
+        </form>
+      </Card>
 
       <Card className="space-y-2 p-5 text-sm">
       <form action={updateFiscalSettingsAction} className="space-y-2">

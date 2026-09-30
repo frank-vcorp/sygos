@@ -1,7 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { clients, invoices } from "@/db/schema";
-import { getCompanySettings } from "@/lib/company-settings";
 import { getPublicAppUrl } from "@/lib/documents/app-url";
 import type { CommercialDocumentData } from "@/lib/documents/commercial-document";
 import { loadIssuerBrand } from "@/lib/documents/load-issuer";
@@ -33,6 +32,7 @@ export async function loadInvoiceCommercialDocument(
     : "Documento de referencia interna. El comprobante fiscal se emite al timbrar en Facturapi.";
 
   const commercial: CommercialDocumentData = {
+    companyId,
     kindTitle: "Factura",
     folio: row.invoice.folio,
     issuedAt: row.invoice.createdAt,

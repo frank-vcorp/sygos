@@ -1,6 +1,7 @@
 import { escapeHtml } from "@/lib/documents/escape";
 import { DOC_BRAND, DOC_FONT } from "@/lib/documents/brand";
 import { formatDateEs, formatMxn } from "@/lib/documents/format";
+import { renderDocumentLogoHtml } from "@/lib/documents/document-logo";
 import type { IssuerBrand } from "@/lib/documents/types";
 
 export type CommercialDocumentLine = {
@@ -17,6 +18,7 @@ export type CommercialDocumentTotalsRow = {
 };
 
 export type CommercialDocumentData = {
+  companyId: string;
   kindTitle: string;
   folio: string;
   issuedAt: Date;
@@ -62,7 +64,7 @@ export function renderCommercialDocumentBody(data: CommercialDocumentData) {
 <article style="max-width:820px;margin:0 auto;background:${DOC_BRAND.white};color:${DOC_BRAND.text};font-family:${DOC_FONT};">
   <header style="display:flex;justify-content:space-between;gap:24px;padding:32px 36px 24px;border-bottom:3px solid ${DOC_BRAND.teal};">
     <div>
-      <img src="/brand/sygos-lockup.png" alt="Sygos" style="height:44px;width:auto;margin-bottom:16px;" />
+      ${renderDocumentLogoHtml(data.issuer)}
       <h1 style="margin:0;font-size:26px;font-weight:700;color:${DOC_BRAND.navy};letter-spacing:-.02em;">${escapeHtml(data.kindTitle)}</h1>
       <p style="margin:8px 0 0;font-size:14px;color:${DOC_BRAND.textMuted};">${escapeHtml(data.issuer.legalName)}</p>
       ${data.issuer.rfc ? `<p style="margin:4px 0 0;font-size:13px;color:${DOC_BRAND.textMuted};">RFC ${escapeHtml(data.issuer.rfc)}</p>` : ""}

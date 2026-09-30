@@ -491,6 +491,8 @@ export const companySettings = pgTable(
     testModeEnabled: boolean("test_mode_enabled").notNull().default(false),
     fiscalLegalName: text("fiscal_legal_name"),
     fiscalRfc: text("fiscal_rfc"),
+    brandLogoPath: text("brand_logo_path"),
+    brandLogoMimeType: text("brand_logo_mime_type"),
     monthlyPurchaseBudgetMxn: integer("monthly_purchase_budget_mxn").notNull().default(5000),
     maxDirectPurchaseMxn: integer("max_direct_purchase_mxn").notNull().default(2000),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
