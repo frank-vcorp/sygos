@@ -110,9 +110,9 @@ export default async function IntegracionesPage() {
       <Card className="p-6 text-sm">
         <h2 className="font-semibold">Envío de documentos</h2>
         <p className="mt-2 text-slate-600">
-          Cotizaciones, comprobantes y archivos adjuntos podrán enviarse por <strong>correo</strong> y por{" "}
-          <strong>WhatsApp</strong> usando estas integraciones. Si un canal no está configurado, el envío por ese
-          canal fallará de forma explícita (sin simular éxito).
+          Las <strong>cotizaciones</strong> se generan con plantilla corporativa (PDF + correo HTML) al enviarlas desde
+          Comercial. Los <strong>CFDI timbrados</strong> los emite Facturapi con los datos del emisor en su portal y el
+          RFC del cliente en Sygos. Correo y WhatsApp requieren SendGrid y sesión Baileys configurados.
         </p>
       </Card>
 

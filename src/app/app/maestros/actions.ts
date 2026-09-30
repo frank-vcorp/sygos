@@ -66,6 +66,8 @@ export async function createClientAction(formData: FormData) {
       responsibleUserId: session.id,
       requiresInvoice: formData.get("requiresInvoice") === "on",
       creditDays: Number(formData.get("creditDays") ?? 0) || 0,
+      taxIdentity: String(formData.get("taxIdentity") ?? "").trim() || null,
+      shippingAddress: String(formData.get("shippingAddress") ?? "").trim() || null,
     })
     .returning();
 
@@ -101,6 +103,8 @@ export async function updateClientAction(formData: FormData) {
       name,
       creditDays: Number(formData.get("creditDays") ?? 0) || 0,
       requiresInvoice: formData.get("requiresInvoice") === "on",
+      taxIdentity: String(formData.get("taxIdentity") ?? "").trim() || null,
+      shippingAddress: String(formData.get("shippingAddress") ?? "").trim() || null,
       version: version + 1,
       updatedAt: sql`now()`,
     })
@@ -710,7 +714,16 @@ export async function logClientCommunicationAction(formData: FormData) {
       .from(clientContacts)
       .where(inArray(clientContacts.id, contactIds));
     const deliverySubject = subject ?? `Comunicación — ${client.name}`;
+    const { communicationEmailPackage } = await import("@/lib/documents/email-shell");
+    const { loadIssuerBrand } = await import("@/lib/documents/load-issuer");
+    const issuer = await loadIssuerBrand(session.activeCompany.id);
     for (const contact of fullContacts) {
+      const mail = communicationEmailPackage({
+        issuer,
+        subject: deliverySubject,
+        recipientName: contact.name,
+        body,
+      });
       if (sendEmail) {
         await deliverDocument({
           companyId: session.activeCompany.id,
@@ -721,8 +734,9 @@ export async function logClientCommunicationAction(formData: FormData) {
           recipientName: contact.name,
           recipientEmail: contact.email,
           recipientPhone: contact.phone,
-          subject: deliverySubject,
-          body,
+          subject: mail.subject,
+          body: mail.plainText,
+          html: mail.html,
           createdByUserId: session.id,
         });
       }

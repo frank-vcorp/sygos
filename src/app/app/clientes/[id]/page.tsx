@@ -86,6 +86,23 @@ export default async function ClienteDetallePage({
                 className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
               />
             </label>
+            <label className="block text-sm sm:col-span-2">
+              <span className="font-medium">RFC (facturación)</span>
+              <input
+                name="taxIdentity"
+                defaultValue={client.taxIdentity ?? ""}
+                className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm font-mono uppercase"
+              />
+            </label>
+            <label className="block text-sm sm:col-span-2">
+              <span className="font-medium">Domicilio fiscal / envío</span>
+              <textarea
+                name="shippingAddress"
+                rows={2}
+                defaultValue={client.shippingAddress ?? ""}
+                className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
+              />
+            </label>
             <label className="block text-sm">
               <span className="font-medium">Crédito (días)</span>
               <input

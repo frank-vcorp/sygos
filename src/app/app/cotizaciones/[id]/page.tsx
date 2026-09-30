@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/patterns/page-header";
 import { Card, StatusBadge } from "@/components/ui/surface";
@@ -40,7 +41,21 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
         title={quote.folio}
         description={quote.pendingPricing ? "Pendiente de precio" : "Detalle de cotización"}
         breadcrumbs={[{ label: "Cotizaciones", href: "/app/cotizaciones" }, { label: quote.folio }]}
-        actions={<StatusBadge status={quote.status} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={quote.status} />
+            {(quote.finalPriceMxn != null || quote.priceMxn != null) && (
+              <Link
+                href={`/api/documents/cotizacion/${quote.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-accent hover:bg-slate-50"
+              >
+                Ver documento
+              </Link>
+            )}
+          </div>
+        }
       />
       {quote.pendingOrigin && (
         <p className="text-xs text-slate-600">Origen bandeja: {ORIGIN_LABEL[quote.pendingOrigin] ?? quote.pendingOrigin}</p>

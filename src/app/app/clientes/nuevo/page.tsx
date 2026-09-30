@@ -27,6 +27,14 @@ export default async function NuevoClientePage() {
           <input name="name" required className="mt-1 w-full rounded-md border border-border px-3 py-2" />
         </label>
         <label className="block text-sm">
+          <span className="font-medium">RFC (facturación)</span>
+          <input name="taxIdentity" className="mt-1 w-full rounded-md border border-border px-3 py-2 font-mono uppercase" placeholder="XAXX010101000" />
+        </label>
+        <label className="block text-sm">
+          <span className="font-medium">Domicilio fiscal / envío</span>
+          <textarea name="shippingAddress" rows={2} className="mt-1 w-full rounded-md border border-border px-3 py-2" />
+        </label>
+        <label className="block text-sm">
           <span className="font-medium">Días de crédito</span>
           <input name="creditDays" type="number" min={0} defaultValue={0} className="mt-1 w-full rounded-md border border-border px-3 py-2" />
         </label>

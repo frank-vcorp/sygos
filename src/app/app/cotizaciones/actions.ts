@@ -10,6 +10,7 @@ import { propagateClientDecisionToLinkedQuote } from "@/lib/quote-link";
 import { canApplyQuoteDiscount, canSetQuotePrice } from "@/lib/permissions-commercial";
 import { isUserInTestMode, logTestMutation } from "@/lib/test-mode-guard";
 import { deliverDocument } from "@/lib/document-delivery";
+import { buildQuoteDeliveryPackage } from "@/lib/documents/quote-delivery";
 import { getSession } from "@/lib/session";
 
 async function requireCommercial() {
@@ -127,10 +128,6 @@ export async function sendQuoteAction(formData: FormData) {
     .from(clientContacts)
     .where(and(eq(clientContacts.clientId, quote.clientId), inArray(clientContacts.id, contactIds)));
 
-  const price = quote.finalPriceMxn ?? quote.priceMxn ?? 0;
-  const subject = `Cotización ${quote.folio}`;
-  const body = `Hola,\n\nAdjuntamos la cotización ${quote.folio} por $${price.toLocaleString("es-MX")} MXN.\n\nSaludos,\n${session.activeCompany.displayName}`;
-
   for (const contactId of contactIds) {
     await db.insert(quoteSendContacts).values({ quoteId, contactId });
   }
@@ -139,6 +136,13 @@ export async function sendQuoteAction(formData: FormData) {
   let successCount = 0;
 
   for (const contact of contacts) {
+    const package_ = await buildQuoteDeliveryPackage(
+      session.activeCompany.id,
+      quoteId,
+      contact.name,
+    );
+    if (!package_) throw new Error("No se pudo generar el documento de cotización");
+
     if (sendEmail) {
       const result = await deliverDocument({
         companyId: session.activeCompany.id,
@@ -149,8 +153,10 @@ export async function sendQuoteAction(formData: FormData) {
         recipientName: contact.name,
         recipientEmail: contact.email,
         recipientPhone: contact.phone,
-        subject,
-        body,
+        subject: package_.subject,
+        body: package_.plainText,
+        html: package_.html,
+        attachments: package_.attachments,
         createdByUserId: session.id,
       });
       if (result.ok) successCount += 1;
@@ -166,8 +172,8 @@ export async function sendQuoteAction(formData: FormData) {
         recipientName: contact.name,
         recipientEmail: contact.email,
         recipientPhone: contact.phone,
-        subject,
-        body,
+        subject: package_.subject,
+        body: package_.plainText,
         createdByUserId: session.id,
       });
       if (result.ok) successCount += 1;

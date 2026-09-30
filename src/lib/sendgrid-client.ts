@@ -1,10 +1,17 @@
 import type { SendGridIntegrationConfig } from "@/lib/integration-types";
 
+type SendEmailAttachment = {
+  filename: string;
+  contentBase64: string;
+  mimeType: string;
+};
+
 type SendEmailInput = {
   to: string;
   subject: string;
   text: string;
   html?: string;
+  attachments?: SendEmailAttachment[];
 };
 
 export async function sendEmailViaSendGrid(config: SendGridIntegrationConfig, input: SendEmailInput) {
@@ -25,6 +32,16 @@ export async function sendEmailViaSendGrid(config: SendGridIntegrationConfig, in
         { type: "text/plain", value: input.text },
         ...(input.html ? [{ type: "text/html", value: input.html }] : []),
       ],
+      ...(input.attachments?.length
+        ? {
+            attachments: input.attachments.map((a) => ({
+              content: a.contentBase64,
+              filename: a.filename,
+              type: a.mimeType,
+              disposition: "attachment",
+            })),
+          }
+        : {}),
     }),
   });
 

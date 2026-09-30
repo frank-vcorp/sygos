@@ -17,6 +17,8 @@ export type DeliverDocumentInput = {
   recipientPhone?: string | null;
   subject: string;
   body: string;
+  html?: string;
+  attachments?: { filename: string; contentBase64: string; mimeType: string }[];
   createdByUserId: string;
 };
 
@@ -77,6 +79,8 @@ export async function deliverDocument(input: DeliverDocumentInput) {
       to: recipient,
       subject: input.subject,
       text: input.body,
+      html: input.html,
+      attachments: input.attachments,
     });
     if (!sent.ok) {
       await logDocumentDelivery({
