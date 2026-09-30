@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
@@ -9,6 +9,7 @@ import { nextCompanyFolio } from "@/lib/folio";
 import { propagateClientDecisionToLinkedQuote } from "@/lib/quote-link";
 import { canApplyQuoteDiscount, canSetQuotePrice } from "@/lib/permissions-commercial";
 import { isUserInTestMode, logTestMutation } from "@/lib/test-mode-guard";
+import { deliverDocument } from "@/lib/document-delivery";
 import { getSession } from "@/lib/session";
 
 async function requireCommercial() {
@@ -107,7 +108,10 @@ export async function sendQuoteAction(formData: FormData) {
   const session = await requireCommercial();
   const quoteId = String(formData.get("quoteId") ?? "");
   const contactIds = formData.getAll("contactIds").map(String).filter(Boolean);
+  const sendEmail = formData.get("sendEmail") === "on";
+  const sendWhatsapp = formData.get("sendWhatsapp") === "on";
   if (!quoteId || contactIds.length === 0) throw new Error("Selecciona al menos un contacto");
+  if (!sendEmail && !sendWhatsapp) throw new Error("Elige al menos un canal: correo o WhatsApp");
 
   const db = getDb();
   const [quote] = await db
@@ -118,9 +122,63 @@ export async function sendQuoteAction(formData: FormData) {
   if (!quote) throw new Error("Cotización no encontrada");
   if (!quote.finalPriceMxn && !quote.priceMxn) throw new Error("CEO/Administrador debe fijar precio antes de enviar");
 
+  const contacts = await db
+    .select()
+    .from(clientContacts)
+    .where(and(eq(clientContacts.clientId, quote.clientId), inArray(clientContacts.id, contactIds)));
+
+  const price = quote.finalPriceMxn ?? quote.priceMxn ?? 0;
+  const subject = `Cotización ${quote.folio}`;
+  const body = `Hola,\n\nAdjuntamos la cotización ${quote.folio} por $${price.toLocaleString("es-MX")} MXN.\n\nSaludos,\n${session.activeCompany.displayName}`;
+
   for (const contactId of contactIds) {
     await db.insert(quoteSendContacts).values({ quoteId, contactId });
   }
+
+  const errors: string[] = [];
+  let successCount = 0;
+
+  for (const contact of contacts) {
+    if (sendEmail) {
+      const result = await deliverDocument({
+        companyId: session.activeCompany.id,
+        channel: "EMAIL",
+        entityType: "QUOTE",
+        entityId: quoteId,
+        contactId: contact.id,
+        recipientName: contact.name,
+        recipientEmail: contact.email,
+        recipientPhone: contact.phone,
+        subject,
+        body,
+        createdByUserId: session.id,
+      });
+      if (result.ok) successCount += 1;
+      else errors.push(`${contact.name} (correo): ${result.error}`);
+    }
+    if (sendWhatsapp) {
+      const result = await deliverDocument({
+        companyId: session.activeCompany.id,
+        channel: "WHATSAPP",
+        entityType: "QUOTE",
+        entityId: quoteId,
+        contactId: contact.id,
+        recipientName: contact.name,
+        recipientEmail: contact.email,
+        recipientPhone: contact.phone,
+        subject,
+        body,
+        createdByUserId: session.id,
+      });
+      if (result.ok) successCount += 1;
+      else errors.push(`${contact.name} (WhatsApp): ${result.error}`);
+    }
+  }
+
+  if (successCount === 0) {
+    throw new Error(errors.join(" · ") || "No se pudo enviar por ningún canal");
+  }
+
   await db
     .update(quotes)
     .set({ status: "ENVIADA", pendingPricing: false })

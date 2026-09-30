@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import { canConfigureIntegrations } from "@/lib/permissions";
 import { FacturapiConfigForm } from "@/components/integrations/facturapi-config-form";
+import { SendGridConfigForm } from "@/components/integrations/sendgrid-config-form";
 import { getFacturapiConfigView } from "./facturapi-actions";
+import { getSendGridConfigView } from "./sendgrid-actions";
 import { getMotSequenceState, listIntegrations } from "../maestros/actions";
 
 const LABELS: Record<string, string> = {
@@ -25,10 +27,11 @@ export default async function IntegracionesPage() {
   if (!session) redirect("/login");
   if (!canConfigureIntegrations(session.role)) redirect("/app");
 
-  const [rows, mot, facturapiView] = await Promise.all([
+  const [rows, mot, facturapiView, sendgridView] = await Promise.all([
     listIntegrations(session.activeCompany.id),
     getMotSequenceState(),
     getFacturapiConfigView(session.activeCompany.id),
+    getSendGridConfigView(session.activeCompany.id),
   ]);
 
   const encryptionReady = Boolean(
@@ -76,8 +79,16 @@ export default async function IntegracionesPage() {
                 organizationId={facturapiView.organizationId}
               />
             )}
-            {row.integration !== "FACTURAPI" && (
-              <p className="mt-auto text-xs text-slate-500">Configuración en el siguiente módulo desplegado.</p>
+            {row.integration === "SENDGRID" && (
+              <SendGridConfigForm
+                configured={sendgridView.configured}
+                maskedKey={sendgridView.maskedKey}
+                fromEmail={sendgridView.fromEmail}
+                fromName={sendgridView.fromName}
+              />
+            )}
+            {row.integration === "WHATSAPP" && (
+              <p className="mt-auto text-xs text-slate-500">Vinculación QR (Baileys) en el módulo WhatsApp.</p>
             )}
           </Card>
         ))}

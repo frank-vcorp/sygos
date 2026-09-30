@@ -701,5 +701,48 @@ export async function logClientCommunicationAction(formData: FormData) {
     });
   }
 
+  const sendEmail = formData.get("sendEmail") === "on";
+  const sendWhatsapp = formData.get("sendWhatsapp") === "on";
+  if (sendEmail || sendWhatsapp) {
+    const { deliverDocument } = await import("@/lib/document-delivery");
+    const fullContacts = await db
+      .select()
+      .from(clientContacts)
+      .where(inArray(clientContacts.id, contactIds));
+    const deliverySubject = subject ?? `Comunicación — ${client.name}`;
+    for (const contact of fullContacts) {
+      if (sendEmail) {
+        await deliverDocument({
+          companyId: session.activeCompany.id,
+          channel: "EMAIL",
+          entityType: "CLIENT_COMMUNICATION",
+          entityId: comm.id,
+          contactId: contact.id,
+          recipientName: contact.name,
+          recipientEmail: contact.email,
+          recipientPhone: contact.phone,
+          subject: deliverySubject,
+          body,
+          createdByUserId: session.id,
+        });
+      }
+      if (sendWhatsapp) {
+        await deliverDocument({
+          companyId: session.activeCompany.id,
+          channel: "WHATSAPP",
+          entityType: "CLIENT_COMMUNICATION",
+          entityId: comm.id,
+          contactId: contact.id,
+          recipientName: contact.name,
+          recipientEmail: contact.email,
+          recipientPhone: contact.phone,
+          subject: deliverySubject,
+          body,
+          createdByUserId: session.id,
+        });
+      }
+    }
+  }
+
   revalidatePath(`/app/clientes/${clientId}`);
 }

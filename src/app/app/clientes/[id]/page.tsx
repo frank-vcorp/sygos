@@ -213,8 +213,18 @@ export default async function ClienteDetallePage({
             </fieldset>
             <input name="subject" placeholder="Asunto (opcional)" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
             <textarea name="body" required rows={3} placeholder="Mensaje o nota de envío" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+            <div className="flex flex-wrap gap-4 text-sm">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" name="sendEmail" />
+                Enviar por correo
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" name="sendWhatsapp" />
+                Enviar por WhatsApp
+              </label>
+            </div>
             <button type="submit" className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white">
-              Registrar
+              Registrar y enviar
             </button>
           </form>
         )}

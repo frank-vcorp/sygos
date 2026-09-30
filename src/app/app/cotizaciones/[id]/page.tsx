@@ -97,16 +97,31 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
       )}
 
       {contacts.length > 0 && quote.finalPriceMxn != null && (
-        <form action={sendQuoteAction} className="space-y-2 rounded-xl border bg-card p-4">
-          <p className="text-sm font-medium">Enviar — elegir contactos (no cambia el principal)</p>
+        <form action={sendQuoteAction} className="space-y-3 rounded-xl border bg-card p-4">
+          <p className="text-sm font-medium">Enviar documento — contactos y canales</p>
           {contacts.map((c) => (
             <label key={c.id} className="flex gap-2 text-sm">
               <input type="checkbox" name="contactIds" value={c.id} />
               {c.name}{c.isPrimary ? " (principal)" : ""}
+              <span className="text-xs text-slate-500">
+                {[c.email && "correo", c.phone && "tel."].filter(Boolean).join(" · ")}
+              </span>
             </label>
           ))}
+          <div className="flex flex-wrap gap-4 text-sm">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="sendEmail" defaultChecked />
+              Correo (SendGrid)
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="sendWhatsapp" />
+              WhatsApp
+            </label>
+          </div>
           <input type="hidden" name="quoteId" value={quote.id} />
-          <button type="submit" className="rounded-md border px-3 py-1 text-sm">Registrar envío</button>
+          <button type="submit" className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white">
+            Enviar cotización
+          </button>
         </form>
       )}
     </div>

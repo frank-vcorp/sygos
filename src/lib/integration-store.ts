@@ -14,7 +14,7 @@ function isConfiguredPayload(key: IntegrationKey, payload: IntegrationConfigMap[
     return Boolean(p.apiKey?.trim() && p.fromEmail?.trim());
   }
   if (key === "WHATSAPP") {
-    return true;
+    return false;
   }
   return false;
 }
