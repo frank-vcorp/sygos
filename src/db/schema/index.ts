@@ -275,6 +275,78 @@ export const integrationSettings = pgTable(
   (t) => [uniqueIndex("integration_settings_company_key").on(t.companyId, t.integration)],
 );
 
+/** Credenciales cifradas por empresa e integración (no se exponen en UI). */
+export const integrationSecrets = pgTable(
+  "integration_secrets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    integration: integrationKeyEnum("integration").notNull(),
+    ciphertext: text("ciphertext").notNull(),
+    updatedByUserId: uuid("updated_by_user_id").references(() => users.id),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("integration_secrets_company_key").on(t.companyId, t.integration)],
+);
+
+export const whatsappConnectionStatusEnum = pgEnum("whatsapp_connection_status", [
+  "DISCONNECTED",
+  "QR_PENDING",
+  "CONNECTED",
+]);
+
+export const whatsappSessions = pgTable(
+  "whatsapp_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    status: whatsappConnectionStatusEnum("status").notNull().default("DISCONNECTED"),
+    linkedPhone: text("linked_phone"),
+    authCiphertext: text("auth_ciphertext"),
+    lastError: text("last_error"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("whatsapp_sessions_company_unique").on(t.companyId)],
+);
+
+export const documentDeliveryChannelEnum = pgEnum("document_delivery_channel", ["EMAIL", "WHATSAPP"]);
+
+export const documentDeliveryStatusEnum = pgEnum("document_delivery_status", [
+  "PENDING",
+  "SENT",
+  "FAILED",
+]);
+
+export const documentDeliveries = pgTable(
+  "document_deliveries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    channel: documentDeliveryChannelEnum("channel").notNull(),
+    status: documentDeliveryStatusEnum("status").notNull().default("PENDING"),
+    entityType: text("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    contactId: uuid("contact_id").references(() => clientContacts.id),
+    recipient: text("recipient").notNull(),
+    subject: text("subject"),
+    errorMessage: text("error_message"),
+    createdByUserId: uuid("created_by_user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("document_deliveries_company_idx").on(t.companyId),
+    index("document_deliveries_entity_idx").on(t.entityType, t.entityId),
+  ],
+);
+
 export const masterRecordEvents = pgTable(
   "master_record_events",
   {

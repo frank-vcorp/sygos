@@ -92,6 +92,13 @@
       "when": 1790652390080,
       "tag": "0012_tough_wallow",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790653000000,
+      "tag": "0013_integration_secrets",
+      "breakpoints": true
     }
   ]
 }
