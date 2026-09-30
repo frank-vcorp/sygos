@@ -8,6 +8,15 @@
 
 Registry: `~/.cursor/provision-registry.json` → `frank-vcorp/sygos`.
 
+## Deploy automático
+
+1. **Coolify** tiene `is_auto_deploy_enabled` vía **GitHub App** (`frank-vcorp/sygos`, rama `main`). Si al hacer `git push` no aparece un deployment nuevo en el panel, en Coolify Cloud revisa **Sources → GitHub** y confirma que la app **sygos** sigue autorizada en el repositorio.
+2. **Respaldo:** workflow `.github/workflows/coolify-deploy.yml` encola deploy con la API. Secrets del repo (Settings → Secrets → Actions):
+   - `COOLIFY_BASE_URL` — p. ej. `https://app.coolify.io`
+   - `COOLIFY_API_TOKEN` — token **write** de Coolify (no commitear)
+   - `COOLIFY_APP_UUID` — `3zamnoefpehquagdcvi2578i`
+3. **Manual desde contabo-integra:** `source ~/.cursor/bin/load-cursor-env.sh && coolify deploy 3zamnoefpehquagdcvi2578i`
+
 ## Verificar conexión API (contabo-integra)
 
 ```bash

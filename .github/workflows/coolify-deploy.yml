@@ -1,0 +1,30 @@
+# Respaldo cuando la GitHub App de Coolify no encola el build tras push a main.
+# Secrets en GitHub (repo frank-vcorp/sygos): COOLIFY_BASE_URL, COOLIFY_API_TOKEN, COOLIFY_APP_UUID
+name: Deploy staging (Coolify)
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: coolify-sygos-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify deployment
+        env:
+          COOLIFY_BASE_URL: ${{ secrets.COOLIFY_BASE_URL }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          COOLIFY_APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
+        run: |
+          if [ -z "$COOLIFY_BASE_URL" ] || [ -z "$COOLIFY_API_TOKEN" ] || [ -z "$COOLIFY_APP_UUID" ]; then
+            echo "Skip: configure COOLIFY_BASE_URL, COOLIFY_API_TOKEN and COOLIFY_APP_UUID in repo secrets."
+            exit 0
+          fi
+          curl -fsS -G "${COOLIFY_BASE_URL%/}/api/v1/deploy" \
+            --data-urlencode "uuid=${COOLIFY_APP_UUID}" \
+            -H "Authorization: Bearer ${COOLIFY_API_TOKEN}"
+          echo "Deployment queued for ${GITHUB_SHA}"
