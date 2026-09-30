@@ -23,23 +23,23 @@ export default async function PendientesCotizarPage() {
       {rows.length === 0 ? (
         <EmptyState icon={<FileText className="size-7" />} title="Bandeja vacía" description="No hay cotizaciones pendientes de precio." />
       ) : (
-        <DataTable title="Por cotizar" description={`${rows.length} en cola`}>
-          <table className="min-w-full text-sm">
-            <thead>
+        <DataTable title="Por cotizar" description={`${rows.length} en cola — abre cada una para fijar precio`}>
+          <table className="w-full min-w-[480px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
-                <th className="px-4 py-3">Folio</th>
-                <th className="px-4 py-3">Origen</th>
-                <th className="px-4 py-3 text-right">Acción</th>
+                <th className="px-5 py-3 font-semibold">Folio</th>
+                <th className="px-5 py-3 font-semibold">Origen bandeja</th>
+                <th className="px-5 py-3 text-right font-semibold">Acción</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y">
               {rows.map((q) => (
-                <tr key={q.id}>
-                  <td className="px-4 py-3 font-mono text-xs font-semibold text-accent">{q.folio}</td>
-                  <td className="px-4 py-3 text-slate-600">{q.pendingOrigin?.replaceAll("_", " ") ?? "—"}</td>
-                  <td className="px-4 py-3 text-right">
+                <tr key={q.id} className="hover:bg-slate-50/80">
+                  <td className="px-5 py-3 font-mono text-xs font-semibold text-accent">{q.folio}</td>
+                  <td className="px-5 py-3 text-slate-600">{q.pendingOrigin?.replaceAll("_", " ") ?? "—"}</td>
+                  <td className="px-5 py-3 text-right">
                     <Link href={`/app/cotizaciones/${q.id}`} className="text-sm font-semibold text-accent hover:underline">
-                      Abrir
+                      Fijar precio
                     </Link>
                   </td>
                 </tr>

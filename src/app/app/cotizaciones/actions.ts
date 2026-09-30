@@ -35,6 +35,20 @@ export async function listQuotes(companyId: string) {
     .limit(200);
 }
 
+export async function listQuotesWithClients(companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      quote: quotes,
+      clientName: clients.name,
+    })
+    .from(quotes)
+    .innerJoin(clients, eq(quotes.clientId, clients.id))
+    .where(eq(quotes.companyId, companyId))
+    .orderBy(desc(quotes.createdAt))
+    .limit(200);
+}
+
 export async function listPendingQuote(companyId: string) {
   const db = getDb();
   return db

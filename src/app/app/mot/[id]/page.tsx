@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ClipboardList, PackageCheck, ScrollText } from "lucide-react";
 import { PageHeader } from "@/components/patterns/page-header";
+import { DetailGrid, DetailItem } from "@/components/patterns/detail-grid";
+import { SectionCard } from "@/components/patterns/section-card";
+import { buttonVariants } from "@/components/ui/button";
+import { Field, Textarea } from "@/components/ui/form-fields";
+import { StatusBadge } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import {
   canConfirmMotIngress,
@@ -14,8 +20,8 @@ import { diagnoses } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 const STATUS_LABEL: Record<string, string> = {
-  PENDIENTE_INGRESO_SERVOMOTORES: "Pendiente ingreso físico (Servomotores)",
-  EN_RESGUARDO_SERVOMOTORES: "En resguardo (Servomotores)",
+  PENDIENTE_INGRESO_SERVOMOTORES: "Pendiente ingreso físico",
+  EN_RESGUARDO_SERVOMOTORES: "En resguardo",
   SALIDA_PRUEBA: "Salida a prueba",
   EGRESADO: "Egresado",
 };
@@ -55,134 +61,110 @@ export default async function MotDetallePage({
         title={mot.folio}
         description="Identidad global MOT — el serial no sustituye al folio."
         breadcrumbs={[{ label: "Motores", href: "/app/mot" }, { label: mot.folio }]}
+        actions={<StatusBadge status={mot.custodyStatus} />}
       />
       {conflict === "1" && (
-        <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">Conflicto de versión; recarga e intenta de nuevo.</p>
+        <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">Conflicto de versión; recarga e intenta de nuevo.</p>
       )}
 
-      <dl className="grid gap-3 rounded-xl border border-border bg-card p-6 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Origen</dt>
-          <dd>{mot.originCompanyCode === "SYSTRON" ? "SYSTRON" : "Servomotores"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Custodia</dt>
-          <dd>{STATUS_LABEL[mot.custodyStatus] ?? mot.custodyStatus}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Modelo</dt>
-          <dd>{mot.model}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Marca</dt>
-          <dd>{mot.brand ?? "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Serial</dt>
-          <dd>{mot.manufacturerSerial ?? "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">Ingreso físico</dt>
-          <dd>{mot.physicalIngressAt ? new Date(mot.physicalIngressAt).toLocaleString("es-MX") : "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-slate-500">SLA (desde ingreso)</dt>
-          <dd>{mot.slaDueAt ? new Date(mot.slaDueAt).toLocaleString("es-MX") : "—"}</dd>
-        </div>
+      <DetailGrid title="Identidad del motor" description="Custodia, origen y datos de placa.">
+        <DetailItem label="Origen" value={mot.originCompanyCode === "SYSTRON" ? "SYSTRON" : "Servomotores"} />
+        <DetailItem label="Custodia" value={STATUS_LABEL[mot.custodyStatus] ?? mot.custodyStatus} />
+        <DetailItem label="Marca / modelo" value={`${mot.brand ?? "—"} · ${mot.model}`} />
+        <DetailItem label="Serial fabricante" value={mot.manufacturerSerial ?? "—"} />
+        <DetailItem
+          label="Ingreso físico"
+          value={mot.physicalIngressAt ? new Date(mot.physicalIngressAt).toLocaleString("es-MX") : "Pendiente"}
+        />
+        <DetailItem
+          label="SLA (desde ingreso)"
+          value={mot.slaDueAt ? new Date(mot.slaDueAt).toLocaleString("es-MX") : "—"}
+        />
         {mot.egressAt && (
           <>
-            <div>
-              <dt className="text-xs uppercase text-slate-500">Egreso</dt>
-              <dd>{new Date(mot.egressAt).toLocaleString("es-MX")}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-slate-500">Recibe físicamente</dt>
-              <dd>{mot.egressRecipient ?? "—"}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs uppercase text-slate-500">Documento habilitante</dt>
-              <dd>{mot.egressDocumentRef ?? "—"}</dd>
-            </div>
+            <DetailItem label="Egreso" value={new Date(mot.egressAt).toLocaleString("es-MX")} />
+            <DetailItem label="Recibe físicamente" value={mot.egressRecipient ?? "—"} />
+            <DetailItem label="Documento habilitante" value={mot.egressDocumentRef ?? "—"} className="sm:col-span-2 lg:col-span-3" />
           </>
         )}
         {mot.description && (
-          <div className="sm:col-span-2">
-            <dt className="text-xs uppercase text-slate-500">Descripción</dt>
-            <dd>{mot.description}</dd>
-          </div>
+          <DetailItem label="Descripción" value={mot.description} className="sm:col-span-2 lg:col-span-3" />
         )}
-      </dl>
+      </DetailGrid>
 
       {custodyHistory.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-semibold">Historial de custodia</h2>
-          <ul className="mt-2 space-y-2 text-sm">
+        <SectionCard icon={ClipboardList} title="Historial de custodia" description="Movimientos de estado y responsables.">
+          <ul className="space-y-2 text-sm">
             {custodyHistory.map((ev) => (
-              <li key={ev.id} className="rounded border border-border px-3 py-2">
-                <span className="font-medium">
-                  {STATUS_LABEL[ev.fromStatus ?? ""] ?? ev.fromStatus ?? "—"} →{" "}
-                  {STATUS_LABEL[ev.toStatus] ?? ev.toStatus}
+              <li key={ev.id} className="rounded-xl border border-border bg-slate-50/50 px-4 py-3">
+                <span className="font-semibold">
+                  {STATUS_LABEL[ev.fromStatus ?? ""] ?? ev.fromStatus ?? "—"} → {STATUS_LABEL[ev.toStatus] ?? ev.toStatus}
                 </span>
                 <span className="text-slate-500"> · {new Date(ev.createdAt).toLocaleString("es-MX")}</span>
-                {ev.recipient && <p className="text-slate-600">Recibe: {ev.recipient}</p>}
+                {ev.recipient && <p className="mt-1 text-slate-600">Recibe: {ev.recipient}</p>}
                 {ev.documentRef && <p className="text-slate-600">Doc: {ev.documentRef}</p>}
                 {ev.note && <p className="text-slate-600">{ev.note}</p>}
               </li>
             ))}
           </ul>
-        </section>
+        </SectionCard>
       )}
 
       {session.activeCompany.code === "SYSTRON" && mot.originCompanyCode === "SYSTRON" && motAttendances.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-6 text-sm">
-          <h2 className="font-semibold">Operación técnica Servomotores (solo lectura)</h2>
-          <ul className="mt-2 space-y-1">
+        <SectionCard title="Operación Servomotores" description="Vista de solo lectura desde SYSTRON." tone="muted">
+          <ul className="space-y-2 text-sm">
             {motAttendances.map((a) => (
-              <li key={a.id}>
-                {a.attentionType.replaceAll("_", " ")} · empresa operativa vinculada
+              <li key={a.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-border px-3 py-2">
+                <span className="font-medium">{a.attentionType.replaceAll("_", " ")}</span>
                 {warrantyRows.find((w) => w?.attendanceId === a.id)?.outcome === "PROCEDENTE" && (
-                  <span className="ml-2 text-accent">Garantía válida (propagada desde Servomotores)</span>
+                  <StatusBadge status="AUTORIZADA" className="!bg-success-muted" />
                 )}
               </li>
             ))}
           </ul>
-        </section>
+        </SectionCard>
       )}
 
       {canIngress && (
-        <form action={confirmMotIngressAction} className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-semibold">Confirmar ingreso físico</h2>
-          <p className="mt-1 text-sm text-slate-600">Inicia SLA y custodia en Servomotores (Gerente operativo).</p>
-          <input type="hidden" name="id" value={mot.id} />
-          <input type="hidden" name="version" value={mot.version} />
-          <button type="submit" className="mt-3 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white">
-            Confirmar ingreso
-          </button>
-        </form>
+        <SectionCard icon={PackageCheck} title="Confirmar ingreso físico" description="Inicia SLA y custodia en Servomotores." tone="accent">
+          <form action={confirmMotIngressAction}>
+            <input type="hidden" name="id" value={mot.id} />
+            <input type="hidden" name="version" value={mot.version} />
+            <button type="submit" className={buttonVariants({ variant: "primary" })}>Confirmar ingreso</button>
+          </form>
+        </SectionCard>
       )}
 
-      <section className="rounded-xl border border-border bg-card p-6">
-        <h2 className="text-sm font-semibold">Bitácora técnica</h2>
-        <ul className="mt-2 space-y-2 text-sm">
-          {bitacora.length === 0 && <li className="text-slate-500">Sin entradas.</li>}
+      <SectionCard icon={ScrollText} title="Bitácora técnica" description="Entradas inmutables del equipo.">
+        <ul className="space-y-2 text-sm">
+          {bitacora.length === 0 && <li className="text-slate-500">Sin entradas registradas.</li>}
           {bitacora.map((b) => (
-            <li key={b.id} className="rounded border border-border px-3 py-2">
-              {b.body}
-              <span className="block text-xs text-slate-500">{new Date(b.createdAt).toLocaleString("es-MX")}</span>
+            <li key={b.id} className="rounded-xl border border-border px-4 py-3">
+              <p>{b.body}</p>
+              <span className="mt-1 block text-xs text-slate-500">{new Date(b.createdAt).toLocaleString("es-MX")}</span>
             </li>
           ))}
         </ul>
         {session.activeCompany.code === "SERVOMOTORES" && (
-          <form action={addTechnicalLogAction} className="mt-3 space-y-2">
+          <form action={addTechnicalLogAction} className="mt-4 space-y-3 border-t border-border pt-4">
             <input type="hidden" name="motId" value={mot.id} />
-            <textarea name="body" required rows={2} className="w-full rounded border px-2 py-1 text-sm" placeholder="Nueva entrada (inmutable)" />
-            <button type="submit" className="text-sm text-accent">Agregar</button>
+            <Field label="Nueva entrada" hint="No se puede editar después de guardar">
+              <Textarea name="body" required rows={3} placeholder="Avance, hallazgo o instrucción…" />
+            </Field>
+            <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>Agregar a bitácora</button>
           </form>
         )}
         {session.activeCompany.code === "SYSTRON" && mot.originCompanyCode === "SYSTRON" && (
-          <p className="mt-2 text-xs text-slate-500">Solo lectura desde SYSTRON.</p>
+          <p className="mt-3 text-xs text-slate-500">Solo lectura desde SYSTRON.</p>
         )}
-      </section>
+      </SectionCard>
+
+      {session.activeCompany.code === "SERVOMOTORES" && motAttendances.length > 0 && (
+        <p className="text-sm">
+          <Link href="/app/tecnica" className="font-medium text-accent hover:underline">Ir a operación técnica</Link>
+          {" "}para diagnósticos y reparaciones vinculados.
+        </p>
+      )}
     </div>
   );
 }

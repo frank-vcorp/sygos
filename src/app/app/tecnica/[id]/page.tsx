@@ -1,6 +1,14 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Activity, FileWarning, ScrollText, Stethoscope, Wrench } from "lucide-react";
 import { PageHeader } from "@/components/patterns/page-header";
-import { Card } from "@/components/ui/surface";
+import { DetailGrid, DetailItem } from "@/components/patterns/detail-grid";
+import { SectionCard } from "@/components/patterns/section-card";
+import { WorkflowStrip } from "@/components/patterns/workflow-strip";
+import { buttonVariants } from "@/components/ui/button";
+import { Field, Input, Select, Textarea } from "@/components/ui/form-fields";
+import { StatusBadge } from "@/components/ui/surface";
+import { formatMxnDisplay } from "@/lib/format-currency";
 import { getSession } from "@/lib/session";
 import { canAssignExternalService, canManageTechnicalState, canReturnDiagnosis, canValidateDiagnosis } from "@/lib/permissions-tecnica";
 import { listSuppliers } from "../../maestros/actions";
@@ -22,10 +30,12 @@ const DIAG_STATUS: Record<string, string> = {
   ABIERTO: "En espera",
   EN_TRABAJO: "En diagnóstico",
   TERMINADO: "Diagnóstico terminado",
-  PENDIENTE_VALIDACION_GERENTE: "Pendiente validación Gerente",
+  PENDIENTE_VALIDACION_GERENTE: "Pendiente validación",
   DEVUELTO_CORRECCION: "Devuelto a corrección",
-  VALIDADO_GERENTE: "Validado por Gerente",
+  VALIDADO_GERENTE: "Validado por gerente",
 };
+
+const DIAG_ORDER = ["ABIERTO", "EN_TRABAJO", "TERMINADO", "PENDIENTE_VALIDACION_GERENTE", "VALIDADO_GERENTE"] as const;
 
 export default async function AtencionDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -38,175 +48,237 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
   const suppliers =
     session.activeCompany.code === "SYSTRON" ? await listSuppliers(session.activeCompany.id) : [];
 
+  const diagStatusKey = diag?.status === "DEVUELTO_CORRECCION" ? "EN_TRABAJO" : diag?.status;
+  const diagCurrentIdx = diag ? DIAG_ORDER.indexOf(diagStatusKey as typeof DIAG_ORDER[number]) : -1;
+  const diagSteps = diag
+    ? DIAG_ORDER.map((st, i) => ({
+        id: st,
+        label: DIAG_STATUS[st] ?? st,
+        done: diag.status === "VALIDADO_GERENTE" ? true : i < diagCurrentIdx,
+        current: i === diagCurrentIdx,
+      }))
+    : [];
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Operación"
         title={att.attentionType.replaceAll("_", " ")}
-        description={att.reportedFault ?? "Atención técnica"}
+        description={att.reportedFault ?? "Atención técnica en curso"}
         breadcrumbs={[{ label: "Técnica", href: "/app/tecnica" }, { label: "Detalle" }]}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            {diag && <StatusBadge status={diag.status} />}
+            {att.motId && (
+              <Link href={`/app/mot/${att.motId}`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                Ver MOT
+              </Link>
+            )}
+          </div>
+        }
       />
 
+      <DetailGrid title="Contexto de atención">
+        <DetailItem label="Tipo" value={att.attentionType.replaceAll("_", " ")} />
+        <DetailItem label="Falla reportada" value={att.reportedFault ?? "—"} className="sm:col-span-2" />
+        {os[0] && (
+          <DetailItem label="Orden de servicio" value={`${os[0].folio} · ${os[0].status.replaceAll("_", " ")}`} />
+        )}
+      </DetailGrid>
+
       {diag && (
-        <Card className="p-4 text-sm">
-          <h2 className="font-semibold">Diagnóstico</h2>
-          <p>
-            {diag.priority} · {DIAG_STATUS[diag.status] ?? diag.status} · snapshot ${diag.snapshotPriceMxn} / SLA{" "}
-            {diag.snapshotSlaDays}d hábiles (desde ingreso físico del equipo)
-          </p>
-          {diag.warrantyValidUntil && (
-            <p className="text-slate-600">
-              Vigencia garantía hasta: {new Date(diag.warrantyValidUntil).toLocaleDateString("es-MX")} (6 meses desde
-              salida pagada)
-            </p>
-          )}
-          {diag.warrantyOutcome && diag.warrantyOutcome !== "PENDIENTE" && (
-            <p>Garantía: {diag.warrantyOutcome.replaceAll("_", " ")}</p>
-          )}
-          {production && <p className="text-xs text-slate-500">Producción atribuida (cierre validado).</p>}
-          {canEdit && diag.status === "ABIERTO" && (
-            <form action={advanceDiagnosisStatusAction} className="mt-2">
-              <input type="hidden" name="diagnosisId" value={diag.id} />
-              <input type="hidden" name="target" value="EN_TRABAJO" />
-              <button type="submit" className="rounded border px-2 py-1 text-xs">Iniciar diagnóstico</button>
-            </form>
-          )}
-          {canEdit && (diag.status === "EN_TRABAJO" || diag.status === "DEVUELTO_CORRECCION") && (
-            <form action={advanceDiagnosisStatusAction} className="mt-2">
-              <input type="hidden" name="diagnosisId" value={diag.id} />
-              <input type="hidden" name="target" value="TERMINADO" />
-              <button type="submit" className="rounded bg-accent px-2 py-1 text-xs text-white">Marcar terminado</button>
-            </form>
-          )}
-          {canValidateDiagnosis(session) && diag.status === "PENDIENTE_VALIDACION_GERENTE" && (
-            <form action={validateDiagnosisAction} className="mt-2 inline">
-              <input type="hidden" name="diagnosisId" value={diag.id} />
-              <button type="submit" className="rounded border px-2 py-1 text-xs">Validar gerente</button>
-            </form>
-          )}
-          {canReturnDiagnosis(session) && diag.status === "PENDIENTE_VALIDACION_GERENTE" && (
-            <form action={returnDiagnosisAction} className="mt-3 space-y-1 border-t pt-2">
-              <input type="hidden" name="diagnosisId" value={diag.id} />
-              <input name="reason" required placeholder="Motivo devolución" className="w-full rounded border px-2 py-1 text-xs" />
-              <input name="instruction" required placeholder="Instrucción al técnico" className="w-full rounded border px-2 py-1 text-xs" />
-              <button type="submit" className="text-xs text-red-700 underline">Devolver a corrección</button>
-            </form>
-          )}
-          {canValidateDiagnosis(session) &&
-            att.attentionType === "DIAGNOSTICO_GARANTIA" &&
-            diag.status === "VALIDADO_GERENTE" &&
-            diag.warrantyOutcome === "PENDIENTE" && (
-              <div className="mt-2 flex gap-2">
-                <form action={resolveWarrantyAction}>
-                  <input type="hidden" name="diagnosisId" value={diag.id} />
-                  <input type="hidden" name="outcome" value="PROCEDENTE" />
-                  <button type="submit" className="text-xs underline">Garantía procedente</button>
-                </form>
-                <form action={resolveWarrantyAction}>
-                  <input type="hidden" name="diagnosisId" value={diag.id} />
-                  <input type="hidden" name="outcome" value="NO_PROCEDENTE" />
-                  <button type="submit" className="text-xs underline">No procedente</button>
-                </form>
+        <>
+          <SectionCard icon={Stethoscope} title="Diagnóstico" description="Flujo de validación gerencial." tone="accent">
+            {diagSteps.length > 0 && (
+              <div className="mb-5">
+                <WorkflowStrip steps={diagSteps} />
               </div>
             )}
-          {diag.warrantyOutcome === "NO_PROCEDENTE" && (session.role === "CEO" || session.role === "ADMINISTRADOR") && (
-            <form action={ceoOverrideWarrantyAction} className="mt-2">
-              <input type="hidden" name="diagnosisId" value={diag.id} />
-              <button type="submit" className="text-xs text-accent underline">CEO: convertir a garantía válida</button>
-            </form>
-          )}
-          {corrections.length > 0 && (
-            <ul className="mt-2 space-y-1 text-xs text-slate-600">
-              {corrections.map((c) => (
-                <li key={c.id}>
-                  Devolución {new Date(c.createdAt).toLocaleString("es-MX")}: {c.reason} — {c.instruction}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+            <dl className="grid gap-3 text-sm sm:grid-cols-3">
+              <div>
+                <dt className="text-xs font-semibold uppercase text-slate-500">Prioridad</dt>
+                <dd className="font-medium">{diag.priority}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase text-slate-500">Snapshot precio</dt>
+                <dd className="font-medium">{formatMxnDisplay(diag.snapshotPriceMxn)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase text-slate-500">SLA</dt>
+                <dd className="font-medium">{diag.snapshotSlaDays} días hábiles</dd>
+              </div>
+            </dl>
+            {diag.warrantyValidUntil && (
+              <p className="mt-3 text-sm text-slate-600">
+                Vigencia garantía hasta {new Date(diag.warrantyValidUntil).toLocaleDateString("es-MX")}
+              </p>
+            )}
+            {diag.warrantyOutcome && diag.warrantyOutcome !== "PENDIENTE" && (
+              <p className="mt-2 text-sm">Garantía: <StatusBadge status={diag.warrantyOutcome} /></p>
+            )}
+            {production && <p className="mt-2 text-xs text-slate-500">Producción atribuida al cierre validado.</p>}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {canEdit && diag.status === "ABIERTO" && (
+                <form action={advanceDiagnosisStatusAction}>
+                  <input type="hidden" name="diagnosisId" value={diag.id} />
+                  <input type="hidden" name="target" value="EN_TRABAJO" />
+                  <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>Iniciar diagnóstico</button>
+                </form>
+              )}
+              {canEdit && (diag.status === "EN_TRABAJO" || diag.status === "DEVUELTO_CORRECCION") && (
+                <form action={advanceDiagnosisStatusAction}>
+                  <input type="hidden" name="diagnosisId" value={diag.id} />
+                  <input type="hidden" name="target" value="TERMINADO" />
+                  <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Marcar terminado</button>
+                </form>
+              )}
+              {canValidateDiagnosis(session) && diag.status === "PENDIENTE_VALIDACION_GERENTE" && (
+                <form action={validateDiagnosisAction}>
+                  <input type="hidden" name="diagnosisId" value={diag.id} />
+                  <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Validar gerente</button>
+                </form>
+              )}
+            </div>
+
+            {canReturnDiagnosis(session) && diag.status === "PENDIENTE_VALIDACION_GERENTE" && (
+              <form action={returnDiagnosisAction} className="mt-4 space-y-3 rounded-xl border border-red-200 bg-red-50/50 p-4">
+                <p className="text-xs font-semibold text-red-900">Devolver a corrección</p>
+                <input type="hidden" name="diagnosisId" value={diag.id} />
+                <Field label="Motivo">
+                  <Input name="reason" required />
+                </Field>
+                <Field label="Instrucción al técnico">
+                  <Input name="instruction" required />
+                </Field>
+                <button type="submit" className={buttonVariants({ variant: "danger", size: "sm" })}>Devolver</button>
+              </form>
+            )}
+
+            {canValidateDiagnosis(session) &&
+              att.attentionType === "DIAGNOSTICO_GARANTIA" &&
+              diag.status === "VALIDADO_GERENTE" &&
+              diag.warrantyOutcome === "PENDIENTE" && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <form action={resolveWarrantyAction}>
+                    <input type="hidden" name="diagnosisId" value={diag.id} />
+                    <input type="hidden" name="outcome" value="PROCEDENTE" />
+                    <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Garantía procedente</button>
+                  </form>
+                  <form action={resolveWarrantyAction}>
+                    <input type="hidden" name="diagnosisId" value={diag.id} />
+                    <input type="hidden" name="outcome" value="NO_PROCEDENTE" />
+                    <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>No procedente</button>
+                  </form>
+                </div>
+              )}
+            {diag.warrantyOutcome === "NO_PROCEDENTE" && (session.role === "CEO" || session.role === "ADMINISTRADOR") && (
+              <form action={ceoOverrideWarrantyAction} className="mt-3">
+                <input type="hidden" name="diagnosisId" value={diag.id} />
+                <button type="submit" className={buttonVariants({ variant: "ghost", size: "sm" })}>CEO: convertir a garantía válida</button>
+              </form>
+            )}
+            {corrections.length > 0 && (
+              <ul className="mt-4 space-y-2 border-t border-border pt-4 text-xs text-slate-600">
+                {corrections.map((c) => (
+                  <li key={c.id}>
+                    <span className="font-medium">{new Date(c.createdAt).toLocaleString("es-MX")}</span>: {c.reason} — {c.instruction}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </>
       )}
 
       {repair && (
-        <Card className="p-4 text-sm">
-          <h2 className="font-semibold">Reparación preautorizada</h2>
-          <p>
+        <SectionCard icon={Wrench} title="Reparación preautorizada" description="Actualiza estado operativo del taller.">
+          <p className="text-sm text-slate-600">
             Prioridad {repair.priority} · +{repair.snapshotIncrementPercent}% · SLA {repair.snapshotSlaDays}d ·{" "}
-            {repair.status.replaceAll("_", " ")}
+            <StatusBadge status={repair.status} />
           </p>
           {canEdit && (
-            <div className="mt-2 flex flex-wrap gap-1">
+            <div className="mt-4 flex flex-wrap gap-2">
               {(["EN_REPARACION", "EN_ESPERA_REFACCIONES", "REPARACION_TERMINADA", "SIN_REPARACION"] as const).map((st) => (
                 <form key={st} action={updateRepairStatusAction}>
                   <input type="hidden" name="repairId" value={repair.id} />
                   <input type="hidden" name="status" value={st} />
-                  <button type="submit" className="rounded border px-2 py-0.5 text-xs">{st.replaceAll("_", " ")}</button>
+                  <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                    {st.replaceAll("_", " ")}
+                  </button>
                 </form>
               ))}
             </div>
           )}
-        </Card>
+        </SectionCard>
       )}
 
-      {os[0] && <p className="text-sm">OS: {os[0].folio} — {os[0].status.replaceAll("_", " ")}</p>}
       {canEdit && os.length === 0 && att.attentionType === "DIAGNOSTICO" && (
-        <form action={createServiceOrderAction}>
-          <input type="hidden" name="attendanceId" value={att.id} />
-          <button type="submit" className="rounded-md border px-3 py-1 text-sm">Crear OS</button>
-        </form>
+        <SectionCard icon={Activity} title="Orden de servicio" description="Crea la OS cuando el diagnóstico lo amerite.">
+          <form action={createServiceOrderAction}>
+            <input type="hidden" name="attendanceId" value={att.id} />
+            <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Crear OS</button>
+          </form>
+        </SectionCard>
       )}
 
       {canAssignExternalService(session) && att.attentionType !== "REPARACION" && (
-        <Card className="border-dashed p-4 text-sm">
-          <h2 className="font-semibold">Servicio externo (SYSTRON)</h2>
-          <ul className="mt-2 space-y-1">
+        <SectionCard icon={FileWarning} title="Servicio externo" description="Salida y retorno con proveedor SYSTRON." tone="muted">
+          <ul className="mb-4 space-y-2 text-sm">
             {externalCases.map((c) => (
-              <li key={c.id}>
-                Proveedor {c.supplierId.slice(0, 8)}… Salida: {c.outboundAt ? "sí" : "no"} Retorno:{" "}
-                {c.inboundAt ? "sí" : "pendiente"}
+              <li key={c.id} className="rounded-lg border border-border px-3 py-2">
+                Proveedor {c.supplierId.slice(0, 8)}… · Salida: {c.outboundAt ? "sí" : "no"} · Retorno: {c.inboundAt ? "sí" : "pendiente"}
                 {!c.inboundAt && (
-                  <form action={registerExternalServiceInboundAction} className="inline ml-2">
+                  <form action={registerExternalServiceInboundAction} className="mt-2 flex flex-wrap gap-2">
                     <input type="hidden" name="caseId" value={c.id} />
-                    <input name="note" placeholder="Nota retorno" className="rounded border px-1 text-xs" />
-                    <button type="submit" className="text-xs underline">Retorno</button>
+                    <Input name="note" placeholder="Nota de retorno" className="!mt-0 h-8 max-w-xs text-xs" />
+                    <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>Registrar retorno</button>
                   </form>
                 )}
               </li>
             ))}
           </ul>
-          <form action={registerExternalServiceOutboundAction} className="mt-2 flex flex-wrap gap-1">
+          <form action={registerExternalServiceOutboundAction} className="grid gap-3 sm:grid-cols-3">
             <input type="hidden" name="attendanceId" value={att.id} />
-            <select name="supplierId" required className="rounded border px-2 py-1 text-xs">
-              <option value="">Proveedor</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-            <input name="note" placeholder="Motivo salida" className="rounded border px-2 py-1 text-xs" />
-            <button type="submit" className="text-xs underline">Registrar salida a proveedor</button>
+            <Field label="Proveedor">
+              <Select name="supplierId" required>
+                <option value="">Seleccionar</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Motivo salida">
+              <Input name="note" required placeholder="Referencia" />
+            </Field>
+            <div className="flex items-end">
+              <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Registrar salida</button>
+            </div>
           </form>
-        </Card>
+        </SectionCard>
       )}
 
-      <Card className="p-4">
-        <h2 className="text-sm font-semibold">Bitácora técnica (inmutable)</h2>
-        <ul className="mt-2 space-y-2 text-sm">
+      <SectionCard icon={ScrollText} title="Bitácora técnica" description="Registro inmutable de la atención.">
+        <ul className="space-y-2 text-sm">
+          {logs.length === 0 && <li className="text-slate-500">Sin entradas.</li>}
           {logs.map((b) => (
-            <li key={b.id} className="rounded border px-2 py-1">
-              {b.body}
-              <span className="block text-xs text-slate-500">{new Date(b.createdAt).toLocaleString("es-MX")}</span>
+            <li key={b.id} className="rounded-xl border border-border px-4 py-3">
+              <p>{b.body}</p>
+              <span className="mt-1 block text-xs text-slate-500">{new Date(b.createdAt).toLocaleString("es-MX")}</span>
             </li>
           ))}
         </ul>
         {canEdit && (
-          <form action={addTechnicalLogAction} className="mt-3 space-y-2">
+          <form action={addTechnicalLogAction} className="mt-4 space-y-3 border-t border-border pt-4">
             <input type="hidden" name="attendanceId" value={att.id} />
             {att.motId && <input type="hidden" name="motId" value={att.motId} />}
-            <textarea name="body" required rows={2} className="w-full rounded border px-2 py-1 text-sm" placeholder="Nueva entrada" />
-            <button type="submit" className="text-sm text-accent">Agregar</button>
+            <Field label="Nueva entrada">
+              <Textarea name="body" required rows={3} placeholder="Avance técnico…" />
+            </Field>
+            <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>Agregar</button>
           </form>
         )}
-      </Card>
+      </SectionCard>
     </div>
   );
 }
