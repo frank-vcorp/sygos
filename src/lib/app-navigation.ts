@@ -1,7 +1,13 @@
 import type { SessionUser } from "@/lib/session";
 import { canConfigureIntegrations } from "@/lib/permissions";
 import { canManageOperationalUsers } from "@/lib/permissions-users";
-import { canConfirmMotIngress, canViewEqui, canViewMot } from "@/lib/permissions-activos";
+import {
+  canConfirmMotIngress,
+  canManageSystronWarehouse,
+  canViewEqui,
+  canViewMot,
+  isSystronTechnicalRole,
+} from "@/lib/permissions-activos";
 
 export type NavIcon =
   | "home"
@@ -38,15 +44,25 @@ export function buildNavigation(session: SessionUser): NavGroup[] {
   if (canConfirmMotIngress(session)) {
     assets.push({ href: "/app/mot/servomotores", label: "Custodia SM", icon: "shield" });
   }
-  if (session.activeCompany.code === "SYSTRON") {
+  if (canManageSystronWarehouse(session)) {
     assets.push({ href: "/app/almacen", label: "Almacén", icon: "package" });
   }
 
-  operations.push(
-    { href: "/app/tecnica", label: "Operación técnica", icon: "wrench" },
-    { href: "/app/cotizaciones", label: "Cotizaciones", icon: "file" },
-    { href: "/app/inventario", label: "Inventario", icon: "package" },
-  );
+  operations.push({ href: "/app/tecnica", label: "Operación técnica", icon: "wrench" });
+  if (!isSystronTechnicalRole(session.role) || session.role === "SUPERVISOR_TECNICO_SYSTRON") {
+    operations.push({ href: "/app/cotizaciones", label: "Cotizaciones", icon: "file" });
+  }
+  if (!isSystronTechnicalRole(session.role)) {
+    operations.push({ href: "/app/inventario", label: "Inventario", icon: "package" });
+  }
+
+  if (session.role === "KIOSCO_ASISTENCIA") {
+    return [{ label: "Kiosco", items: [{ href: "/app/kiosco", label: "Asistencia", icon: "clock" }] }];
+  }
+
+  if (isSystronTechnicalRole(session.role) || session.role === "ALMACEN_SYSTRON") {
+    commercial.splice(1, 1);
+  }
 
   const purchaseRoles = [
     "ADMINISTRADOR",
@@ -90,7 +106,7 @@ export function buildNavigation(session: SessionUser): NavGroup[] {
     );
   }
 
-  if (session.role === "KIOSCO_ASISTENCIA" || session.role === "ADMINISTRADOR") {
+  if (session.role === "ADMINISTRADOR") {
     system.push({ href: "/app/kiosco", label: "Kiosco", icon: "clock" });
   }
   if (canManageOperationalUsers(session.role)) {

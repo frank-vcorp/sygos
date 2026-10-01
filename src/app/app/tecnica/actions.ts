@@ -39,6 +39,9 @@ async function requireSession() {
 
 export async function createAttendanceAction(formData: FormData) {
   const session = await requireSession();
+  if (!canManageTechnicalState(session, session.activeCompany.id)) {
+    throw new Error("Sin permiso para abrir atenciones técnicas");
+  }
   const attentionType = String(formData.get("attentionType") ?? "DIAGNOSTICO") as
     | "DIAGNOSTICO"
     | "REPARACION"

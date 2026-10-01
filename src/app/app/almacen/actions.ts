@@ -5,18 +5,13 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/db/client";
 import { equiUnits } from "@/db/schema";
 import { logEquiWarehouseEvent } from "@/lib/custody-events";
+import { canManageSystronWarehouse } from "@/lib/permissions-activos";
 import { getSession } from "@/lib/session";
 
 async function requireSystronWarehouse() {
   const session = await getSession();
   if (!session) throw new Error("No autenticado");
-  if (session.activeCompany.code !== "SYSTRON") throw new Error("Almacén SYSTRON solo en empresa SYSTRON");
-  const ok =
-    session.role === "ADMINISTRADOR" ||
-    session.role === "CEO" ||
-    session.role === "ALMACEN_SYSTRON" ||
-    session.role === "GERENTE_OPERATIVO_SYSTRON";
-  if (!ok) throw new Error("Sin permiso");
+  if (!canManageSystronWarehouse(session)) throw new Error("Sin permiso");
   return session;
 }
 

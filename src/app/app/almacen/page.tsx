@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { canManageSystronWarehouse } from "@/lib/permissions-activos";
 import { getSession } from "@/lib/session";
 import { PageHeader } from "@/components/patterns/page-header";
 import { Card, StatusBadge } from "@/components/ui/surface";
@@ -22,7 +23,7 @@ const WH_LABEL: Record<string, string> = {
 export default async function AlmacenPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (session.activeCompany.code !== "SYSTRON") redirect("/app");
+  if (!canManageSystronWarehouse(session)) redirect("/app");
 
   const rows = await listEquiWarehouse(session.activeCompany.id);
 

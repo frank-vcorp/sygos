@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { canManageTechnicalState } from "@/lib/permissions-tecnica";
 import { getSession } from "@/lib/session";
 import { getEqui, listEquiForCompany, listMotVisible } from "../../activos/actions";
 import { createAttendanceAction } from "../actions";
@@ -14,6 +15,7 @@ export default async function NuevaAtencionPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (!canManageTechnicalState(session, session.activeCompany.id)) redirect("/app");
   const { equiId: preselectedEquiId } = await searchParams;
 
   const equi = session.activeCompany.code === "SYSTRON" ? await listEquiForCompany(session.activeCompany.id) : [];

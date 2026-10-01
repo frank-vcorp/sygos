@@ -1,7 +1,10 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  attendances,
+  diagnoses,
   documentRequests,
+  equiUnits,
   invoices,
   payments,
   payableBalances,
@@ -88,4 +91,90 @@ export async function gerenteSmPanelSnapshot(companyId: string) {
     .where(and(eq(pendingReceipts.companyId, companyId), eq(pendingReceipts.status, "PENDIENTE")))
     .limit(10);
   return { pendingQuotes, production, purchases: buys, pendingReceipts: pendingReceiptsRows };
+}
+
+export async function gerenteSystronHomeSnapshot(companyId: string) {
+  const db = getDb();
+  const [sinEntradaRow, pendingQuotes, pendingValidation] = await Promise.all([
+    db
+      .select({ n: sql<number>`count(*)` })
+      .from(equiUnits)
+      .where(
+        and(
+          eq(equiUnits.companyId, companyId),
+          eq(equiUnits.active, true),
+          eq(equiUnits.warehouseStatus, "SIN_ENTRADA"),
+        ),
+      ),
+    db
+      .select()
+      .from(quotes)
+      .where(and(eq(quotes.companyId, companyId), eq(quotes.pendingPricing, true)))
+      .limit(8),
+    db
+      .select({
+        attendanceId: attendances.id,
+        equiFolio: equiUnits.folio,
+        attentionType: attendances.attentionType,
+      })
+      .from(diagnoses)
+      .innerJoin(attendances, eq(diagnoses.attendanceId, attendances.id))
+      .leftJoin(equiUnits, eq(equiUnits.id, attendances.equiId))
+      .where(
+        and(
+          eq(attendances.companyId, companyId),
+          eq(attendances.active, true),
+          eq(diagnoses.status, "PENDIENTE_VALIDACION_GERENTE"),
+        ),
+      )
+      .orderBy(desc(diagnoses.updatedAt))
+      .limit(10),
+  ]);
+  return {
+    equiSinEntrada: Number(sinEntradaRow[0]?.n ?? 0),
+    pendingQuotes,
+    pendingValidation,
+  };
+}
+
+export async function systronTechnicalHomeSnapshot(companyId: string) {
+  const db = getDb();
+  const openStatuses = ["ABIERTO", "EN_TRABAJO", "DEVUELTO_CORRECCION"] as const;
+  const openDiagnoses = await db
+    .select({
+      attendanceId: attendances.id,
+      equiFolio: equiUnits.folio,
+      diagnosisStatus: diagnoses.status,
+      attentionType: attendances.attentionType,
+    })
+    .from(attendances)
+    .innerJoin(diagnoses, eq(diagnoses.attendanceId, attendances.id))
+    .leftJoin(equiUnits, eq(equiUnits.id, attendances.equiId))
+    .where(
+      and(
+        eq(attendances.companyId, companyId),
+        eq(attendances.active, true),
+        inArray(diagnoses.status, [...openStatuses]),
+      ),
+    )
+    .orderBy(desc(attendances.updatedAt))
+    .limit(12);
+  return { openDiagnoses };
+}
+
+export async function almacenSystronHomeSnapshot(companyId: string) {
+  const db = getDb();
+  const sinEntrada = await db
+    .select({ id: equiUnits.id, folio: equiUnits.folio, model: equiUnits.model })
+    .from(equiUnits)
+    .where(
+      and(
+        eq(equiUnits.companyId, companyId),
+        eq(equiUnits.active, true),
+        eq(equiUnits.warehouseStatus, "SIN_ENTRADA"),
+      ),
+    )
+    .orderBy(desc(equiUnits.createdAt))
+    .limit(12);
+  return { sinEntrada };
 }

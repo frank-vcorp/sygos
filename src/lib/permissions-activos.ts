@@ -47,3 +47,22 @@ export function canConfirmMotIngress(session: SessionUser) {
     (ADMIN_ROLES.has(session.role) || session.role === "GERENTE_OPERATIVO_SERVOMOTORES")
   );
 }
+
+/** Entrada/salida EQUI en Almacén SYSTRON (no incluye solo consulta). */
+export function canManageSystronWarehouse(session: SessionUser) {
+  if (session.activeCompany.code !== "SYSTRON") return false;
+  return (
+    ADMIN_ROLES.has(session.role) ||
+    session.role === "ALMACEN_SYSTRON" ||
+    session.role === "GERENTE_OPERATIVO_SYSTRON"
+  );
+}
+
+const SYSTRON_TECH_ROLES = new Set<SessionUser["role"]>([
+  "TECNICO_SYSTRON",
+  "SUPERVISOR_TECNICO_SYSTRON",
+]);
+
+export function isSystronTechnicalRole(role: SessionUser["role"]) {
+  return SYSTRON_TECH_ROLES.has(role);
+}
