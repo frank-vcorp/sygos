@@ -110,7 +110,11 @@ async function main() {
     const home = await gotoOk(page, "/app");
     if (home.ok) ok("rol-ger-systron-inicio");
     else bad("rol-ger-systron-inicio");
-    const panel = await gotoOk(page, "/app/paneles/gerente-systron", ["Gerencia SYSTRON"]);
+    const panel = await gotoOk(page, "/app/paneles/gerente-systron", [
+      "Gerencia SYSTRON",
+      "Diagnósticos por validar",
+      "Operación técnica",
+    ]);
     if (panel.ok) ok("rol-ger-systron-panel");
     else bad("rol-ger-systron-panel", panel.text.slice(0, 60));
     await gotoOk(page, "/app/cotizaciones/pendientes");

@@ -17,7 +17,10 @@
     "uat:full": "node scripts/uat-browser-full.mjs",
     "uat:cierre": "node scripts/uat-plan-cierre-staging.mjs",
     "uat:e2e": "node scripts/uat-e2e-recorridos.mjs",
-    "uat:e2e:r1": "node scripts/uat-e2e-recorrido1-equi.mjs"
+    "uat:e2e:r1": "node scripts/uat-e2e-recorrido1-equi.mjs",
+    "uat:e2e:r2": "node scripts/uat-e2e-recorrido2-mot-sm.mjs",
+    "uat:e2e:r3": "node scripts/uat-e2e-recorrido3-mot-interco.mjs",
+    "uat:e2e:nightly": "node scripts/uat-e2e-nightly.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

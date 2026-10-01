@@ -46,8 +46,11 @@ async function requireCoord() {
   const session = await getSession();
   if (!session || !canGenerateFiscalDocuments(session)) throw new Error("Sin permiso");
   const { isUserInTestMode } = await import("@/lib/test-mode-guard");
+  const { isStagingUatHost } = await import("@/lib/staging-uat");
   const test = await isUserInTestMode(session.id);
-  if (test.active) throw new Error("Modo pruebas: finanzas reales bloqueadas para este usuario");
+  if (test.active && !(await isStagingUatHost())) {
+    throw new Error("Modo pruebas: finanzas reales bloqueadas para este usuario");
+  }
   return session;
 }
 

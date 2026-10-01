@@ -467,6 +467,7 @@ export async function confirmMotIngressAction(formData: FormData) {
     motId: id,
     clientId: mot.systronClientId ?? mot.servomotoresClientId ?? undefined,
   });
+  redirect(`/app/mot/${id}`);
 }
 
 export async function motTrialExitAction(formData: FormData) {

@@ -2,6 +2,7 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { equiUnits } from "@/db/schema";
 import { logEquiWarehouseEvent } from "@/lib/custody-events";
@@ -50,6 +51,7 @@ export async function registerEquiEntryAction(formData: FormData) {
   });
   revalidatePath("/app/almacen");
   revalidatePath(`/app/equi/${id}`);
+  redirect(`/app/equi/${id}`);
 }
 
 export async function registerEquiTrialExitAction(formData: FormData) {
