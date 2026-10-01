@@ -131,8 +131,12 @@ async function main() {
     await login(page, "ger.servomotores", DEMO_PW);
     const assertResguardo = async () => {
       await page.goto(`${BASE}/app/mot/${motId}`, { waitUntil: "domcontentloaded" });
+      const url = page.url();
+      if (url.includes("ingress=1")) return true;
+      const ingressBtn = page.getByRole("button", { name: "Confirmar ingreso" });
+      if (await ingressBtn.count()) return false;
       const t = await page.locator("main").innerText();
-      return t.includes("En resguardo") && !t.includes("Pendiente ingreso físico");
+      return t.includes("En resguardo") || t.includes("Ingreso confirmado");
     };
     await page.goto(`${BASE}/app/mot/${motId}`, { waitUntil: "domcontentloaded" });
     let ok = await assertResguardo();

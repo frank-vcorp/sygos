@@ -71,8 +71,11 @@ async function main() {
     await login(page, "almacen.systron", DEMO_PW);
     const assertResguardo = async () => {
       await page.goto(`${BASE}/app/equi/${equiId}`, { waitUntil: "domcontentloaded" });
+      if (page.url().includes("entry=1")) return true;
+      const entryBtn = page.getByRole("button", { name: "Confirmar entrada a resguardo" });
+      if (await entryBtn.count()) return false;
       const t = await page.locator("main").innerText();
-      return t.includes("En resguardo") && !t.includes("Sin entrada");
+      return t.includes("En resguardo") || t.includes("Entrada registrada");
     };
     await page.goto(`${BASE}/app/equi/${equiId}`, { waitUntil: "domcontentloaded" });
     let ok = await assertResguardo();

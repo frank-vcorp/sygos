@@ -318,7 +318,10 @@ export default async function MotDetallePage({
             {custodyHistory.map((ev) => (
               <li key={ev.id} className="rounded-xl border border-border bg-slate-50/50 px-4 py-3">
                 <span className="font-semibold">
-                  {STATUS_LABEL[ev.fromStatus ?? ""] ?? ev.fromStatus ?? "—"} → {STATUS_LABEL[ev.toStatus] ?? ev.toStatus}
+                  {(ev.fromStatus === "PENDIENTE_INGRESO_SERVOMOTORES"
+                    ? "Pendiente ingreso"
+                    : STATUS_LABEL[ev.fromStatus ?? ""] ?? ev.fromStatus ?? "—")}{" "}
+                  → {STATUS_LABEL[ev.toStatus] ?? ev.toStatus}
                 </span>
                 <span className="text-slate-500"> · {new Date(ev.createdAt).toLocaleString("es-MX")}</span>
                 {ev.recipient && <p className="mt-1 text-slate-600">Recibe: {ev.recipient}</p>}
