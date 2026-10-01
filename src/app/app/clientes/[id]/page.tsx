@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Cpu, FileText, Stethoscope } from "lucide-react";
+import { Cpu, FileText, Receipt, ReceiptText, Stethoscope } from "lucide-react";
+import { formatMxnDisplay } from "@/lib/format-currency";
+import { canViewClientBilling } from "@/lib/permissions-finance";
 import { PageHeader } from "@/components/patterns/page-header";
 import { SectionCard } from "@/components/patterns/section-card";
 import { buttonVariants } from "@/components/ui/button";
@@ -14,6 +16,7 @@ import {
   listEquiForClient,
 } from "../../activos/actions";
 import { listQuotesForClient } from "../../cotizaciones/actions";
+import { listInvoicesForClient, listRemissionsForClient } from "../../finanzas/actions";
 import {
   addClientContactAction,
   cancelClientAction,
@@ -63,6 +66,14 @@ export default async function ClienteDetallePage({
     : [[], [], []];
 
   const pendingQuotes = quoteRows.filter((q) => q.pendingPricing);
+  const showBilling = canViewClientBilling(session);
+
+  const [invoiceRows, remissionRows] = showBilling
+    ? await Promise.all([
+        listInvoicesForClient(client.id, session.activeCompany.id),
+        listRemissionsForClient(client.id, session.activeCompany.id),
+      ])
+    : [[], []];
 
   return (
     <div className="space-y-6">
@@ -208,6 +219,82 @@ export default async function ClienteDetallePage({
                     </span>
                     <Link href={`/app/cotizaciones/${q.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
                       Abrir cotización
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </>
+      )}
+
+      {showBilling && (
+        <>
+          <SectionCard
+            icon={Receipt}
+            title="Facturas"
+            description="Documentos fiscales del cliente; enlace a cotización origen cuando aplica."
+            tone={invoiceRows.length ? "default" : "muted"}
+          >
+            {invoiceRows.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Sin facturas registradas.{" "}
+                <Link href="/app/finanzas" className="font-medium text-accent hover:underline">
+                  Ver módulo Finanzas
+                </Link>
+              </p>
+            ) : (
+              <ul className="divide-y rounded-xl border border-border">
+                {invoiceRows.map(({ invoice: inv, quoteFolio, quoteId }) => (
+                  <li key={inv.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-accent">{inv.folio}</span>
+                      <StatusBadge status={inv.status} />
+                      <span className="text-slate-600">{formatMxnDisplay(inv.totalMxn)}</span>
+                      {quoteFolio && quoteId && (
+                        <Link href={`/app/cotizaciones/${quoteId}`} className="text-xs text-accent hover:underline">
+                          COT {quoteFolio}
+                        </Link>
+                      )}
+                    </span>
+                    <Link href="/app/finanzas" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Finanzas
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            icon={ReceiptText}
+            title="Remisiones"
+            description="Entregas con obligación de facturar o salida física autorizada."
+            tone={remissionRows.length ? "default" : "muted"}
+          >
+            {remissionRows.length === 0 ? (
+              <p className="text-sm text-slate-500">Sin remisiones para este cliente.</p>
+            ) : (
+              <ul className="divide-y rounded-xl border border-border">
+                {remissionRows.map(({ remission: rem, quoteFolio, quoteId }) => (
+                  <li key={rem.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-accent">{rem.folio}</span>
+                      <span className="text-slate-600">{formatMxnDisplay(rem.totalMxn)}</span>
+                      {rem.allowsPhysicalExit && (
+                        <span className="text-xs text-emerald-700">Permite salida física</span>
+                      )}
+                      {rem.invoiceObligationRemains && (
+                        <span className="text-xs text-amber-700">Pendiente facturar</span>
+                      )}
+                      {quoteFolio && quoteId && (
+                        <Link href={`/app/cotizaciones/${quoteId}`} className="text-xs text-accent hover:underline">
+                          COT {quoteFolio}
+                        </Link>
+                      )}
+                    </span>
+                    <Link href="/app/finanzas" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Finanzas
                     </Link>
                   </li>
                 ))}

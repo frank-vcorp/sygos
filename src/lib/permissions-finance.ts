@@ -28,3 +28,13 @@ export function canRegisterPayment(session: SessionUser) {
     session.role === "GERENTE_OPERATIVO_SERVOMOTORES"
   );
 }
+
+/** Ver facturas/remisiones del cliente en ficha comercial (lectura). */
+export function canViewClientBilling(session: SessionUser) {
+  return (
+    canRequestInvoice(session) ||
+    canGenerateFiscalDocuments(session) ||
+    session.role === "GERENTE_OPERATIVO_SYSTRON" ||
+    session.role === "COORDINACION_ADMIN"
+  );
+}

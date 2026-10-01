@@ -848,6 +848,7 @@ export const remissions = pgTable("remissions", {
   clientId: uuid("client_id")
     .notNull()
     .references(() => clients.id),
+  quoteId: uuid("quote_id").references(() => quotes.id),
   folio: text("folio").notNull(),
   totalMxn: integer("total_mxn").notNull().default(0),
   allowsPhysicalExit: boolean("allows_physical_exit").notNull().default(false),

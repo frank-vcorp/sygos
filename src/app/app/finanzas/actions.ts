@@ -13,9 +13,11 @@ import {
   payments,
   pendingReceipts,
   receivableBalances,
+  quotes,
   remissions,
   storedDocuments,
 } from "@/db/schema";
+import { revalidateCommercialHub } from "@/lib/revalidate-commercial-hub";
 import {
   applyIntercompanyPayment,
   applyValidatedPayment,
@@ -92,6 +94,45 @@ export async function listDocumentRequestsForQuote(quoteId: string, companyId: s
     .orderBy(desc(documentRequests.createdAt));
 }
 
+export async function listInvoicesForClient(clientId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      invoice: invoices,
+      quoteFolio: quotes.folio,
+      quoteId: quotes.id,
+    })
+    .from(invoices)
+    .leftJoin(quotes, eq(invoices.quoteId, quotes.id))
+    .where(and(eq(invoices.clientId, clientId), eq(invoices.companyId, companyId)))
+    .orderBy(desc(invoices.createdAt))
+    .limit(50);
+}
+
+export async function listRemissionsForClient(clientId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      remission: remissions,
+      quoteFolio: quotes.folio,
+      quoteId: quotes.id,
+    })
+    .from(remissions)
+    .leftJoin(quotes, eq(remissions.quoteId, quotes.id))
+    .where(and(eq(remissions.clientId, clientId), eq(remissions.companyId, companyId)))
+    .orderBy(desc(remissions.createdAt))
+    .limit(50);
+}
+
+export async function listRemissionsForQuote(quoteId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(remissions)
+    .where(and(eq(remissions.quoteId, quoteId), eq(remissions.companyId, companyId)))
+    .orderBy(desc(remissions.createdAt));
+}
+
 export async function requestDocumentAction(formData: FormData) {
   const session = await getSession();
   if (!session) throw new Error("No autenticado");
@@ -109,7 +150,7 @@ export async function requestDocumentAction(formData: FormData) {
     requestedByUserId: session.id,
   });
   revalidatePath("/app/finanzas");
-  if (quoteId) revalidatePath(`/app/cotizaciones/${quoteId}`);
+  await revalidateCommercialHub({ clientId, quoteId });
 }
 
 export async function createInvoiceAction(formData: FormData) {
@@ -145,7 +186,7 @@ export async function createInvoiceAction(formData: FormData) {
   await openReceivableForInvoice(inv.id, session.activeCompany.id, clientId, totalMxn);
   await stampInvoiceWithFacturapi(inv.id, session.activeCompany.id);
   revalidatePath("/app/finanzas");
-  if (quoteId) revalidatePath(`/app/cotizaciones/${quoteId}`);
+  await revalidateCommercialHub({ clientId, quoteId });
 }
 
 export async function createFreeInvoiceAction(formData: FormData) {
@@ -168,6 +209,7 @@ export async function createFreeInvoiceAction(formData: FormData) {
 export async function createRemissionAction(formData: FormData) {
   const session = await requireCoord();
   const clientId = String(formData.get("clientId") ?? "");
+  const quoteId = String(formData.get("quoteId") ?? "") || null;
   const totalMxn = Number(formData.get("totalMxn") ?? 0);
   const allowsExit = formData.get("allowsExit") === "on";
   const db = getDb();
@@ -177,12 +219,14 @@ export async function createRemissionAction(formData: FormData) {
     .values({
       companyId: session.activeCompany.id,
       clientId,
+      quoteId,
       folio: `REM-${n.padStart(4, "0")}`,
       totalMxn,
       allowsPhysicalExit: allowsExit,
       invoiceObligationRemains: true,
     });
   revalidatePath("/app/finanzas");
+  await revalidateCommercialHub({ clientId, quoteId });
 }
 
 export async function registerPaymentAction(formData: FormData) {

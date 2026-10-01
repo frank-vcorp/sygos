@@ -6,4 +6,5 @@ export async function ensureDbPatches() {
   const db = getDb();
   await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "brand_logo_path" text`);
   await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "brand_logo_mime_type" text`);
+  await db.execute(sql`ALTER TABLE "remissions" ADD COLUMN IF NOT EXISTS "quote_id" uuid`);
 }

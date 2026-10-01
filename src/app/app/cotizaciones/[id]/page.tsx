@@ -28,7 +28,14 @@ import {
   canRequestInvoice,
   canRequestRemission,
 } from "@/lib/permissions-finance";
-import { createInvoiceAction, listDocumentRequestsForQuote, listInvoicesForQuote, requestDocumentAction } from "../../finanzas/actions";
+import {
+  createInvoiceAction,
+  createRemissionAction,
+  listDocumentRequestsForQuote,
+  listInvoicesForQuote,
+  listRemissionsForQuote,
+  requestDocumentAction,
+} from "../../finanzas/actions";
 import {
   applyQuoteDiscountAction,
   authorizeWithoutEquipmentAction,
@@ -62,12 +69,14 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
   }
   const authorized =
     quote.status === "AUTORIZADA" || quote.status === "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO";
-  const [contacts, origin, quoteInvoices, quoteDocRequests] = await Promise.all([
+  const [contacts, origin, quoteInvoices, quoteRemissions, quoteDocRequests] = await Promise.all([
     listContactsForClient(quote.clientId),
     getQuoteOriginLinks(quote.attendanceId),
     authorized ? listInvoicesForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
+    authorized ? listRemissionsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
     authorized ? listDocumentRequestsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
   ]);
+  const fiscalDone = quoteInvoices.length > 0 || quoteRemissions.length > 0;
   const showSupplierCost = canSeeSupplierCost(session);
   const hideCostFromVendedor = session.role === "VENTAS_SYSTRON";
   const hasPrice = quote.finalPriceMxn != null || quote.priceMxn != null;
@@ -103,13 +112,13 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
     {
       id: "fiscal",
       label: "Fiscal",
-      detail: quoteInvoices.length
-        ? `${quoteInvoices.length} factura(s) ligada(s)`
+      detail: fiscalDone
+        ? `${quoteInvoices.length} factura(s) · ${quoteRemissions.length} remisión(es)`
         : authorized
-          ? "Solicitar factura o remisión"
+          ? "Solicitar o generar factura / remisión"
           : "Tras autorización del cliente",
-      done: quoteInvoices.length > 0,
-      current: authorized && quoteInvoices.length === 0,
+      done: fiscalDone,
+      current: authorized && !fiscalDone,
     },
   ];
 
@@ -299,24 +308,54 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
           icon={Receipt}
           title="Documentos fiscales"
           description="Cola comercial → coordinación. Factura timbrada o remisión según política del cliente."
-          tone={quoteInvoices.length ? "default" : "accent"}
+          tone={fiscalDone ? "default" : "accent"}
         >
           {quoteInvoices.length > 0 && (
-            <ul className="mb-4 divide-y rounded-xl border border-border text-sm">
-              {quoteInvoices.map((inv) => (
-                <li key={inv.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                  <span>
-                    <span className="font-mono text-xs font-bold text-accent">{inv.folio}</span>
-                    <span className="text-slate-500"> · </span>
-                    <StatusBadge status={inv.status} />
-                    <span className="text-slate-600"> · {formatMxnDisplay(inv.totalMxn)}</span>
-                  </span>
-                  <Link href="/app/finanzas" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                    Ver en Finanzas
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <>
+              <p className="mb-2 text-xs font-semibold uppercase text-slate-500">Facturas</p>
+              <ul className="mb-4 divide-y rounded-xl border border-border text-sm">
+                {quoteInvoices.map((inv) => (
+                  <li key={inv.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                    <span>
+                      <span className="font-mono text-xs font-bold text-accent">{inv.folio}</span>
+                      <span className="text-slate-500"> · </span>
+                      <StatusBadge status={inv.status} />
+                      <span className="text-slate-600"> · {formatMxnDisplay(inv.totalMxn)}</span>
+                    </span>
+                    <Link href="/app/finanzas" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Ver en Finanzas
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {quoteRemissions.length > 0 && (
+            <>
+              <p className="mb-2 text-xs font-semibold uppercase text-slate-500">Remisiones</p>
+              <ul className="mb-4 divide-y rounded-xl border border-border text-sm">
+                {quoteRemissions.map((rem) => (
+                  <li key={rem.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-accent">{rem.folio}</span>
+                      <span className="text-slate-600">{formatMxnDisplay(rem.totalMxn)}</span>
+                      {rem.allowsPhysicalExit && (
+                        <span className="text-xs text-emerald-700">Salida física</span>
+                      )}
+                      {rem.invoiceObligationRemains && (
+                        <span className="text-xs text-amber-700">Pendiente facturar</span>
+                      )}
+                    </span>
+                    <Link
+                      href={`/app/clientes/${quote.clientId}`}
+                      className={buttonVariants({ variant: "ghost", size: "sm" })}
+                    >
+                      Ver en cliente
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
           {quoteDocRequests.length > 0 && (
             <ul className="mb-4 space-y-1 text-xs text-slate-600">
@@ -357,6 +396,20 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
                 <input type="hidden" name="contractTotalMxn" value={displayTotal} />
                 <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>
                   Generar factura (coord.)
+                </button>
+              </form>
+            )}
+            {canGenerateFiscalDocuments(session) && displayTotal != null && (
+              <form action={createRemissionAction} className="flex flex-wrap items-center gap-3">
+                <input type="hidden" name="clientId" value={quote.clientId} />
+                <input type="hidden" name="quoteId" value={quote.id} />
+                <input type="hidden" name="totalMxn" value={displayTotal} />
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" name="allowsExit" />
+                  Permite salida física
+                </label>
+                <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                  Generar remisión (coord.)
                 </button>
               </form>
             )}
