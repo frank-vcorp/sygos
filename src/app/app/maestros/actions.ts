@@ -238,6 +238,81 @@ export async function createProspectAction(formData: FormData) {
   redirect(`/app/prospectos/${row.id}`);
 }
 
+export async function convertProspectToClientAction(formData: FormData) {
+  const session = await requireSession();
+  if (!canManageProspects(session.role, session.activeCompany.code)) {
+    throw new Error("Sin permiso");
+  }
+
+  const id = String(formData.get("id") ?? "");
+  const version = Number(formData.get("version") ?? 0);
+  const confirmDuplicate = formData.get("confirmDuplicate") === "1";
+  if (!id || !version) throw new Error("Datos incompletos");
+
+  const db = getDb();
+  const prospect = await getProspect(session.activeCompany.id, id);
+  if (!prospect || !prospect.active) throw new Error("Prospecto no encontrado");
+  if (prospect.convertedClientId) {
+    redirect(`/app/clientes/${prospect.convertedClientId}`);
+  }
+
+  if (!confirmDuplicate) {
+    const dupes = await findLikelyDuplicateClients(session.activeCompany.id, prospect.name, null);
+    if (dupes.length > 0) {
+      const sp = new URLSearchParams();
+      sp.set("duplicateWarning", "1");
+      sp.set("duplicateIds", dupes.map((d) => d.id).join(","));
+      redirect(`/app/prospectos/${id}?${sp.toString()}`);
+    }
+  }
+
+  const folio = await assignClientFolio(session.activeCompany.id, session.activeCompany.code);
+  const [client] = await db
+    .insert(clients)
+    .values({
+      companyId: session.activeCompany.id,
+      folio,
+      name: prospect.name,
+      responsibleUserId: prospect.responsibleUserId ?? session.id,
+      requiresInvoice: true,
+      creditDays: 0,
+    })
+    .returning();
+
+  const updated = await db
+    .update(prospects)
+    .set({
+      status: "CONVERTIDO",
+      convertedClientId: client.id,
+      version: version + 1,
+      updatedAt: sql`now()`,
+    })
+    .where(
+      and(
+        eq(prospects.id, id),
+        eq(prospects.companyId, session.activeCompany.id),
+        eq(prospects.version, version),
+      ),
+    )
+    .returning({ id: prospects.id });
+
+  if (updated.length === 0) redirect(`/app/prospectos/${id}?conflict=1`);
+
+  await logMasterEvent({
+    companyId: session.activeCompany.id,
+    entityType: "PROSPECT",
+    entityId: id,
+    eventType: "UPDATED",
+    actorUserId: session.id,
+    reason: `Convertido a cliente ${client.folio ?? client.id}`,
+  });
+
+  revalidatePath("/app/prospectos");
+  revalidatePath(`/app/prospectos/${id}`);
+  revalidatePath("/app/clientes");
+  redirect(`/app/clientes/${client.id}`);
+}
+
 export async function updateProspectAction(formData: FormData) {
   const session = await requireSession();
   if (!canManageProspects(session.role, session.activeCompany.code)) {

@@ -110,7 +110,9 @@ export default async function ComprasPage({
             {rows.map((p) => (
               <tr key={p.id} className="align-top hover:bg-slate-50/80">
                 <td className="px-5 py-4">
-                  <p className="font-semibold">{p.description}</p>
+                  <Link href={`/app/compras/movimientos/${p.id}`} className="font-semibold text-accent hover:underline">
+                    {p.description}
+                  </Link>
                   <p className="text-xs text-slate-500">{p.calendarMonth}</p>
                 </td>
                 <td className="px-5 py-4 font-medium">{formatMxnDisplay(p.amountMxn)}</td>
@@ -171,7 +173,11 @@ export default async function ComprasPage({
           <tbody className="divide-y">
             {orders.map((o) => (
               <tr key={o.id} className="align-top hover:bg-slate-50/80">
-                <td className="px-5 py-4 font-mono text-xs font-bold text-accent">{o.folio}</td>
+                <td className="px-5 py-4">
+                  <Link href={`/app/compras/ordenes/${o.id}`} className="font-mono text-xs font-bold text-accent hover:underline">
+                    {o.folio}
+                  </Link>
+                </td>
                 <td className="px-5 py-4 font-semibold">{o.description}</td>
                 <td className="px-5 py-4">{formatMxnDisplay(o.amountMxn)}</td>
                 <td className="px-5 py-4"><StatusBadge status={o.status} /></td>

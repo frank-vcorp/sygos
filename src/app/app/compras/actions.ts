@@ -2,8 +2,9 @@
 
 import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { purchaseOrders, purchases } from "@/db/schema";
+import { cashDisbursements, purchaseOrders, purchases, suppliers } from "@/db/schema";
 import { settlePurchaseAsDisbursement, settlePurchaseAsPayable } from "@/lib/purchase-settlement";
 import { nextCompanyFolio } from "@/lib/folio";
 import {
@@ -33,6 +34,37 @@ export async function listPurchaseOrders(companyId: string) {
     .where(eq(purchaseOrders.companyId, companyId))
     .orderBy(desc(purchaseOrders.createdAt))
     .limit(100);
+}
+
+export async function getPurchaseOrderDetail(companyId: string, id: string) {
+  const db = getDb();
+  const [po] = await db
+    .select()
+    .from(purchaseOrders)
+    .where(and(eq(purchaseOrders.id, id), eq(purchaseOrders.companyId, companyId)))
+    .limit(1);
+  if (!po) return null;
+
+  const linkedPurchases = await db.select().from(purchases).where(eq(purchases.purchaseOrderId, po.id));
+  return { po, linkedPurchases };
+}
+
+export async function getPurchaseDetail(companyId: string, id: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      purchase: purchases,
+      supplierName: suppliers.name,
+      poFolio: purchaseOrders.folio,
+      disbursementFolio: cashDisbursements.folio,
+    })
+    .from(purchases)
+    .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
+    .leftJoin(purchaseOrders, eq(purchases.purchaseOrderId, purchaseOrders.id))
+    .leftJoin(cashDisbursements, eq(purchases.cashDisbursementId, cashDisbursements.id))
+    .where(and(eq(purchases.id, id), eq(purchases.companyId, companyId)))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function getPurchaseBudgetSummary(companyId: string) {
@@ -118,6 +150,7 @@ export async function createPurchaseOrderAction(formData: FormData) {
       .where(eq(purchases.id, purchaseId));
   }
   revalidatePath("/app/compras");
+  redirect(`/app/compras/ordenes/${po.id}`);
 }
 
 export async function authorizePurchaseOrderAction(formData: FormData) {
@@ -177,6 +210,8 @@ export async function processPurchaseOrderAction(formData: FormData) {
 
   await db.update(purchaseOrders).set({ status: "PROCESADA" }).where(eq(purchaseOrders.id, poId));
   revalidatePath("/app/compras");
+  revalidatePath(`/app/compras/ordenes/${poId}`);
+  redirect(`/app/compras/movimientos/${purchase.id}`);
 }
 
 export async function validateDirectPurchaseAction(formData: FormData) {
@@ -197,6 +232,7 @@ export async function validateDirectPurchaseAction(formData: FormData) {
     await settlePurchaseAsPayable(session.activeCompany.id, purchaseId, supplierId, p.amountMxn);
   }
   revalidatePath("/app/compras");
+  redirect(`/app/compras/movimientos/${purchaseId}`);
 }
 
 export async function editPurchaseOrderAction(formData: FormData) {
