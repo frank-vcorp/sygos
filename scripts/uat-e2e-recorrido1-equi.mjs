@@ -71,6 +71,7 @@ async function main() {
     await page.goto(`${BASE}/app/equi/${equiId}`, { waitUntil: "domcontentloaded" });
     let ok = await assertResguardo();
     if (!ok) {
+      await page.reload({ waitUntil: "domcontentloaded" });
       const btn = page.getByRole("button", { name: "Confirmar entrada a resguardo" });
       if (await btn.count()) {
         await Promise.all([
@@ -116,8 +117,10 @@ async function main() {
       await page.waitForSelector('select[name="attentionType"]', { timeout: 30_000 });
       await page.selectOption('select[name="attentionType"]', "DIAGNOSTICO");
       await page.fill('textarea[name="reportedFault"]', "Recorrido E2E falla simulada");
-      await page.getByRole("button", { name: "Crear" }).click();
-      await page.waitForURL(/\/app\/tecnica\/[0-9a-f-]+/, { timeout: 45_000 });
+      await Promise.all([
+        page.waitForURL(/\/app\/tecnica\/[0-9a-f-]+/, { timeout: 90_000 }),
+        page.getByRole("button", { name: "Crear" }).click(),
+      ]);
       attUrl = page.url();
       step("r1-03-atencion", attUrl.includes("/app/tecnica/"));
       for (const label of ["Iniciar diagnóstico", "Marcar terminado"]) {

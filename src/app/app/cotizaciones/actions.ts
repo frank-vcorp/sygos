@@ -180,14 +180,6 @@ export async function sendQuoteAction(formData: FormData) {
   if (!quote) throw new Error("Cotización no encontrada");
   if (!quote.finalPriceMxn && !quote.priceMxn) throw new Error("CEO/Administrador debe fijar precio antes de enviar");
 
-  const contacts = await db
-    .select()
-    .from(clientContacts)
-    .where(and(eq(clientContacts.clientId, quote.clientId), inArray(clientContacts.id, contactIds)));
-  if (contacts.length !== contactIds.length) {
-    throw new Error("Uno o más contactos no son válidos para este cliente");
-  }
-
   const markQuoteSent = async () => {
     await db
       .update(quotes)
@@ -198,6 +190,14 @@ export async function sendQuoteAction(formData: FormData) {
   };
 
   try {
+    const contacts = await db
+      .select()
+      .from(clientContacts)
+      .where(and(eq(clientContacts.clientId, quote.clientId), inArray(clientContacts.id, contactIds)));
+    if (contacts.length !== contactIds.length) {
+      throw new Error("Uno o más contactos no son válidos para este cliente");
+    }
+
     for (const contactId of contactIds) {
       await db.insert(quoteSendContacts).values({ quoteId, contactId });
     }
