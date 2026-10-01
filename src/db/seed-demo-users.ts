@@ -50,6 +50,27 @@ const DEMO_USERS: DemoUserSpec[] = [
     homeCode: "SYSTRON",
     multiCompany: false,
   },
+  {
+    username: "sup.tecnico.systron",
+    displayName: "Supervisor técnico SYSTRON",
+    role: "SUPERVISOR_TECNICO_SYSTRON",
+    homeCode: "SYSTRON",
+    multiCompany: false,
+  },
+  {
+    username: "tecnico.systron",
+    displayName: "Técnico SYSTRON",
+    role: "TECNICO_SYSTRON",
+    homeCode: "SYSTRON",
+    multiCompany: false,
+  },
+  {
+    username: "kiosco",
+    displayName: "Kiosco asistencia",
+    role: "KIOSCO_ASISTENCIA",
+    homeCode: "SERVOMOTORES",
+    multiCompany: false,
+  },
 ];
 
 export async function seedDemoUsers() {
