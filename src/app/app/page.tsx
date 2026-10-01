@@ -292,7 +292,7 @@ export default async function AppHomePage() {
                 label="Diagnósticos por validar"
                 value={gerenteSystron.pendingValidation.length}
                 icon={Stethoscope}
-                href="/app/tecnica"
+                href="/app/paneles/gerente-systron"
                 tone="amber"
               />
               <MetricCard

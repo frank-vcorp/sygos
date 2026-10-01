@@ -1,6 +1,8 @@
 # Recorridos E2E (staging)
 
-Ejecutar en https://sygos.vector-ia.mx con usuarios demo (`SYGOS_SEED_DEMO_USERS=1`).
+Ejecutar en https://sygos.systronia.com con usuarios demo (`SYGOS_SEED_DEMO_USERS=1`).
+
+Automatizado parcial (sin timbrado real): `node scripts/uat-plan-cierre-staging.mjs` con secrets en env.
 
 1. **SYSTRON EQUI** — Almacén → EQUI → Técnica → Cotización → decisión cliente → Factura (coord).
 2. **Servomotores cliente directo** — MOT → Custodia SM → Técnica → Cotización → Egreso → Finanzas.

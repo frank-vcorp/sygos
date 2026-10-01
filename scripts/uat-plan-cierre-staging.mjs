@@ -30,8 +30,13 @@ async function switchCo(page, name) {
   const b = page.locator(`header button:has-text("${name}")`).first();
   if (await b.isEnabled().catch(() => false)) {
     await b.click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
   }
+  await page.waitForFunction(
+    (n) => document.querySelector("header")?.innerText.includes(n),
+    name,
+    { timeout: 15_000 },
+  ).catch(() => {});
 }
 
 async function main() {
@@ -46,16 +51,18 @@ async function main() {
     await switchCo(page, "Servomotores");
     await page.goto(`${BASE}/app/finanzas`, { waitUntil: "domcontentloaded" });
     const amt = 4500;
-    await page.locator('input[placeholder*="intercompañía"]').fill(String(amt));
-    await page.getByRole("button", { name: "CxC/CxP" }).click();
+    const intercoForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Facturar a SYSTRON" }) });
+    await intercoForm.locator('input[name="amountMxn"]').fill(String(amt));
+    await intercoForm.getByRole("button", { name: "Facturar a SYSTRON" }).click();
     await page.waitForTimeout(2000);
     await page.reload();
     const txt = await page.locator("main").innerText();
     step("f5-interco-factura-cxc-cxp", txt.includes("FAC-") || txt.includes("BORRADOR"), "SM finanzas");
     await switchCo(page, "SYSTRON");
     await page.goto(`${BASE}/app/finanzas`, { waitUntil: "domcontentloaded" });
-    await page.locator('input[placeholder*="Pago parcial"]').fill("2000");
-    await page.getByRole("button", { name: /Registrar pago/i }).click();
+    const payForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Registrar pago", exact: true }) }).first();
+    await payForm.locator('input[name="amountMxn"]').fill("2000");
+    await payForm.getByRole("button", { name: "Registrar pago", exact: true }).click();
     await page.waitForTimeout(2000);
     await page.reload();
     const txt2 = await page.locator("main").innerText();

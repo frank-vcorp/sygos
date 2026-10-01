@@ -94,6 +94,12 @@ export function buildNavigation(session: SessionUser): NavGroup[] {
   if (["GERENTE_OPERATIVO_SERVOMOTORES", "CEO", "ADMINISTRADOR"].includes(session.role)) {
     insights.push({ href: "/app/paneles/gerente-sm", label: "Gerencia SM", icon: "chart" });
   }
+  if (
+    ["GERENTE_OPERATIVO_SYSTRON", "CEO", "ADMINISTRADOR"].includes(session.role) &&
+    session.activeCompany.code === "SYSTRON"
+  ) {
+    insights.push({ href: "/app/paneles/gerente-systron", label: "Gerencia SYSTRON", icon: "chart" });
+  }
   if (purchaseRoles.includes(session.role)) {
     insights.push({ href: "/app/paneles/reportes", label: "Reportes", icon: "chart" });
   }
