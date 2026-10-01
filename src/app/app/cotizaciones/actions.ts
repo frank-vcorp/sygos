@@ -2,6 +2,7 @@
 
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
@@ -42,8 +43,11 @@ async function requireCommercial() {
 }
 
 /** Staging UAT: marcar ENVIADA aunque SendGrid/WhatsApp fallen (p. ej. API key inválida). */
-function allowQuoteSendWithoutDelivery() {
+async function allowQuoteSendWithoutDelivery() {
   if (process.env.SYGOS_RELAX_QUOTE_SEND === "1") return true;
+  const h = await headers();
+  const host = (h.get("x-forwarded-host") ?? h.get("host") ?? "").toLowerCase();
+  if (host.includes("systronia.com")) return true;
   const fqdn = process.env.COOLIFY_FQDN?.trim() ?? "";
   const publicUrl = process.env.SYGOS_PUBLIC_URL?.trim() ?? "";
   const coolifyUrl = process.env.COOLIFY_URL?.trim() ?? "";
@@ -247,7 +251,7 @@ export async function sendQuoteAction(formData: FormData) {
     const allChannelsFailed =
       errors.length > 0 && errors.every((e) => /\(correo\)|\(WhatsApp\)/.test(e));
     const relaxStaging =
-      allowQuoteSendWithoutDelivery() && (allChannelsFailed || errors.length === 0);
+      (await allowQuoteSendWithoutDelivery()) && (allChannelsFailed || errors.length === 0);
     if (!stagingWithoutIntegration && !relaxStaging) {
       throw new Error(errors.join(" · ") || "No se pudo enviar por ningún canal");
     }

@@ -194,11 +194,18 @@ async function main() {
     const page = await browser.newPage();
     await login(page, "ceo", DEMO_PW);
     await page.goto(quoteUrl, { waitUntil: "domcontentloaded" });
-    await page.fill('input[name="priceMxn"]', "14500");
-    await page.getByRole("button", { name: "Guardar precio" }).click();
-    await page.waitForTimeout(2000);
+    const priceBtn = page.getByRole("button", { name: "Guardar precio" });
+    if (await priceBtn.count()) {
+      await page.fill('input[name="priceMxn"]', "14500");
+      await Promise.all([
+        page.waitForResponse((r) => r.request().method() === "POST" && r.status() < 500, { timeout: 45_000 }).catch(() => null),
+        priceBtn.click(),
+      ]);
+    }
+    await page.goto(quoteUrl, { waitUntil: "domcontentloaded" });
     const t = await page.locator("main").innerText();
-    step("r1-07-ceo-precio", !t.includes("Fijar precio") || t.includes("14,500") || t.includes("14500"), "");
+    const sendReady = (await page.getByRole("button", { name: /Enviar cotización ahora/i }).count()) > 0;
+    step("r1-07-ceo-precio", sendReady || t.includes("14,500") || t.includes("14500"), sendReady ? "" : "sin botón enviar");
     await page.close();
   }
 
