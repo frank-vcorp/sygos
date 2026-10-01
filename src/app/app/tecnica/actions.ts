@@ -69,6 +69,12 @@ export async function createAttendanceAction(formData: FormData) {
     if (!mot) throw new Error("MOT no encontrado");
     motOrigin = mot.originCompanyCode;
     assertSystronMotTechnicalRule(session.activeCompany.code, attentionType, motOrigin, true);
+    if (
+      session.activeCompany.code === "SERVOMOTORES" &&
+      mot.custodyStatus === "PENDIENTE_INGRESO_SERVOMOTORES"
+    ) {
+      throw new Error("Confirma el ingreso físico del motor en Servomotores antes de abrir la atención técnica.");
+    }
   }
 
   const [row] = await db
@@ -124,7 +130,7 @@ export async function createAttendanceAction(formData: FormData) {
   }
 
   revalidatePath("/app/tecnica");
-  await revalidateCommercialHub({ equiId, attendanceId: row.id });
+  await revalidateCommercialHub({ equiId, motId, attendanceId: row.id });
   redirect(`/app/tecnica/${row.id}`);
 }
 

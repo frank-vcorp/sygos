@@ -19,6 +19,7 @@ import {
   canViewEqui,
   canViewMot,
 } from "@/lib/permissions-activos";
+import { revalidateCommercialHub } from "@/lib/revalidate-commercial-hub";
 import { getSession } from "@/lib/session";
 
 async function requireSession() {
@@ -125,6 +126,89 @@ export async function listEquiForClient(clientId: string, companyId: string) {
     )
     .orderBy(desc(equiUnits.updatedAt))
     .limit(50);
+}
+
+export async function listMotForClient(
+  clientId: string,
+  companyId: string,
+  companyCode: "SYSTRON" | "SERVOMOTORES",
+) {
+  const db = getDb();
+  if (companyCode === "SYSTRON") {
+    return db
+      .select()
+      .from(motUnits)
+      .where(
+        and(
+          eq(motUnits.systronClientId, clientId),
+          eq(motUnits.originCompanyId, companyId),
+          eq(motUnits.active, true),
+        ),
+      )
+      .orderBy(desc(motUnits.updatedAt))
+      .limit(50);
+  }
+  return db
+    .select()
+    .from(motUnits)
+    .where(and(eq(motUnits.servomotoresClientId, clientId), eq(motUnits.active, true)))
+    .orderBy(desc(motUnits.updatedAt))
+    .limit(50);
+}
+
+export async function listAttendancesForClientViaMot(clientId: string, companyCode: "SYSTRON" | "SERVOMOTORES") {
+  const db = getDb();
+  const clientCol =
+    companyCode === "SYSTRON" ? motUnits.systronClientId : motUnits.servomotoresClientId;
+  return db
+    .select({
+      attendance: attendances,
+      motFolio: motUnits.folio,
+      motId: motUnits.id,
+    })
+    .from(attendances)
+    .innerJoin(motUnits, eq(attendances.motId, motUnits.id))
+    .where(and(eq(clientCol, clientId), eq(attendances.active, true)))
+    .orderBy(desc(attendances.updatedAt))
+    .limit(30);
+}
+
+export async function listQuotesForMot(motId: string) {
+  const db = getDb();
+  return db
+    .select({ quote: quotes })
+    .from(quotes)
+    .innerJoin(attendances, eq(quotes.attendanceId, attendances.id))
+    .where(eq(attendances.motId, motId))
+    .orderBy(desc(quotes.createdAt))
+    .limit(50);
+}
+
+export async function getMotDetailEnriched(id: string) {
+  const mot = await getMot(id);
+  if (!mot) return null;
+  const db = getDb();
+  const [systronClient, smClient] = await Promise.all([
+    mot.systronClientId
+      ? db
+          .select({ id: clients.id, name: clients.name })
+          .from(clients)
+          .where(eq(clients.id, mot.systronClientId))
+          .limit(1)
+      : Promise.resolve([]),
+    mot.servomotoresClientId
+      ? db
+          .select({ id: clients.id, name: clients.name })
+          .from(clients)
+          .where(eq(clients.id, mot.servomotoresClientId))
+          .limit(1)
+      : Promise.resolve([]),
+  ]);
+  return {
+    mot,
+    systronClient: systronClient[0] ?? null,
+    smClient: smClient[0] ?? null,
+  };
 }
 
 export async function listAttendancesForClientViaEqui(clientId: string, companyId: string) {
@@ -293,6 +377,7 @@ export async function createMotSystronAction(formData: FormData) {
     .returning();
 
   revalidatePath("/app/mot");
+  revalidatePath(`/app/clientes/${clientId}`);
   redirect(`/app/mot/${row.id}`);
 }
 
@@ -332,6 +417,7 @@ export async function createMotServomotoresAction(formData: FormData) {
     .returning();
 
   revalidatePath("/app/mot");
+  revalidatePath(`/app/clientes/${clientId}`);
   redirect(`/app/mot/${row.id}`);
 }
 
@@ -377,6 +463,10 @@ export async function confirmMotIngressAction(formData: FormData) {
 
   revalidatePath("/app/mot");
   revalidatePath(`/app/mot/${id}`);
+  await revalidateCommercialHub({
+    motId: id,
+    clientId: mot.systronClientId ?? mot.servomotoresClientId ?? undefined,
+  });
 }
 
 export async function motTrialExitAction(formData: FormData) {

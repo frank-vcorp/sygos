@@ -3,10 +3,11 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/db/client";
 import { attendances, equiUnits, quotes } from "@/db/schema";
 
-/** Invalida vistas enlazadas del tronco Cliente → EQUI → Técnica → Cotización. */
+/** Invalida vistas enlazadas del tronco Cliente → EQUI/MOT → Técnica → Cotización. */
 export async function revalidateCommercialHub(opts: {
   clientId?: string | null;
   equiId?: string | null;
+  motId?: string | null;
   attendanceId?: string | null;
   quoteId?: string | null;
 }) {
@@ -29,9 +30,19 @@ export async function revalidateCommercialHub(opts: {
     }
   }
 
-  if (opts.attendanceId && !equiId) {
+  let motId = opts.motId ?? null;
+  if (opts.attendanceId && (!equiId || !motId)) {
     const [att] = await db.select().from(attendances).where(eq(attendances.id, opts.attendanceId)).limit(1);
-    equiId = att?.equiId ?? null;
+    equiId = equiId ?? att?.equiId ?? null;
+    motId = motId ?? att?.motId ?? null;
+  }
+
+  if (opts.quoteId && !motId) {
+    const [q] = await db.select().from(quotes).where(eq(quotes.id, opts.quoteId)).limit(1);
+    if (q?.attendanceId) {
+      const [att] = await db.select().from(attendances).where(eq(attendances.id, q.attendanceId)).limit(1);
+      motId = att?.motId ?? null;
+    }
   }
 
   if (equiId && !clientId) {
@@ -44,5 +55,6 @@ export async function revalidateCommercialHub(opts: {
   }
 
   if (equiId) revalidatePath(`/app/equi/${equiId}`);
+  if (motId) revalidatePath(`/app/mot/${motId}`);
   if (clientId) revalidatePath(`/app/clientes/${clientId}`);
 }

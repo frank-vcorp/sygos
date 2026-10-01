@@ -2,29 +2,45 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { canManageTechnicalState } from "@/lib/permissions-tecnica";
 import { getSession } from "@/lib/session";
-import { getEqui, listEquiForCompany, listMotVisible } from "../../activos/actions";
+import { getEqui, getMot, listEquiForCompany, listMotVisible } from "../../activos/actions";
 import { createAttendanceAction } from "../actions";
 import { PageHeader } from "@/components/patterns/page-header";
 import { Card } from "@/components/ui/surface";
 import { buttonVariants } from "@/components/ui/button";
 
+const MOT_STATUS_SHORT: Record<string, string> = {
+  PENDIENTE_INGRESO_SERVOMOTORES: "sin ingreso SM",
+  EN_RESGUARDO_SERVOMOTORES: "en resguardo",
+  SALIDA_PRUEBA: "salida prueba",
+  EGRESADO: "egresado",
+};
+
 export default async function NuevaAtencionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ equiId?: string }>;
+  searchParams: Promise<{ equiId?: string; motId?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!canManageTechnicalState(session, session.activeCompany.id)) redirect("/app");
-  const { equiId: preselectedEquiId } = await searchParams;
+  const { equiId: preselectedEquiId, motId: preselectedMotId } = await searchParams;
 
   const equi = session.activeCompany.code === "SYSTRON" ? await listEquiForCompany(session.activeCompany.id) : [];
   const mot = await listMotVisible();
 
-  const preselected =
+  const preselectedEqui =
     preselectedEquiId && session.activeCompany.code === "SYSTRON"
       ? await getEqui(session.activeCompany.id, preselectedEquiId)
       : null;
+
+  const preselectedMot = preselectedMotId ? await getMot(preselectedMotId) : null;
+
+  const motBlocked =
+    preselectedMot &&
+    session.activeCompany.code === "SERVOMOTORES" &&
+    preselectedMot.custodyStatus === "PENDIENTE_INGRESO_SERVOMOTORES";
+
+  const equiBlocked = preselectedEqui?.warehouseStatus === "SIN_ENTRADA";
 
   return (
     <div className="mx-auto max-w-lg">
@@ -32,21 +48,35 @@ export default async function NuevaAtencionPage({
         eyebrow="Operación"
         title="Nueva atención"
         description={
-          preselected
-            ? `Vinculada a ${preselected.folio}. El equipo debe tener entrada física registrada.`
-            : "Diagnóstico, reparación preautorizada o diagnóstico de garantía."
+          preselectedEqui
+            ? `Vinculada a ${preselectedEqui.folio}. El equipo debe tener entrada física registrada.`
+            : preselectedMot
+              ? `Vinculada a ${preselectedMot.folio}.`
+              : "Diagnóstico, reparación preautorizada o diagnóstico de garantía."
         }
         breadcrumbs={[
           { label: "Técnica", href: "/app/tecnica" },
-          ...(preselected ? [{ label: preselected.folio, href: `/app/equi/${preselected.id}` }] : []),
+          ...(preselectedEqui
+            ? [{ label: preselectedEqui.folio, href: `/app/equi/${preselectedEqui.id}` }]
+            : []),
+          ...(preselectedMot ? [{ label: preselectedMot.folio, href: `/app/mot/${preselectedMot.id}` }] : []),
           { label: "Nueva" },
         ]}
       />
-      {preselected?.warehouseStatus === "SIN_ENTRADA" && (
+      {equiBlocked && (
         <Card className="mb-4 border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           Este EQUI aún no tiene entrada física.{" "}
-          <Link href={`/app/equi/${preselected.id}`} className="font-semibold underline">
+          <Link href={`/app/equi/${preselectedEqui!.id}`} className="font-semibold underline">
             Regístrala en el detalle del equipo
+          </Link>{" "}
+          antes de crear la atención.
+        </Card>
+      )}
+      {motBlocked && (
+        <Card className="mb-4 border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Este motor aún no tiene ingreso físico en Servomotores.{" "}
+          <Link href={`/app/mot/${preselectedMot!.id}`} className="font-semibold underline">
+            Confírmalo en el detalle MOT
           </Link>{" "}
           antes de crear la atención.
         </Card>
@@ -64,16 +94,17 @@ export default async function NuevaAtencionPage({
               <option value="DIAGNOSTICO_GARANTIA">Diagnóstico de Garantía</option>
             </select>
           </label>
-          {equi.length > 0 && (
+          {equi.length > 0 && !preselectedMot && (
             <label className="block text-sm">
-              EQUI {preselected ? "(requerido)" : "(opcional)"}
+              EQUI {preselectedEqui ? "(requerido)" : "(opcional)"}
               <select
                 name="equiId"
-                defaultValue={preselected?.id ?? ""}
-                required={Boolean(preselected)}
+                defaultValue={preselectedEqui?.id ?? ""}
+                required={Boolean(preselectedEqui)}
+                disabled={Boolean(preselectedMot)}
                 className="mt-1 w-full rounded-md border border-border px-3 py-2"
               >
-                {!preselected && <option value="">—</option>}
+                {!preselectedEqui && <option value="">—</option>}
                 {equi.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.folio} · {WH_SHORT[e.warehouseStatus] ?? e.warehouseStatus}
@@ -82,20 +113,27 @@ export default async function NuevaAtencionPage({
               </select>
             </label>
           )}
-          {!preselected && (
+          {!preselectedEqui && (
             <label className="block text-sm">
-              MOT (opcional)
-              <select name="motId" className="mt-1 w-full rounded-md border border-border px-3 py-2">
-                <option value="">—</option>
+              MOT {preselectedMot ? "(requerido)" : "(opcional)"}
+              <select
+                name="motId"
+                defaultValue={preselectedMot?.id ?? ""}
+                required={Boolean(preselectedMot)}
+                disabled={Boolean(preselectedEqui)}
+                className="mt-1 w-full rounded-md border border-border px-3 py-2"
+              >
+                {!preselectedMot && <option value="">—</option>}
                 {mot.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.folio}
+                    {m.folio} · {MOT_STATUS_SHORT[m.custodyStatus] ?? m.custodyStatus}
                   </option>
                 ))}
               </select>
             </label>
           )}
-          {preselected && <input type="hidden" name="motId" value="" />}
+          {preselectedEqui && <input type="hidden" name="motId" value="" />}
+          {preselectedMot && <input type="hidden" name="equiId" value="" />}
           <label className="block text-sm">
             Prioridad diagnóstico
             <select name="priority" className="mt-1 w-full rounded-md border border-border px-3 py-2">
@@ -120,12 +158,18 @@ export default async function NuevaAtencionPage({
             <button
               type="submit"
               className={buttonVariants({ variant: "primary" })}
-              disabled={preselected?.warehouseStatus === "SIN_ENTRADA"}
+              disabled={Boolean(equiBlocked || motBlocked)}
             >
               Crear
             </button>
             <Link
-              href={preselected ? `/app/equi/${preselected.id}` : "/app/tecnica"}
+              href={
+                preselectedEqui
+                  ? `/app/equi/${preselectedEqui.id}`
+                  : preselectedMot
+                    ? `/app/mot/${preselectedMot.id}`
+                    : "/app/tecnica"
+              }
               className={buttonVariants({ variant: "secondary" })}
             >
               Cancelar

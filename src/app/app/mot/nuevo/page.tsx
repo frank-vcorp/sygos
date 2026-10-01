@@ -12,10 +12,15 @@ import {
   listClientsForSelect,
 } from "../../activos/actions";
 
-export default async function NuevoMotPage() {
+export default async function NuevoMotPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ clientId?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!canCreateMot(session)) redirect("/app/mot");
+  const { clientId: preselectedClientId } = await searchParams;
 
   const clientOptions = await listClientsForSelect(session.activeCompany.id).then((rows) =>
     rows.filter((c) => !c.isIntercompany),
@@ -38,7 +43,7 @@ export default async function NuevoMotPage() {
       <SectionCard title="Identidad del motor" description="Se asigna folio MOT global al guardar." tone="accent">
         <form action={isSystron ? createMotSystronAction : createMotServomotoresAction} className="grid gap-4">
           <Field label={isSystron ? "Cliente final (SYSTRON)" : "Cliente"}>
-            <Select name="clientId" required>
+            <Select name="clientId" required defaultValue={preselectedClientId ?? ""}>
               <option value="">Seleccionar…</option>
               {clientOptions.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>

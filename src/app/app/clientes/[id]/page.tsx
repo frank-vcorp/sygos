@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Cpu, FileText, Receipt, ReceiptText, Stethoscope } from "lucide-react";
+import { Cog, Cpu, FileText, Receipt, ReceiptText, Stethoscope } from "lucide-react";
 import { formatMxnDisplay } from "@/lib/format-currency";
 import { canViewClientBilling } from "@/lib/permissions-finance";
 import { PageHeader } from "@/components/patterns/page-header";
@@ -11,9 +11,13 @@ import { getSession } from "@/lib/session";
 import { canManageClients } from "@/lib/permissions";
 import {
   canCreateEqui,
+  canCreateMot,
   canViewEqui,
+  canViewMot,
   listAttendancesForClientViaEqui,
+  listAttendancesForClientViaMot,
   listEquiForClient,
+  listMotForClient,
 } from "../../activos/actions";
 import { listQuotesForClient } from "../../cotizaciones/actions";
 import { listInvoicesForClient, listRemissionsForClient } from "../../finanzas/actions";
@@ -56,14 +60,22 @@ export default async function ClienteDetallePage({
   const history = await getEntityHistory("CLIENT", client.id);
   const canEdit = canManageClients(session.role, session.activeCompany.code) && !client.isIntercompany;
   const showSystronOps = canViewEqui(session);
+  const showMotOps = canViewMot(session);
+  const showCommercialOps = showSystronOps || showMotOps;
 
-  const [equiRows, attendanceRows, quoteRows] = showSystronOps
-    ? await Promise.all([
-        listEquiForClient(client.id, session.activeCompany.id),
-        listAttendancesForClientViaEqui(client.id, session.activeCompany.id),
-        listQuotesForClient(client.id, session.activeCompany.id),
-      ])
-    : [[], [], []];
+  const [equiRows, equiAttendanceRows, motRows, motAttendanceRows, quoteRows] = await Promise.all([
+    showSystronOps ? listEquiForClient(client.id, session.activeCompany.id) : Promise.resolve([]),
+    showSystronOps
+      ? listAttendancesForClientViaEqui(client.id, session.activeCompany.id)
+      : Promise.resolve([]),
+    showMotOps
+      ? listMotForClient(client.id, session.activeCompany.id, session.activeCompany.code)
+      : Promise.resolve([]),
+    showMotOps
+      ? listAttendancesForClientViaMot(client.id, session.activeCompany.code)
+      : Promise.resolve([]),
+    showCommercialOps ? listQuotesForClient(client.id, session.activeCompany.id) : Promise.resolve([]),
+  ]);
 
   const pendingQuotes = quoteRows.filter((q) => q.pendingPricing);
   const showBilling = canViewClientBilling(session);
@@ -120,18 +132,18 @@ export default async function ClienteDetallePage({
         </div>
       </Card>
 
+      {showCommercialOps && pendingQuotes.length > 0 && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          {pendingQuotes.length} cotización(es) de este cliente{" "}
+          {pendingQuotes.length === 1 ? "requiere" : "requieren"} precio CEO.{" "}
+          <Link href="/app/cotizaciones/pendientes" className="font-semibold text-accent hover:underline">
+            Ver pendientes de precio
+          </Link>
+        </p>
+      )}
+
       {showSystronOps && (
         <>
-          {pendingQuotes.length > 0 && (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-              {pendingQuotes.length} cotización(es) de este cliente{" "}
-              {pendingQuotes.length === 1 ? "requiere" : "requieren"} precio CEO.{" "}
-              <Link href="/app/cotizaciones/pendientes" className="font-semibold text-accent hover:underline">
-                Ver pendientes de precio
-              </Link>
-            </p>
-          )}
-
           <SectionCard
             icon={Cpu}
             title="Equipos EQUI"
@@ -175,13 +187,13 @@ export default async function ClienteDetallePage({
             icon={Stethoscope}
             title="Atenciones técnicas"
             description="Operaciones vinculadas a los EQUI de este cliente."
-            tone={attendanceRows.length ? "default" : "muted"}
+            tone={equiAttendanceRows.length ? "default" : "muted"}
           >
-            {attendanceRows.length === 0 ? (
+            {equiAttendanceRows.length === 0 ? (
               <p className="text-sm text-slate-500">Aún no hay atenciones en equipos de este cliente.</p>
             ) : (
               <ul className="divide-y rounded-xl border border-border">
-                {attendanceRows.map(({ attendance: a, equiFolio, equiId }) => (
+                {equiAttendanceRows.map(({ attendance: a, equiFolio, equiId }) => (
                   <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                     <span>
                       <Link href={`/app/equi/${equiId}`} className="font-mono text-xs font-bold text-accent hover:underline">
@@ -199,26 +211,79 @@ export default async function ClienteDetallePage({
               </ul>
             )}
           </SectionCard>
+        </>
+      )}
 
+      {showMotOps && (
+        <>
           <SectionCard
-            icon={FileText}
-            title="Cotizaciones"
-            description="Comercial vinculado al cliente (técnico o iniciado en ventas)."
-            tone={quoteRows.length ? "default" : "muted"}
+            icon={Cog}
+            title="Motores MOT"
+            description="Activos del cliente — ingreso SM, técnica interco y cotizaciones vinculadas."
+            tone={motRows.length ? "default" : "muted"}
+            actions={
+              canCreateMot(session) && !client.isIntercompany ? (
+                <Link
+                  href={`/app/mot/nuevo?clientId=${client.id}`}
+                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                >
+                  Nuevo MOT
+                </Link>
+              ) : undefined
+            }
           >
-            {quoteRows.length === 0 ? (
-              <p className="text-sm text-slate-500">Sin cotizaciones registradas para este cliente.</p>
+            {motRows.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Sin motores registrados.
+                {canCreateMot(session) && !client.isIntercompany && (
+                  <>
+                    {" "}
+                    <Link href={`/app/mot/nuevo?clientId=${client.id}`} className="font-medium text-accent hover:underline">
+                      Dar de alta un MOT
+                    </Link>
+                  </>
+                )}
+              </p>
             ) : (
               <ul className="divide-y rounded-xl border border-border">
-                {quoteRows.map((q) => (
-                  <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                {motRows.map((m) => (
+                  <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-accent">{q.folio}</span>
-                      <StatusBadge status={q.status} />
-                      {q.pendingPricing && <span className="text-xs text-amber-700">Pendiente de precio</span>}
+                      <span className="font-mono text-xs font-bold text-accent">{m.folio}</span>
+                      <span className="text-slate-600">{m.model}</span>
+                      <StatusBadge status={m.custodyStatus} />
                     </span>
-                    <Link href={`/app/cotizaciones/${q.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                      Abrir cotización
+                    <Link href={`/app/mot/${m.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Abrir motor
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            icon={Stethoscope}
+            title="Atenciones MOT"
+            description="Operaciones vinculadas a motores de este cliente."
+            tone={motAttendanceRows.length ? "default" : "muted"}
+          >
+            {motAttendanceRows.length === 0 ? (
+              <p className="text-sm text-slate-500">Aún no hay atenciones en motores de este cliente.</p>
+            ) : (
+              <ul className="divide-y rounded-xl border border-border">
+                {motAttendanceRows.map(({ attendance: a, motFolio, motId }) => (
+                  <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                    <span>
+                      <Link href={`/app/mot/${motId}`} className="font-mono text-xs font-bold text-accent hover:underline">
+                        {motFolio}
+                      </Link>
+                      <span className="text-slate-500"> · </span>
+                      <span className="font-semibold">{ATT_LABEL[a.attentionType] ?? a.attentionType}</span>
+                      <span className="text-slate-500"> · {a.reportedFault ?? "Sin falla reportada"}</span>
+                    </span>
+                    <Link href={`/app/tecnica/${a.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Abrir atención
                     </Link>
                   </li>
                 ))}
@@ -226,6 +291,34 @@ export default async function ClienteDetallePage({
             )}
           </SectionCard>
         </>
+      )}
+
+      {showCommercialOps && (
+        <SectionCard
+          icon={FileText}
+          title="Cotizaciones"
+          description="Comercial vinculado al cliente (EQUI, MOT interco o ventas)."
+          tone={quoteRows.length ? "default" : "muted"}
+        >
+          {quoteRows.length === 0 ? (
+            <p className="text-sm text-slate-500">Sin cotizaciones registradas para este cliente.</p>
+          ) : (
+            <ul className="divide-y rounded-xl border border-border">
+              {quoteRows.map((q) => (
+                <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-accent">{q.folio}</span>
+                    <StatusBadge status={q.status} />
+                    {q.pendingPricing && <span className="text-xs text-amber-700">Pendiente de precio</span>}
+                  </span>
+                  <Link href={`/app/cotizaciones/${q.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                    Abrir cotización
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
       )}
 
       {showBilling && (

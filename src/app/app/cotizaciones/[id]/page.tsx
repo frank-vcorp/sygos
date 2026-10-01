@@ -39,6 +39,7 @@ import {
 import {
   applyQuoteDiscountAction,
   authorizeWithoutEquipmentAction,
+  getIntercompanyQuotePartner,
   getQuoteDetailForSession,
   getQuoteOriginLinks,
   recordQuoteClientDecisionAction,
@@ -69,9 +70,10 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
   }
   const authorized =
     quote.status === "AUTORIZADA" || quote.status === "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO";
-  const [contacts, origin, quoteInvoices, quoteRemissions, quoteDocRequests] = await Promise.all([
+  const [contacts, origin, intercoPartner, quoteInvoices, quoteRemissions, quoteDocRequests] = await Promise.all([
     listContactsForClient(quote.clientId),
     getQuoteOriginLinks(quote.attendanceId),
+    getIntercompanyQuotePartner(quote.id),
     authorized ? listInvoicesForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
     authorized ? listRemissionsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
     authorized ? listDocumentRequestsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
@@ -199,8 +201,25 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
         {showSupplierCost && quote.systronSupplierCostMxn != null && (
           <DetailItem label="Base Servomotores (CEO)" value={formatMxnDisplay(quote.systronSupplierCostMxn)} />
         )}
-        {quote.linkedQuoteId && (
-          <DetailItem label="Vinculación intercompañía" value={`Cotización SM · ${quote.linkedQuoteId.slice(0, 8)}…`} />
+        {intercoPartner && (
+          <DetailItem
+            label="Cotización espejo (interco)"
+            value={
+              intercoPartner.companyId === session.activeCompany.id ? (
+                <Link href={`/app/cotizaciones/${intercoPartner.id}`} className="font-mono text-accent hover:underline">
+                  {intercoPartner.folio}
+                </Link>
+              ) : canSwitchActiveCompany(session.role) ? (
+                <Link href={`/app/cotizaciones/${intercoPartner.id}`} className="font-mono text-accent hover:underline">
+                  {intercoPartner.folio} ({intercoPartner.companyCode === "SYSTRON" ? "SYSTRON" : "Servomotores"})
+                </Link>
+              ) : (
+                <span className="font-mono text-slate-700">
+                  {intercoPartner.folio} · {intercoPartner.companyCode === "SYSTRON" ? "SYSTRON" : "Servomotores"}
+                </span>
+              )
+            }
+          />
         )}
         {quote.authorizedWithoutEquipment && (
           <DetailItem label="Equipo físico" value="Autorizada — pendiente ingreso" />
@@ -221,6 +240,16 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
             value={
               <Link href={`/app/equi/${origin.equiId}`} className="font-mono text-accent hover:underline">
                 {origin.equiFolio}
+              </Link>
+            }
+          />
+        )}
+        {origin?.motId && origin.motFolio && (
+          <DetailItem
+            label="MOT"
+            value={
+              <Link href={`/app/mot/${origin.motId}`} className="font-mono text-accent hover:underline">
+                {origin.motFolio}
               </Link>
             }
           />

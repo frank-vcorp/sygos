@@ -8,6 +8,7 @@ import {
   attendances,
   clientContacts,
   clients,
+  companies,
   equiUnits,
   motUnits,
   quotePriceRevisions,
@@ -276,6 +277,36 @@ export async function getQuoteForAttendance(attendanceId: string, companyId: str
     .where(and(eq(quotes.attendanceId, attendanceId), eq(quotes.companyId, companyId)))
     .limit(1);
   return row ?? null;
+}
+
+export async function getIntercompanyQuotePartner(quoteId: string) {
+  const db = getDb();
+  const [q] = await db.select().from(quotes).where(eq(quotes.id, quoteId)).limit(1);
+  if (!q) return null;
+
+  let partnerId = q.linkedQuoteId;
+  if (!partnerId) {
+    const [reverse] = await db
+      .select({ id: quotes.id })
+      .from(quotes)
+      .where(eq(quotes.linkedQuoteId, quoteId))
+      .limit(1);
+    partnerId = reverse?.id ?? null;
+  }
+  if (!partnerId) return null;
+
+  const [partner] = await db
+    .select({
+      id: quotes.id,
+      folio: quotes.folio,
+      companyId: quotes.companyId,
+      companyCode: companies.code,
+    })
+    .from(quotes)
+    .innerJoin(companies, eq(quotes.companyId, companies.id))
+    .where(eq(quotes.id, partnerId))
+    .limit(1);
+  return partner ?? null;
 }
 
 export async function getQuoteOriginLinks(attendanceId: string | null) {
