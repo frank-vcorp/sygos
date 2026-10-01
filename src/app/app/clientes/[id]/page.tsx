@@ -257,8 +257,8 @@ export default async function ClienteDetallePage({
                         </Link>
                       )}
                     </span>
-                    <Link href="/app/finanzas" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                      Finanzas
+                    <Link href={`/app/finanzas/facturas/${inv.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Abrir factura
                     </Link>
                   </li>
                 ))}
@@ -293,8 +293,8 @@ export default async function ClienteDetallePage({
                         </Link>
                       )}
                     </span>
-                    <Link href="/app/finanzas" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                      Finanzas
+                    <Link href={`/app/finanzas/remisiones/${rem.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Abrir remisión
                     </Link>
                   </li>
                 ))}

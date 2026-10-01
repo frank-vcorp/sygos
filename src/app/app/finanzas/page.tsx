@@ -268,7 +268,11 @@ export default async function FinanzasPage() {
             <tbody className="divide-y">
               {invoiceRows.map(({ invoice: i, clientName }) => (
                 <tr key={i.id} className="align-top hover:bg-slate-50/80">
-                  <td className="px-5 py-4 font-mono text-xs font-semibold">{i.folio}</td>
+                  <td className="px-5 py-4 font-mono text-xs font-semibold">
+                    <Link href={`/app/finanzas/facturas/${i.id}`} className="text-accent hover:underline">
+                      {i.folio}
+                    </Link>
+                  </td>
                   <td className="px-5 py-4">{clientName}</td>
                   <td className="px-5 py-4 font-medium">{formatMxnDisplay(i.totalMxn)}</td>
                   <td className="px-5 py-4">
@@ -345,7 +349,11 @@ export default async function FinanzasPage() {
             <tbody className="divide-y">
               {remissions.map((r) => (
                 <tr key={r.id}>
-                  <td className="px-5 py-3 font-mono text-xs">{r.folio}</td>
+                  <td className="px-5 py-3 font-mono text-xs">
+                    <Link href={`/app/finanzas/remisiones/${r.id}`} className="text-accent hover:underline">
+                      {r.folio}
+                    </Link>
+                  </td>
                   <td className="px-5 py-3">{formatMxnDisplay(r.totalMxn)} {r.allowsPhysicalExit && <span className="text-xs text-slate-500">· salida</span>}</td>
                   <td className="px-5 py-3 text-right">
                     <Link href={`/api/documents/remision/${r.id}`} target="_blank" className={buttonVariants({ variant: "ghost", size: "sm" })}>

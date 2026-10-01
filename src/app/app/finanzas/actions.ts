@@ -2,6 +2,7 @@
 
 import { and, desc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
   cashDisbursements,
@@ -133,6 +134,72 @@ export async function listRemissionsForQuote(quoteId: string, companyId: string)
     .orderBy(desc(remissions.createdAt));
 }
 
+export async function getInvoiceDetail(companyId: string, id: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      invoice: invoices,
+      clientName: clients.name,
+      clientId: clients.id,
+      quoteFolio: quotes.folio,
+      quoteId: quotes.id,
+    })
+    .from(invoices)
+    .innerJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(quotes, eq(invoices.quoteId, quotes.id))
+    .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function getRemissionDetail(companyId: string, id: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      remission: remissions,
+      clientName: clients.name,
+      clientId: clients.id,
+      quoteFolio: quotes.folio,
+      quoteId: quotes.id,
+    })
+    .from(remissions)
+    .innerJoin(clients, eq(remissions.clientId, clients.id))
+    .leftJoin(quotes, eq(remissions.quoteId, quotes.id))
+    .where(and(eq(remissions.id, id), eq(remissions.companyId, companyId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function listPaymentsForInvoice(invoiceId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(payments)
+    .where(and(eq(payments.invoiceId, invoiceId), eq(payments.companyId, companyId)))
+    .orderBy(desc(payments.paidAt))
+    .limit(50);
+}
+
+export async function getReceivableForInvoice(invoiceId: string, companyId: string) {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(receivableBalances)
+    .where(and(eq(receivableBalances.invoiceId, invoiceId), eq(receivableBalances.companyId, companyId)))
+    .limit(1);
+  return row ?? null;
+}
+
+function revalidateInvoiceDetail(invoiceId: string) {
+  revalidatePath(`/app/finanzas/facturas/${invoiceId}`);
+  revalidatePath("/app/finanzas");
+}
+
+function revalidateRemissionDetail(remissionId: string) {
+  revalidatePath(`/app/finanzas/remisiones/${remissionId}`);
+  revalidatePath("/app/finanzas");
+}
+
 export async function requestDocumentAction(formData: FormData) {
   const session = await getSession();
   if (!session) throw new Error("No autenticado");
@@ -185,8 +252,9 @@ export async function createInvoiceAction(formData: FormData) {
 
   await openReceivableForInvoice(inv.id, session.activeCompany.id, clientId, totalMxn);
   await stampInvoiceWithFacturapi(inv.id, session.activeCompany.id);
-  revalidatePath("/app/finanzas");
+  revalidateInvoiceDetail(inv.id);
   await revalidateCommercialHub({ clientId, quoteId });
+  redirect(`/app/finanzas/facturas/${inv.id}`);
 }
 
 export async function createFreeInvoiceAction(formData: FormData) {
@@ -214,7 +282,7 @@ export async function createRemissionAction(formData: FormData) {
   const allowsExit = formData.get("allowsExit") === "on";
   const db = getDb();
   const n = await nextCompanyFolio(session.activeCompany.id, "REM");
-  await db
+  const [rem] = await db
     .insert(remissions)
     .values({
       companyId: session.activeCompany.id,
@@ -224,9 +292,11 @@ export async function createRemissionAction(formData: FormData) {
       totalMxn,
       allowsPhysicalExit: allowsExit,
       invoiceObligationRemains: true,
-    });
-  revalidatePath("/app/finanzas");
+    })
+    .returning();
+  revalidateRemissionDetail(rem.id);
   await revalidateCommercialHub({ clientId, quoteId });
+  redirect(`/app/finanzas/remisiones/${rem.id}`);
 }
 
 export async function registerPaymentAction(formData: FormData) {
@@ -242,7 +312,8 @@ export async function registerPaymentAction(formData: FormData) {
     validationStatus: "PENDIENTE_VALIDACION",
     createdByUserId: session.id,
   });
-  revalidatePath("/app/finanzas");
+  if (invoiceId) revalidateInvoiceDetail(invoiceId);
+  else revalidatePath("/app/finanzas");
 }
 
 export async function validatePaymentAction(formData: FormData) {
@@ -250,12 +321,14 @@ export async function validatePaymentAction(formData: FormData) {
   if (!session || !canValidatePayments(session)) throw new Error("Sin permiso");
   const paymentId = String(formData.get("paymentId") ?? "");
   const db = getDb();
+  const [pay] = await db.select().from(payments).where(eq(payments.id, paymentId)).limit(1);
   await applyValidatedPayment(paymentId);
   await db
     .update(payments)
     .set({ validatedAt: sql`now()`, validatedByUserId: session.id })
     .where(eq(payments.id, paymentId));
-  revalidatePath("/app/finanzas");
+  if (pay?.invoiceId) revalidateInvoiceDetail(pay.invoiceId);
+  else revalidatePath("/app/finanzas");
 }
 
 export async function applyCustomerCreditAction(formData: FormData) {
@@ -287,7 +360,7 @@ export async function applyCustomerCreditAction(formData: FormData) {
     })
     .returning();
   await applyValidatedPayment(p.id);
-  revalidatePath("/app/finanzas");
+  revalidateInvoiceDetail(invoiceId);
 }
 
 export async function intercompanyInvoiceAction(formData: FormData) {
@@ -306,7 +379,7 @@ export async function retryStampAction(formData: FormData) {
   const session = await requireCoord();
   const invoiceId = String(formData.get("invoiceId") ?? "");
   await retryStampInvoice(invoiceId, session.activeCompany.id);
-  revalidatePath("/app/finanzas");
+  revalidateInvoiceDetail(invoiceId);
 }
 
 export async function getFiscalIdentity(companyId: string) {

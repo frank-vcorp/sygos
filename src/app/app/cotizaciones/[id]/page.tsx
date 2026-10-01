@@ -322,8 +322,8 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
                       <StatusBadge status={inv.status} />
                       <span className="text-slate-600"> · {formatMxnDisplay(inv.totalMxn)}</span>
                     </span>
-                    <Link href="/app/finanzas" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                      Ver en Finanzas
+                    <Link href={`/app/finanzas/facturas/${inv.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Abrir factura
                     </Link>
                   </li>
                 ))}
@@ -346,11 +346,8 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
                         <span className="text-xs text-amber-700">Pendiente facturar</span>
                       )}
                     </span>
-                    <Link
-                      href={`/app/clientes/${quote.clientId}`}
-                      className={buttonVariants({ variant: "ghost", size: "sm" })}
-                    >
-                      Ver en cliente
+                    <Link href={`/app/finanzas/remisiones/${rem.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Abrir remisión
                     </Link>
                   </li>
                 ))}
