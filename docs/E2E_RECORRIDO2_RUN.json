@@ -1,0 +1,77 @@
+{
+  "base": "https://sygos.systronia.com",
+  "motId": "9419f835-7d57-4f53-82be-941551ba3352",
+  "motFolio": "MOT-17",
+  "quoteId": "4e9e0226-88f6-44df-b8e8-13f68b830ff4",
+  "attUrl": "https://sygos.systronia.com/app/tecnica/d4275602-cad6-4b11-abcd-2f3ffffc92a9",
+  "log": [
+    {
+      "id": "r2-01-mot-alta",
+      "ok": true,
+      "detail": "MOT-17 · E2E-R2-1790837201110",
+      "at": "2026-10-01T06:46:41.824Z"
+    },
+    {
+      "id": "r2-02-ingreso-sm",
+      "ok": true,
+      "detail": "ingreso efectivo (técnica desbloqueada)",
+      "at": "2026-10-01T06:47:04.791Z"
+    },
+    {
+      "id": "r2-03-atencion",
+      "ok": true,
+      "detail": "",
+      "at": "2026-10-01T06:47:09.441Z"
+    },
+    {
+      "id": "r2-04-diagnostico-cerrado",
+      "ok": true,
+      "detail": "cot 4e9e0226-88f6-44df-b8e8-13f68b830ff4",
+      "at": "2026-10-01T06:48:18.788Z"
+    },
+    {
+      "id": "r2-05-ger-valida",
+      "ok": true,
+      "detail": "",
+      "at": "2026-10-01T06:48:20.368Z"
+    },
+    {
+      "id": "r2-06-cot-generada",
+      "ok": true,
+      "detail": "4e9e0226-88f6-44df-b8e8-13f68b830ff4",
+      "at": "2026-10-01T06:48:20.371Z"
+    },
+    {
+      "id": "r2-07-precio",
+      "ok": true,
+      "detail": "",
+      "at": "2026-10-01T06:48:27.581Z"
+    },
+    {
+      "id": "r2-08-enviada",
+      "ok": true,
+      "detail": "Cotizaciones\nCOT-0010\n\nCOMERCIAL\n\nCOT-0010\n\nSeguimiento comercial, env",
+      "at": "2026-10-01T06:48:32.603Z"
+    },
+    {
+      "id": "r2-09-decision",
+      "ok": true,
+      "detail": "Cotizaciones\nCOT-0010\n\nCOMERCIAL\n\nCOT-0010\n\nSeguimiento comercial, env",
+      "at": "2026-10-01T06:48:33.439Z"
+    },
+    {
+      "id": "r2-10-egreso-sm",
+      "ok": true,
+      "detail": "MOT-17",
+      "at": "2026-10-01T06:48:37.662Z"
+    },
+    {
+      "id": "r2-11-factura-sm",
+      "ok": true,
+      "detail": "coord · https://sygos.systronia.com/app/finanzas/facturas/d63ce0d4-7490-4077-878e-d6d33e6d4fd9",
+      "at": "2026-10-01T06:48:44.186Z"
+    }
+  ],
+  "passed": 11,
+  "failed": 0
+}

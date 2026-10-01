@@ -168,8 +168,7 @@ export async function sendQuoteAction(formData: FormData) {
   const contactIds = formData.getAll("contactIds").map(String).filter(Boolean);
   const sendEmail = formData.get("sendEmail") === "on";
   const sendWhatsapp = formData.get("sendWhatsapp") === "on";
-  if (!quoteId || contactIds.length === 0) throw new Error("Selecciona al menos un contacto");
-  if (!sendEmail && !sendWhatsapp) throw new Error("Elige al menos un canal: correo o WhatsApp");
+  if (!quoteId) throw new Error("Cotización no válida");
 
   const db = getDb();
   const [quote] = await db
@@ -179,6 +178,27 @@ export async function sendQuoteAction(formData: FormData) {
     .limit(1);
   if (!quote) throw new Error("Cotización no encontrada");
   if (!quote.finalPriceMxn && !quote.priceMxn) throw new Error("CEO/Administrador debe fijar precio antes de enviar");
+
+  const [clientRow] = await db
+    .select({ isIntercompany: clients.isIntercompany })
+    .from(clients)
+    .where(eq(clients.id, quote.clientId))
+    .limit(1);
+
+  if (contactIds.length === 0) {
+    if (clientRow?.isIntercompany && (await allowQuoteSendWithoutDelivery())) {
+      await db
+        .update(quotes)
+        .set({ status: "ENVIADA", pendingPricing: false })
+        .where(eq(quotes.id, quoteId));
+      revalidatePath(`/app/cotizaciones/${quoteId}`);
+      revalidatePath("/app/cotizaciones/pendientes");
+      await revalidateCommercialHub({ quoteId });
+      return;
+    }
+    throw new Error("Selecciona al menos un contacto");
+  }
+  if (!sendEmail && !sendWhatsapp) throw new Error("Elige al menos un canal: correo o WhatsApp");
 
   const markQuoteSent = async () => {
     await db
@@ -314,13 +334,19 @@ export async function getQuoteDetailForSession(session: SessionUser, id: string)
       quote: quotes,
       clientName: clients.name,
       clientId: clients.id,
+      clientIsIntercompany: clients.isIntercompany,
     })
     .from(quotes)
     .innerJoin(clients, eq(quotes.clientId, clients.id))
     .where(and(eq(quotes.id, id), quoteCompanyScope(session)))
     .limit(1);
   if (!row) return null;
-  return { ...row.quote, clientName: row.clientName, clientId: row.clientId };
+  return {
+    ...row.quote,
+    clientName: row.clientName,
+    clientId: row.clientId,
+    clientIsIntercompany: row.clientIsIntercompany,
+  };
 }
 
 export async function getQuoteForAttendance(attendanceId: string, companyId: string) {

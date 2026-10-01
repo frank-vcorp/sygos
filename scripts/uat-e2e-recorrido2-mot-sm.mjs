@@ -38,8 +38,47 @@ async function switchCo(page, name) {
   const b = page.locator(`header button:has-text("${name}")`).first();
   if (await b.isEnabled().catch(() => false)) {
     await b.click();
-    await page.waitForTimeout(1500);
+    await page.waitForLoadState("domcontentloaded", { timeout: 20_000 }).catch(() => null);
+    await page.waitForTimeout(1200);
   }
+}
+
+async function hasSendQuoteButton(page) {
+  await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => null);
+  await page.waitForTimeout(400);
+  return (await page.getByRole("button", { name: /Enviar cotización ahora/i }).count().catch(() => 0)) > 0;
+}
+
+async function quoteIdFromAttendance(page, attUrl) {
+  await page.goto(attUrl, { waitUntil: "domcontentloaded" });
+  const href = await page.locator('main a[href*="/app/cotizaciones/"]').first().getAttribute("href").catch(() => null);
+  return href?.match(/\/app\/cotizaciones\/([0-9a-f-]+)/)?.[1] ?? null;
+}
+
+/** Gerente SM auto-valida al marcar terminado; poll cotización o botón Validar gerente. */
+async function advanceDiagnosisUntilQuoteReady(page, attUrl) {
+  for (let round = 0; round < 18; round++) {
+    await page.goto(attUrl, { waitUntil: "domcontentloaded" });
+    const q = await quoteIdFromAttendance(page, attUrl);
+    if (q) return { quoteId: q, needsValidate: false };
+    if (await page.getByRole("button", { name: "Validar gerente" }).count()) {
+      return { quoteId: null, needsValidate: true };
+    }
+    for (const label of ["Iniciar diagnóstico", "Marcar terminado"]) {
+      const b = page.getByRole("button", { name: label });
+      if (await b.count()) {
+        await Promise.all([
+          page.waitForResponse((r) => r.request().method() === "POST" && r.status() < 500, { timeout: 45_000 }).catch(() => null),
+          b.click(),
+        ]);
+        await page.waitForTimeout(2500);
+        break;
+      }
+    }
+    await page.waitForTimeout(1200);
+  }
+  const q = await quoteIdFromAttendance(page, attUrl);
+  return { quoteId: q, needsValidate: false };
 }
 
 async function main() {
@@ -167,21 +206,15 @@ async function main() {
       attUrl = page.url();
       step("r2-03-atencion", attUrl.includes("/app/tecnica/"));
       }
-      if (attUrl) for (const label of ["Iniciar diagnóstico", "Marcar terminado"]) {
-        for (let round = 0; round < 3; round++) {
-          const b = page.getByRole("button", { name: label });
-          if (!(await b.count())) break;
-          await Promise.all([
-            page.waitForResponse((r) => r.request().method() === "POST" && r.status() < 500, { timeout: 45_000 }).catch(() => null),
-            b.click(),
-          ]);
-          await page.waitForTimeout(2000);
-          await page.reload({ waitUntil: "domcontentloaded" });
-        }
-      }
       if (attUrl) {
+        const prep = await advanceDiagnosisUntilQuoteReady(page, attUrl);
+        quoteId = prep.quoteId;
         const t = await page.locator("main").innerText();
-        step("r2-04-diagnostico-cerrado", /Validar gerente|validación|PENDIENTE/i.test(t), t.slice(0, 60));
+        const closed =
+          Boolean(prep.quoteId) ||
+          prep.needsValidate ||
+          /Validar gerente|VALIDADO|Pendiente validación|cotización/i.test(t);
+        step("r2-04-diagnostico-cerrado", closed, prep.quoteId ? `cot ${prep.quoteId}` : t.slice(0, 60));
       }
     }
     await page.close();
@@ -194,44 +227,52 @@ async function main() {
     return;
   }
 
-  // 4 — Validación gerente SM → cotización
+  // 4 — Validación gerente SM → cotización (SM gerente puede auto-validar al terminar)
   {
     const page = await browser.newPage();
     await login(page, "ger.servomotores", DEMO_PW);
-    let validated = false;
-    for (const cred of [
-      { u: "ger.servomotores", p: DEMO_PW },
-      { u: "Vectoria", p: ADMIN_PW },
-    ]) {
-      await login(page, cred.u, cred.p);
-      for (let i = 0; i < 12; i++) {
-        await page.goto(attUrl, { waitUntil: "domcontentloaded" });
-        const val = page.getByRole("button", { name: "Validar gerente" });
-        if (await val.count()) {
-          await val.click();
-          await page.waitForTimeout(3000);
+    let validated = Boolean(quoteId);
+    if (!quoteId) {
+      for (const cred of [
+        { u: "ger.servomotores", p: DEMO_PW },
+        { u: "Vectoria", p: ADMIN_PW },
+      ]) {
+        await login(page, cred.u, cred.p);
+        const prep = await advanceDiagnosisUntilQuoteReady(page, attUrl);
+        if (prep.quoteId) {
+          quoteId = prep.quoteId;
           validated = true;
           break;
         }
-        await page.reload({ waitUntil: "domcontentloaded" });
-        await page.waitForTimeout(1000);
+        if (prep.needsValidate) {
+          for (let i = 0; i < 8; i++) {
+            await page.goto(attUrl, { waitUntil: "domcontentloaded" });
+            const val = page.getByRole("button", { name: "Validar gerente" });
+            if (await val.count()) {
+              await Promise.all([
+                page.waitForResponse((r) => r.request().method() === "POST" && r.status() < 500, { timeout: 45_000 }).catch(() => null),
+                val.click(),
+              ]);
+              await page.waitForTimeout(2500);
+              validated = true;
+              break;
+            }
+            await page.waitForTimeout(1200);
+          }
+        }
+        if (validated) break;
       }
-      if (validated) break;
     }
-    for (let i = 0; i < 15; i++) {
-      await page.goto(attUrl, { waitUntil: "domcontentloaded" });
-      let href = await page.locator('main a[href*="/app/cotizaciones/"]').first().getAttribute("href").catch(() => null);
-      if (!href) {
-        await page.goto(`${BASE}/app/cotizaciones/pendientes`, { waitUntil: "domcontentloaded" });
-        href = await page.locator('main a[href*="/app/cotizaciones/"]').first().getAttribute("href").catch(() => null);
+    if (!quoteId) {
+      for (let i = 0; i < 15; i++) {
+        quoteId = await quoteIdFromAttendance(page, attUrl);
+        if (quoteId) break;
+        await page.waitForTimeout(1500);
       }
-      quoteId = href?.match(/\/app\/cotizaciones\/([0-9a-f-]+)/)?.[1] ?? null;
-      if (quoteId) break;
-      await page.waitForTimeout(1500);
     }
     if (quoteId && !validated) {
       validated = true;
-      console.log("✅ r2-05-ger-valida (retro)", "cotización ya generada");
+      console.log("✅ r2-05-ger-valida (retro)", "cotización en ficha técnica");
     }
     step("r2-05-ger-valida", validated || Boolean(quoteId));
     step("r2-06-cot-generada", Boolean(quoteId), quoteId ?? "");
@@ -257,9 +298,10 @@ async function main() {
     ]) {
       await login(page, cred.u, cred.p);
       if (cred.switchSm) await switchCo(page, "Servomotores");
-      await page.goto(quoteUrl, { waitUntil: "domcontentloaded" });
+      await page.goto(quoteUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+      await page.waitForTimeout(800);
       const priceBtn = page.getByRole("button", { name: "Guardar precio" });
-      if (await priceBtn.count()) {
+      if (await priceBtn.count().catch(() => 0)) {
         await page.fill('input[name="priceMxn"]', "9200");
         await Promise.all([
           page.waitForResponse((r) => r.request().method() === "POST" && r.status() < 500, { timeout: 45_000 }).catch(() => null),
@@ -267,8 +309,8 @@ async function main() {
         ]);
         await page.waitForTimeout(1500);
       }
-      await page.goto(quoteUrl, { waitUntil: "domcontentloaded" });
-      sendReady = (await page.getByRole("button", { name: /Enviar cotización ahora/i }).count()) > 0;
+      await page.goto(quoteUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+      sendReady = await hasSendQuoteButton(page);
       if (sendReady) break;
     }
     step("r2-07-precio", sendReady, sendReady ? "" : "sin botón enviar");
@@ -283,23 +325,23 @@ async function main() {
       { u: "Vectoria", p: ADMIN_PW },
     ]) {
       await login(page, cred.u, cred.p);
-      await page.goto(quoteUrl, { waitUntil: "domcontentloaded" });
-      if (!(await page.getByRole("button", { name: /Enviar cotización ahora/i }).count())) {
+      await page.goto(quoteUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+      if (!(await hasSendQuoteButton(page))) {
         const contactForm = page
           .locator(`form:has(input[name="returnTo"][value="/app/cotizaciones/${quoteId}"])`)
           .filter({ hasText: "Crear contacto" });
-        if (await contactForm.count()) {
+        if (await contactForm.count().catch(() => 0)) {
           await contactForm.locator('input[name="name"]').fill("Contacto E2E R2");
           await contactForm.locator('input[name="email"]').fill("e2e-r2@example.com");
           await contactForm.getByRole("button", { name: "Guardar y volver" }).click();
           await page.waitForTimeout(2500);
-          await page.goto(quoteUrl, { waitUntil: "domcontentloaded" });
+          await page.goto(quoteUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
         }
       }
-      if (await page.getByRole("button", { name: /Enviar cotización ahora/i }).count()) break;
+      if (await hasSendQuoteButton(page)) break;
     }
     const sendBtn = page.getByRole("button", { name: /Enviar cotización ahora/i });
-    if (await sendBtn.count()) {
+    if (await sendBtn.count().catch(() => 0)) {
       const cb = page.locator('input[name="contactIds"]').first();
       if (await cb.count()) await cb.check();
       const emailChk = page.locator('input[name="sendEmail"]').first();

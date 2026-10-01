@@ -541,9 +541,22 @@ export default async function CotizacionDetallePage({
             <div className="space-y-4">
               <EmptyState
                 title="Sin contactos en el cliente"
-                description="Alta rápida: captura un contacto mínimo y regresa aquí con el destinatario listo."
+                description={
+                  quote.clientIsIntercompany
+                    ? "Cliente intercompañía: registra el envío interno sin destinatarios externos."
+                    : "Alta rápida: captura un contacto mínimo y regresa aquí con el destinatario listo."
+                }
               />
-              {canManageClients(session.role, session.activeCompany.code) && (
+              {quote.clientIsIntercompany && (
+                <form action={sendQuoteAction} className="flex flex-wrap items-center gap-3">
+                  <input type="hidden" name="quoteId" value={quote.id} />
+                  <input type="hidden" name="sendEmail" value="on" />
+                  <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>
+                    Enviar cotización ahora
+                  </button>
+                </form>
+              )}
+              {canManageClients(session.role, session.activeCompany.code) && !quote.clientIsIntercompany && (
                 <form action={addClientContactAction} className="grid gap-2 rounded-xl border border-border p-4">
                   <input type="hidden" name="clientId" value={quote.clientId} />
                   <input type="hidden" name="returnTo" value={`/app/cotizaciones/${quote.id}`} />

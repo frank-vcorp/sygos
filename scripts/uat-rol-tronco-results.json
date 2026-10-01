@@ -1,8 +1,8 @@
 {
   "base": "https://sygos.systronia.com",
-  "at": "2026-10-01T04:44:35.708Z",
-  "passed": 17,
-  "failed": 1,
+  "at": "2026-10-01T06:51:10.332Z",
+  "passed": 18,
+  "failed": 0,
   "items": {
     "passed": [
       {
@@ -42,6 +42,10 @@
         "note": ""
       },
       {
+        "key": "rol-ger-systron-panel",
+        "note": ""
+      },
+      {
         "key": "rol-ger-systron-pendientes-ruta",
         "note": ""
       },
@@ -74,11 +78,6 @@
         "note": ""
       }
     ],
-    "failed": [
-      {
-        "key": "rol-ger-systron-panel",
-        "note": ""
-      }
-    ]
+    "failed": []
   }
 }

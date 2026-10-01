@@ -1,0 +1,52 @@
+{
+  "base": "https://sygos.systronia.com",
+  "motId": "4cb475d6-1c17-47f8-a10a-7327af83f3ca",
+  "motFolio": "MOT-18",
+  "smQuoteId": "7b44f5da-48e4-428d-88df-e29d650a9c66",
+  "log": [
+    {
+      "id": "r3-01-mot-systron",
+      "ok": true,
+      "detail": "MOT-18 · origen SYSTRON en ficha: true",
+      "at": "2026-10-01T06:48:48.116Z"
+    },
+    {
+      "id": "r3-02-ingreso-tecnica",
+      "ok": true,
+      "detail": "https://sygos.systronia.com/app/tecnica/6faa1de8-4314-46b2-b8dd-0c6a0be7f191",
+      "at": "2026-10-01T06:50:06.651Z"
+    },
+    {
+      "id": "r3-03-cot-sm",
+      "ok": true,
+      "detail": "7b44f5da-48e4-428d-88df-e29d650a9c66",
+      "at": "2026-10-01T06:50:06.683Z"
+    },
+    {
+      "id": "r3-04-badge-interco",
+      "ok": true,
+      "detail": "COT-0011",
+      "at": "2026-10-01T06:50:08.829Z"
+    },
+    {
+      "id": "r3-05-systron-ve-mot",
+      "ok": true,
+      "detail": "MOT-18",
+      "at": "2026-10-01T06:50:16.833Z"
+    },
+    {
+      "id": "r3-06-ceo-precio-sm",
+      "ok": true,
+      "detail": "",
+      "at": "2026-10-01T06:50:26.123Z"
+    },
+    {
+      "id": "r3-07-decision-sm",
+      "ok": false,
+      "detail": "Cotizaciones\nCOT-0011\n\nCOMERCIAL\n\nCOT-0011\n\nSeguimiento come",
+      "at": "2026-10-01T06:50:38.427Z"
+    }
+  ],
+  "passed": 6,
+  "failed": 1
+}

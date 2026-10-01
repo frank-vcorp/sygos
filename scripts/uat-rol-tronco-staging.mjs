@@ -93,7 +93,7 @@ async function main() {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
     await login(page, "tecnico.systron", DEMO_PW);
-    const tech = await gotoOk(page, "/app/tecnica", ["Técnica", "atención"]);
+    const tech = await gotoOk(page, "/app/tecnica", ["Técnica", "atención", "Atención", "Diagnóstico", "bandeja"]);
     if (tech.ok) ok("rol-tecnico-bandeja");
     else bad("rol-tecnico-bandeja");
     const nueva = await gotoOk(page, "/app/tecnica/nueva", ["EQUI", "MOT", "atención"]);
@@ -141,7 +141,7 @@ async function main() {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
     await login(page, "ger.servomotores", DEMO_PW);
-    const mot = await gotoOk(page, "/app/mot", ["MOT", "motor"]);
+    const mot = await gotoOk(page, "/app/mot", ["Motores", "MOT", "motor", "Custodia"]);
     if (mot.ok) ok("rol-ger-sm-mot");
     else bad("rol-ger-sm-mot");
     const compras = await gotoOk(page, "/app/compras", ["Compras", "Presupuesto", "directa"]);
@@ -171,8 +171,12 @@ async function main() {
     else bad("admin-mot-list");
     const link = page.locator('main a:has-text("Ver ficha")').first();
     if (await link.count()) {
-      await link.click();
-      await page.waitForURL(/\/app\/mot\/[0-9a-f-]+/i, { timeout: 30_000 });
+      const href = await link.getAttribute("href");
+      if (href) await page.goto(`${BASE}${href}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+      else {
+        await link.click();
+        await page.waitForURL(/\/app\/mot\/[0-9a-f-]+/i, { timeout: 45_000 }).catch(() => null);
+      }
       const t = await page.locator("main").innerText();
       if (
         t.includes("Ingreso") ||

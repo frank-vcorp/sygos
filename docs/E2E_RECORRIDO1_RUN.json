@@ -1,68 +1,68 @@
 {
   "base": "https://sygos.systronia.com",
-  "equiId": "84c77f6d-8f53-4b03-be96-965553c8eb88",
-  "quoteId": "ea1a2912-48b7-4cb6-9b20-d781113c8de7",
-  "attUrl": "https://sygos.systronia.com/app/tecnica/ce837367-f05f-4f10-8675-873155406da0",
+  "equiId": "13b435ff-535d-4dc0-b971-0a3cca814e8d",
+  "quoteId": "6dbf1bdd-77ca-46ad-a0e8-738cdf17754b",
+  "attUrl": "https://sygos.systronia.com/app/tecnica/efbba139-c0af-4d6d-8f4c-b85a10cb2352",
   "log": [
     {
       "id": "r1-01-equi",
       "ok": true,
-      "detail": "E2E-R1-1790833521552 · cliente Ernesto saavedra",
-      "at": "2026-10-01T05:45:21.890Z"
+      "detail": "E2E-R1-1790837070985 · cliente Ernesto saavedra",
+      "at": "2026-10-01T06:44:31.394Z"
     },
     {
       "id": "r1-02-entrada",
       "ok": true,
       "detail": "entrada efectiva (técnica desbloqueada)",
-      "at": "2026-10-01T05:45:45.432Z"
+      "at": "2026-10-01T06:44:54.896Z"
     },
     {
       "id": "r1-03-atencion",
       "ok": true,
       "detail": "",
-      "at": "2026-10-01T05:45:47.827Z"
+      "at": "2026-10-01T06:44:56.868Z"
     },
     {
       "id": "r1-04-diagnostico-cerrado",
       "ok": true,
-      "detail": "Equipos\nEQUI-0022\nAtención\n\nOPERACIÓN\n\nDIAGNOSTICO\n\nRecorrid",
-      "at": "2026-10-01T05:45:52.836Z"
+      "detail": "Equipos\nEQUI-0024\nAtención\n\nOPERACIÓN\n\nDIAGNOSTICO\n\nRecorrid",
+      "at": "2026-10-01T06:45:03.567Z"
     },
     {
       "id": "r1-05-ger-valida",
       "ok": true,
       "detail": "",
-      "at": "2026-10-01T05:45:57.508Z"
+      "at": "2026-10-01T06:45:17.463Z"
     },
     {
       "id": "r1-06-cot-generada",
       "ok": true,
-      "detail": "ea1a2912-48b7-4cb6-9b20-d781113c8de7",
-      "at": "2026-10-01T05:45:57.832Z"
+      "detail": "6dbf1bdd-77ca-46ad-a0e8-738cdf17754b",
+      "at": "2026-10-01T06:45:18.199Z"
     },
     {
       "id": "r1-07-ceo-precio",
       "ok": true,
       "detail": "",
-      "at": "2026-10-01T05:46:03.740Z"
+      "at": "2026-10-01T06:45:26.647Z"
     },
     {
       "id": "r1-08-enviada",
       "ok": true,
-      "detail": "Cotizaciones\nCOT-0017\n\nCOMERCIAL\n\nCOT-0017\n\nSeguimiento comercial, envío de docu",
-      "at": "2026-10-01T05:47:11.939Z"
+      "detail": "Cotizaciones\nCOT-0019\n\nCOMERCIAL\n\nCOT-0019\n\nSeguimiento comercial, envío de docu",
+      "at": "2026-10-01T06:46:31.378Z"
     },
     {
       "id": "r1-09-decision",
       "ok": true,
-      "detail": "Cotizaciones\nCOT-0017\n\nCOMERCIAL\n\nCOT-0017\n\nSeguimiento comercial, envío de docu",
-      "at": "2026-10-01T05:47:12.354Z"
+      "detail": "Cotizaciones\nCOT-0019\n\nCOMERCIAL\n\nCOT-0019\n\nSeguimiento comercial, envío de docu",
+      "at": "2026-10-01T06:46:31.978Z"
     },
     {
       "id": "r1-10-factura-coord",
       "ok": true,
-      "detail": "Vectoria · https://sygos.systronia.com/app/finanzas/facturas/89d9c5c5-7a79-4288-8e3e-246c7743fe5a",
-      "at": "2026-10-01T05:48:18.279Z"
+      "detail": "coord · https://sygos.systronia.com/app/finanzas/facturas/0166c6e0-e063-472d-9ff4-a9d9777b86b9",
+      "at": "2026-10-01T06:46:35.702Z"
     }
   ],
   "passed": 10,
