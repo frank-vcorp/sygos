@@ -41,7 +41,6 @@ export function ClientContactsEditor({ minRows = 1, maxRows = 8 }: { minRows?: n
               </button>
             )}
           </div>
-          <input type="hidden" name={`contact_${row.key}_slot`} value={String(row.key)} />
           <input
             name={`contact_${row.key}_name`}
             placeholder="Nombre"
