@@ -46,7 +46,12 @@ function allowQuoteSendWithoutDelivery() {
   if (process.env.SYGOS_RELAX_QUOTE_SEND === "1") return true;
   const fqdn = process.env.COOLIFY_FQDN?.trim() ?? "";
   const publicUrl = process.env.SYGOS_PUBLIC_URL?.trim() ?? "";
-  return fqdn === "sygos.systronia.com" || publicUrl.includes("systronia.com");
+  const coolifyUrl = process.env.COOLIFY_URL?.trim() ?? "";
+  return (
+    fqdn === "sygos.systronia.com" ||
+    publicUrl.includes("systronia.com") ||
+    coolifyUrl.includes("systronia.com")
+  );
 }
 
 export async function listQuotes(companyId: string) {
@@ -175,6 +180,9 @@ export async function sendQuoteAction(formData: FormData) {
     .select()
     .from(clientContacts)
     .where(and(eq(clientContacts.clientId, quote.clientId), inArray(clientContacts.id, contactIds)));
+  if (contacts.length !== contactIds.length) {
+    throw new Error("Uno o más contactos no son válidos para este cliente");
+  }
 
   for (const contactId of contactIds) {
     await db.insert(quoteSendContacts).values({ quoteId, contactId });
@@ -238,7 +246,8 @@ export async function sendQuoteAction(formData: FormData) {
       );
     const allChannelsFailed =
       errors.length > 0 && errors.every((e) => /\(correo\)|\(WhatsApp\)/.test(e));
-    const relaxStaging = allowQuoteSendWithoutDelivery() && allChannelsFailed;
+    const relaxStaging =
+      allowQuoteSendWithoutDelivery() && (allChannelsFailed || errors.length === 0);
     if (!stagingWithoutIntegration && !relaxStaging) {
       throw new Error(errors.join(" · ") || "No se pudo enviar por ningún canal");
     }
