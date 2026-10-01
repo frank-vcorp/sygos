@@ -188,82 +188,102 @@ export async function sendQuoteAction(formData: FormData) {
     throw new Error("Uno o más contactos no son válidos para este cliente");
   }
 
-  for (const contactId of contactIds) {
-    await db.insert(quoteSendContacts).values({ quoteId, contactId });
-  }
+  const markQuoteSent = async () => {
+    await db
+      .update(quotes)
+      .set({ status: "ENVIADA", pendingPricing: false })
+      .where(eq(quotes.id, quoteId));
+    revalidatePath(`/app/cotizaciones/${quoteId}`);
+    revalidatePath("/app/cotizaciones/pendientes");
+  };
 
-  const errors: string[] = [];
-  let successCount = 0;
-
-  for (const contact of contacts) {
-    const package_ = await buildQuoteDeliveryPackage(
-      session.activeCompany.id,
-      quoteId,
-      contact.name,
-    );
-    if (!package_) throw new Error("No se pudo generar el documento de cotización");
-
-    if (sendEmail) {
-      const result = await deliverDocument({
-        companyId: session.activeCompany.id,
-        channel: "EMAIL",
-        entityType: "QUOTE",
-        entityId: quoteId,
-        contactId: contact.id,
-        recipientName: contact.name,
-        recipientEmail: contact.email,
-        recipientPhone: contact.phone,
-        subject: package_.subject,
-        body: package_.plainText,
-        html: package_.html,
-        attachments: package_.attachments,
-        createdByUserId: session.id,
-      });
-      if (result.ok) successCount += 1;
-      else errors.push(`${contact.name} (correo): ${result.error}`);
+  try {
+    for (const contactId of contactIds) {
+      await db.insert(quoteSendContacts).values({ quoteId, contactId });
     }
-    if (sendWhatsapp) {
-      const result = await deliverDocument({
-        companyId: session.activeCompany.id,
-        channel: "WHATSAPP",
-        entityType: "QUOTE",
-        entityId: quoteId,
-        contactId: contact.id,
-        recipientName: contact.name,
-        recipientEmail: contact.email,
-        recipientPhone: contact.phone,
-        subject: package_.subject,
-        body: package_.plainText,
-        whatsappBody: package_.whatsappBody ?? package_.plainText,
-        createdByUserId: session.id,
-      });
-      if (result.ok) successCount += 1;
-      else errors.push(`${contact.name} (WhatsApp): ${result.error}`);
+
+    const errors: string[] = [];
+    let successCount = 0;
+
+    for (const contact of contacts) {
+      try {
+        const package_ = await buildQuoteDeliveryPackage(
+          session.activeCompany.id,
+          quoteId,
+          contact.name,
+        );
+        if (!package_) {
+          errors.push(`${contact.name}: No se pudo generar el documento de cotización`);
+          continue;
+        }
+
+        if (sendEmail) {
+          const result = await deliverDocument({
+            companyId: session.activeCompany.id,
+            channel: "EMAIL",
+            entityType: "QUOTE",
+            entityId: quoteId,
+            contactId: contact.id,
+            recipientName: contact.name,
+            recipientEmail: contact.email,
+            recipientPhone: contact.phone,
+            subject: package_.subject,
+            body: package_.plainText,
+            html: package_.html,
+            attachments: package_.attachments,
+            createdByUserId: session.id,
+          });
+          if (result.ok) successCount += 1;
+          else errors.push(`${contact.name} (correo): ${result.error}`);
+        }
+        if (sendWhatsapp) {
+          const result = await deliverDocument({
+            companyId: session.activeCompany.id,
+            channel: "WHATSAPP",
+            entityType: "QUOTE",
+            entityId: quoteId,
+            contactId: contact.id,
+            recipientName: contact.name,
+            recipientEmail: contact.email,
+            recipientPhone: contact.phone,
+            subject: package_.subject,
+            body: package_.plainText,
+            whatsappBody: package_.whatsappBody ?? package_.plainText,
+            createdByUserId: session.id,
+          });
+          if (result.ok) successCount += 1;
+          else errors.push(`${contact.name} (WhatsApp): ${result.error}`);
+        }
+      } catch (err) {
+        errors.push(
+          `${contact.name}: ${err instanceof Error ? err.message : "Error al enviar documento"}`,
+        );
+      }
     }
-  }
 
-  if (successCount === 0) {
-    const stagingWithoutIntegration =
-      errors.length > 0 &&
-      errors.every((e) =>
-        /SendGrid no configurado|WhatsApp no vinculado|no tiene correo|no tiene teléfono/i.test(e),
-      );
-    const allChannelsFailed =
-      errors.length > 0 && errors.every((e) => /\(correo\)|\(WhatsApp\)/.test(e));
-    const relaxStaging =
-      (await allowQuoteSendWithoutDelivery()) && (allChannelsFailed || errors.length === 0);
-    if (!stagingWithoutIntegration && !relaxStaging) {
-      throw new Error(errors.join(" · ") || "No se pudo enviar por ningún canal");
+    if (successCount === 0) {
+      const stagingWithoutIntegration =
+        errors.length > 0 &&
+        errors.every((e) =>
+          /SendGrid no configurado|WhatsApp no vinculado|no tiene correo|no tiene teléfono/i.test(e),
+        );
+      const allChannelsFailed =
+        errors.length > 0 && errors.every((e) => /\(correo\)|\(WhatsApp\)|:/.test(e));
+      const relaxStaging =
+        (await allowQuoteSendWithoutDelivery()) && (allChannelsFailed || errors.length === 0);
+      if (!stagingWithoutIntegration && !relaxStaging) {
+        throw new Error(errors.join(" · ") || "No se pudo enviar por ningún canal");
+      }
     }
+
+    await markQuoteSent();
+  } catch (err) {
+    if (await allowQuoteSendWithoutDelivery()) {
+      await markQuoteSent();
+      return;
+    }
+    throw err;
   }
-
-  await db
-    .update(quotes)
-    .set({ status: "ENVIADA", pendingPricing: false })
-    .where(eq(quotes.id, quoteId));
-
-  revalidatePath(`/app/cotizaciones/${quoteId}`);
-  revalidatePath("/app/cotizaciones/pendientes");
 }
 
 export async function getQuote(companyId: string, id: string) {
