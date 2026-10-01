@@ -62,12 +62,12 @@ export default async function CompraMovimientoDetallePage({ params }: { params: 
         <DetailItem
           label="Egreso"
           value={
-            disbursementFolio ? (
-              <Link href="/app/finanzas/comprobaciones" className="font-mono text-accent hover:underline">
+            p.cashDisbursementId && disbursementFolio ? (
+              <Link href={`/app/finanzas/egresos/${p.cashDisbursementId}`} className="font-mono text-accent hover:underline">
                 {disbursementFolio}
               </Link>
             ) : p.payableBalanceId ? (
-              <Link href="/app/finanzas" className="text-accent hover:underline">
+              <Link href={`/app/finanzas/cxp/${p.payableBalanceId}`} className="text-accent hover:underline">
                 CxP registrada
               </Link>
             ) : (

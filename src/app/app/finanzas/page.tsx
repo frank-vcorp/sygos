@@ -12,8 +12,10 @@ import {
   getFiscalIdentity,
   intercompanyInvoiceAction,
   intercompanyPaymentAction,
+  listDisbursements,
   listDocumentRequests,
   listInvoicesWithClients,
+  listPayablesWithSuppliers,
   listPendingPayments,
   listReceivables,
   listRemissions,
@@ -45,15 +47,18 @@ export default async function FinanzasPage() {
   if (!canCoord && !canRequest) redirect("/app");
 
   const companyId = session.activeCompany.id;
-  const [invoiceRows, clients, requests, remissions, pendingPay, receivables, fiscal] = await Promise.all([
-    canCoord ? listInvoicesWithClients(companyId) : Promise.resolve([]),
-    listClientsForSelect(companyId),
-    listDocumentRequests(companyId),
-    canCoord ? listRemissions(companyId) : Promise.resolve([]),
-    canCoord ? listPendingPayments(companyId) : Promise.resolve([]),
-    canCoord ? listReceivables(companyId) : Promise.resolve([]),
-    getFiscalIdentity(companyId),
-  ]);
+  const [invoiceRows, clients, requests, remissions, pendingPay, receivables, payables, disbursements, fiscal] =
+    await Promise.all([
+      canCoord ? listInvoicesWithClients(companyId) : Promise.resolve([]),
+      listClientsForSelect(companyId),
+      listDocumentRequests(companyId),
+      canCoord ? listRemissions(companyId) : Promise.resolve([]),
+      canCoord ? listPendingPayments(companyId) : Promise.resolve([]),
+      canCoord ? listReceivables(companyId) : Promise.resolve([]),
+      canCoord ? listPayablesWithSuppliers(companyId) : Promise.resolve([]),
+      canCoord ? listDisbursements(companyId) : Promise.resolve([]),
+      getFiscalIdentity(companyId),
+    ]);
 
   const openCxC = receivables.reduce((s, r) => s + r.openMxn, 0);
 
@@ -81,6 +86,49 @@ export default async function FinanzasPage() {
             hint={`${receivables.length} partidas`}
             icon={Workflow}
           />
+        </div>
+      )}
+
+      {canCoord && (payables.length > 0 || disbursements.length > 0) && (
+        <div className="grid gap-4 xl:grid-cols-2">
+          {payables.length > 0 && (
+            <DataTable title="CxP (proveedores)" description="Obligaciones abiertas — enlace a compra origen">
+              <table className="w-full text-sm">
+                <tbody className="divide-y">
+                  {payables.slice(0, 8).map(({ payable: ap, supplierName }) => (
+                    <tr key={ap.id} className="hover:bg-slate-50/80">
+                      <td className="px-5 py-3">
+                        <Link href={`/app/finanzas/cxp/${ap.id}`} className="font-medium text-accent hover:underline">
+                          {supplierName}
+                        </Link>
+                        <span className="text-slate-500"> · {formatMxnDisplay(ap.openMxn)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTable>
+          )}
+          {disbursements.length > 0 && (
+            <DataTable title="Egresos recientes" description="Movimientos de caja vinculados a compras">
+              <table className="w-full text-sm">
+                <tbody className="divide-y">
+                  {disbursements.slice(0, 8).map(({ disbursement: eg, supplierName }) => (
+                    <tr key={eg.id} className="hover:bg-slate-50/80">
+                      <td className="px-5 py-3">
+                        <Link href={`/app/finanzas/egresos/${eg.id}`} className="font-mono text-xs font-bold text-accent hover:underline">
+                          {eg.folio}
+                        </Link>
+                        <span className="text-slate-600"> · {eg.description}</span>
+                        <span className="text-slate-500"> · {formatMxnDisplay(eg.amountMxn)}</span>
+                        {supplierName && <span className="block text-xs text-slate-500">{supplierName}</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTable>
+          )}
         </div>
       )}
 

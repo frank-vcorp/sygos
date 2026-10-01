@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listSuppliers } from "../../maestros/actions";
@@ -38,7 +39,14 @@ export default async function ComprobacionesPage() {
       <Card className="divide-y p-2 text-sm">
         {rows.map((r) => (
           <div key={r.id} className="px-3 py-3">
-            ${r.amountMxn} — egreso {r.cashDisbursementId?.slice(0, 8)}…
+            ${r.amountMxn} —{" "}
+            {r.cashDisbursementId ? (
+              <Link href={`/app/finanzas/egresos/${r.cashDisbursementId}`} className="font-mono text-accent hover:underline">
+                Ver egreso
+              </Link>
+            ) : (
+              "sin egreso"
+            )}
             <form action={regularizePendingReceiptAction} className="mt-2 flex gap-1">
               <input type="hidden" name="receiptId" value={r.id} />
               <input name="invoiceId" placeholder="ID factura (opcional)" className="rounded-md border border-border px-2 py-1 text-xs" />

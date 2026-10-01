@@ -11,12 +11,15 @@ import {
   customerCreditBalances,
   documentRequests,
   invoices,
+  payableBalances,
   payments,
   pendingReceipts,
+  purchases,
   receivableBalances,
   quotes,
   remissions,
   storedDocuments,
+  suppliers,
 } from "@/db/schema";
 import { revalidateCommercialHub } from "@/lib/revalidate-commercial-hub";
 import {
@@ -150,6 +153,84 @@ export async function getInvoiceDetail(companyId: string, id: string) {
     .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId)))
     .limit(1);
   return row ?? null;
+}
+
+export async function listPayablesWithSuppliers(companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      payable: payableBalances,
+      supplierName: suppliers.name,
+    })
+    .from(payableBalances)
+    .innerJoin(suppliers, eq(payableBalances.supplierId, suppliers.id))
+    .where(eq(payableBalances.companyId, companyId))
+    .orderBy(desc(payableBalances.createdAt))
+    .limit(50);
+}
+
+export async function listDisbursements(companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      disbursement: cashDisbursements,
+      supplierName: suppliers.name,
+    })
+    .from(cashDisbursements)
+    .leftJoin(suppliers, eq(cashDisbursements.supplierId, suppliers.id))
+    .where(eq(cashDisbursements.companyId, companyId))
+    .orderBy(desc(cashDisbursements.createdAt))
+    .limit(50);
+}
+
+export async function getCashDisbursementDetail(companyId: string, id: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      disbursement: cashDisbursements,
+      supplierName: suppliers.name,
+    })
+    .from(cashDisbursements)
+    .leftJoin(suppliers, eq(cashDisbursements.supplierId, suppliers.id))
+    .where(and(eq(cashDisbursements.id, id), eq(cashDisbursements.companyId, companyId)))
+    .limit(1);
+  if (!row) return null;
+
+  const [purchase] = await db
+    .select({ id: purchases.id, description: purchases.description })
+    .from(purchases)
+    .where(and(eq(purchases.companyId, companyId), eq(purchases.cashDisbursementId, id)))
+    .limit(1);
+
+  const [pendingReceipt] = await db
+    .select({ id: pendingReceipts.id, status: pendingReceipts.status })
+    .from(pendingReceipts)
+    .where(and(eq(pendingReceipts.companyId, companyId), eq(pendingReceipts.cashDisbursementId, id)))
+    .limit(1);
+
+  return { ...row, purchase: purchase ?? null, pendingReceipt: pendingReceipt ?? null };
+}
+
+export async function getPayableDetail(companyId: string, id: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      payable: payableBalances,
+      supplierName: suppliers.name,
+    })
+    .from(payableBalances)
+    .innerJoin(suppliers, eq(payableBalances.supplierId, suppliers.id))
+    .where(and(eq(payableBalances.id, id), eq(payableBalances.companyId, companyId)))
+    .limit(1);
+  if (!row) return null;
+
+  const [purchase] = await db
+    .select({ id: purchases.id, description: purchases.description })
+    .from(purchases)
+    .where(and(eq(purchases.companyId, companyId), eq(purchases.payableBalanceId, id)))
+    .limit(1);
+
+  return { ...row, purchase: purchase ?? null };
 }
 
 export async function getRemissionDetail(companyId: string, id: string) {
