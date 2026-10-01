@@ -69,6 +69,16 @@ export async function listPendingQuote(companyId: string) {
     .orderBy(desc(quotes.createdAt));
 }
 
+export async function listQuotesForClient(clientId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(quotes)
+    .where(and(eq(quotes.clientId, clientId), eq(quotes.companyId, companyId)))
+    .orderBy(desc(quotes.createdAt))
+    .limit(50);
+}
+
 export async function createQuoteAction(formData: FormData) {
   const session = await requireCommercial();
   const clientId = String(formData.get("clientId") ?? "");

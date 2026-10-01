@@ -115,6 +115,39 @@ export async function listQuotesForEqui(equiId: string, companyId: string) {
     .limit(50);
 }
 
+export async function listEquiForClient(clientId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(equiUnits)
+    .where(
+      and(eq(equiUnits.clientId, clientId), eq(equiUnits.companyId, companyId), eq(equiUnits.active, true)),
+    )
+    .orderBy(desc(equiUnits.updatedAt))
+    .limit(50);
+}
+
+export async function listAttendancesForClientViaEqui(clientId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      attendance: attendances,
+      equiFolio: equiUnits.folio,
+      equiId: equiUnits.id,
+    })
+    .from(attendances)
+    .innerJoin(equiUnits, eq(attendances.equiId, equiUnits.id))
+    .where(
+      and(
+        eq(equiUnits.clientId, clientId),
+        eq(attendances.companyId, companyId),
+        eq(attendances.active, true),
+      ),
+    )
+    .orderBy(desc(attendances.updatedAt))
+    .limit(30);
+}
+
 export async function createEquiAction(formData: FormData) {
   const session = await requireSession();
   if (!canCreateEqui(session)) throw new Error("Sin permiso");
@@ -149,6 +182,7 @@ export async function createEquiAction(formData: FormData) {
     .returning();
 
   revalidatePath("/app/equi");
+  revalidatePath(`/app/clientes/${clientId}`);
   redirect(`/app/equi/${row.id}`);
 }
 

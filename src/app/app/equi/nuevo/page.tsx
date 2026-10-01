@@ -7,12 +7,24 @@ import { Field, FormActions, Input, Select, Textarea } from "@/components/ui/for
 import { getSession } from "@/lib/session";
 import { canCreateEqui, createEquiAction, listClientsForSelect } from "../../activos/actions";
 
-export default async function NuevoEquiPage() {
+export default async function NuevoEquiPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ clientId?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!canCreateEqui(session)) redirect("/app/equi");
 
+  const { clientId: preselectedClientId } = await searchParams;
   const clientOptions = await listClientsForSelect(session.activeCompany.id);
+  const preselectValid =
+    preselectedClientId && clientOptions.some((c) => c.id === preselectedClientId)
+      ? preselectedClientId
+      : undefined;
+  const preselectedName = preselectValid
+    ? clientOptions.find((c) => c.id === preselectValid)?.name
+    : undefined;
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -20,12 +32,20 @@ export default async function NuevoEquiPage() {
         eyebrow="Activos"
         title="Nuevo EQUI"
         description="Asigna folio permanente y vincula al cliente antes del ingreso a almacén."
-        breadcrumbs={[{ label: "Equipos", href: "/app/equi" }, { label: "Nuevo" }]}
+        breadcrumbs={
+          preselectValid
+            ? [
+                { label: "Clientes", href: "/app/clientes" },
+                { label: preselectedName ?? "Cliente", href: `/app/clientes/${preselectValid}` },
+                { label: "Nuevo EQUI" },
+              ]
+            : [{ label: "Equipos", href: "/app/equi" }, { label: "Nuevo" }]
+        }
       />
       <SectionCard title="Datos del equipo" description="Solo SYSTRON registra equipos EQUI." tone="accent">
         <form action={createEquiAction} className="grid gap-4">
           <Field label="Cliente" hint="Propietario comercial del equipo">
-            <Select name="clientId" required>
+            <Select name="clientId" required defaultValue={preselectValid ?? ""}>
               <option value="">Seleccionar…</option>
               {clientOptions.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>

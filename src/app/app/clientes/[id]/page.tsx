@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Cpu, FileText, Stethoscope } from "lucide-react";
 import { PageHeader } from "@/components/patterns/page-header";
-import { Card } from "@/components/ui/surface";
+import { SectionCard } from "@/components/patterns/section-card";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, StatusBadge } from "@/components/ui/surface";
 import { getSession } from "@/lib/session";
 import { canManageClients } from "@/lib/permissions";
+import {
+  canCreateEqui,
+  canViewEqui,
+  listAttendancesForClientViaEqui,
+  listEquiForClient,
+} from "../../activos/actions";
+import { listQuotesForClient } from "../../cotizaciones/actions";
 import {
   addClientContactAction,
   cancelClientAction,
@@ -16,6 +26,12 @@ import {
   setPrimaryClientContactAction,
   updateClientAction,
 } from "../../maestros/actions";
+
+const ATT_LABEL: Record<string, string> = {
+  DIAGNOSTICO: "Diagnóstico",
+  REPARACION: "Reparación preautorizada",
+  DIAGNOSTICO_GARANTIA: "Diagnóstico garantía",
+};
 
 export default async function ClienteDetallePage({
   params,
@@ -36,6 +52,17 @@ export default async function ClienteDetallePage({
   const communications = await listClientCommunications(client.id, session.activeCompany.id);
   const history = await getEntityHistory("CLIENT", client.id);
   const canEdit = canManageClients(session.role, session.activeCompany.code) && !client.isIntercompany;
+  const showSystronOps = canViewEqui(session);
+
+  const [equiRows, attendanceRows, quoteRows] = showSystronOps
+    ? await Promise.all([
+        listEquiForClient(client.id, session.activeCompany.id),
+        listAttendancesForClientViaEqui(client.id, session.activeCompany.id),
+        listQuotesForClient(client.id, session.activeCompany.id),
+      ])
+    : [[], [], []];
+
+  const pendingQuotes = quoteRows.filter((q) => q.pendingPricing);
 
   return (
     <div className="space-y-6">
@@ -44,6 +71,17 @@ export default async function ClienteDetallePage({
         title={client.name}
         description={client.folio ? `Folio ${client.folio}` : undefined}
         breadcrumbs={[{ label: "Clientes", href: "/app/clientes" }, { label: client.name }]}
+        actions={
+          showSystronOps && canCreateEqui(session) ? (
+            <Link
+              href={`/app/equi/nuevo?clientId=${client.id}`}
+              className={buttonVariants({ variant: "primary", size: "sm" })}
+            >
+              <Cpu className="size-4" />
+              Nuevo EQUI
+            </Link>
+          ) : undefined
+        }
       />
 
       {conflict === "1" && (
@@ -70,6 +108,114 @@ export default async function ClienteDetallePage({
           <dd>{client.isIntercompany ? "Sí" : "No"}</dd>
         </div>
       </Card>
+
+      {showSystronOps && (
+        <>
+          {pendingQuotes.length > 0 && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              {pendingQuotes.length} cotización(es) de este cliente{" "}
+              {pendingQuotes.length === 1 ? "requiere" : "requieren"} precio CEO.{" "}
+              <Link href="/app/cotizaciones/pendientes" className="font-semibold text-accent hover:underline">
+                Ver pendientes de precio
+              </Link>
+            </p>
+          )}
+
+          <SectionCard
+            icon={Cpu}
+            title="Equipos EQUI"
+            description="Activos SYSTRON del cliente — entrada, técnica y cotización desde cada folio."
+            tone={equiRows.length ? "default" : "muted"}
+          >
+            {equiRows.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Sin equipos registrados.
+                {canCreateEqui(session) && (
+                  <>
+                    {" "}
+                    <Link
+                      href={`/app/equi/nuevo?clientId=${client.id}`}
+                      className="font-medium text-accent hover:underline"
+                    >
+                      Dar de alta un EQUI
+                    </Link>
+                  </>
+                )}
+              </p>
+            ) : (
+              <ul className="divide-y rounded-xl border border-border">
+                {equiRows.map((e) => (
+                  <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-accent">{e.folio}</span>
+                      <span className="text-slate-600">{e.model}</span>
+                      <StatusBadge status={e.warehouseStatus} />
+                    </span>
+                    <Link href={`/app/equi/${e.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Abrir equipo
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            icon={Stethoscope}
+            title="Atenciones técnicas"
+            description="Operaciones vinculadas a los EQUI de este cliente."
+            tone={attendanceRows.length ? "default" : "muted"}
+          >
+            {attendanceRows.length === 0 ? (
+              <p className="text-sm text-slate-500">Aún no hay atenciones en equipos de este cliente.</p>
+            ) : (
+              <ul className="divide-y rounded-xl border border-border">
+                {attendanceRows.map(({ attendance: a, equiFolio, equiId }) => (
+                  <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                    <span>
+                      <Link href={`/app/equi/${equiId}`} className="font-mono text-xs font-bold text-accent hover:underline">
+                        {equiFolio}
+                      </Link>
+                      <span className="text-slate-500"> · </span>
+                      <span className="font-semibold">{ATT_LABEL[a.attentionType] ?? a.attentionType}</span>
+                      <span className="text-slate-500"> · {a.reportedFault ?? "Sin falla reportada"}</span>
+                    </span>
+                    <Link href={`/app/tecnica/${a.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Abrir atención
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            icon={FileText}
+            title="Cotizaciones"
+            description="Comercial vinculado al cliente (técnico o iniciado en ventas)."
+            tone={quoteRows.length ? "default" : "muted"}
+          >
+            {quoteRows.length === 0 ? (
+              <p className="text-sm text-slate-500">Sin cotizaciones registradas para este cliente.</p>
+            ) : (
+              <ul className="divide-y rounded-xl border border-border">
+                {quoteRows.map((q) => (
+                  <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-accent">{q.folio}</span>
+                      <StatusBadge status={q.status} />
+                      {q.pendingPricing && <span className="text-xs text-amber-700">Pendiente de precio</span>}
+                    </span>
+                    <Link href={`/app/cotizaciones/${q.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                      Abrir cotización
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </>
+      )}
 
       {canEdit && (
         <Card className="p-6">
