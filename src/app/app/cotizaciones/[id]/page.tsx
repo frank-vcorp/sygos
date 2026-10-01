@@ -7,6 +7,7 @@ import {
   Inbox,
   Percent,
   Send,
+  Receipt,
   Truck,
   Users,
 } from "lucide-react";
@@ -22,6 +23,12 @@ import { formatMxnDisplay } from "@/lib/format-currency";
 import { canSwitchActiveCompany } from "@/lib/permissions-company";
 import { getSession, switchActiveCompany } from "@/lib/session";
 import { canApplyQuoteDiscount, canSeeSupplierCost, canSetQuotePrice } from "@/lib/permissions-commercial";
+import {
+  canGenerateFiscalDocuments,
+  canRequestInvoice,
+  canRequestRemission,
+} from "@/lib/permissions-finance";
+import { createInvoiceAction, listDocumentRequestsForQuote, listInvoicesForQuote, requestDocumentAction } from "../../finanzas/actions";
 import {
   applyQuoteDiscountAction,
   authorizeWithoutEquipmentAction,
@@ -53,9 +60,13 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
     await switchActiveCompany(session.id, quote.companyId);
     redirect(`/app/cotizaciones/${id}`);
   }
-  const [contacts, origin] = await Promise.all([
+  const authorized =
+    quote.status === "AUTORIZADA" || quote.status === "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO";
+  const [contacts, origin, quoteInvoices, quoteDocRequests] = await Promise.all([
     listContactsForClient(quote.clientId),
     getQuoteOriginLinks(quote.attendanceId),
+    authorized ? listInvoicesForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
+    authorized ? listDocumentRequestsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
   ]);
   const showSupplierCost = canSeeSupplierCost(session);
   const hideCostFromVendedor = session.role === "VENTAS_SYSTRON";
@@ -88,6 +99,17 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
             : "Pendiente respuesta del cliente",
       done: ["AUTORIZADA", "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO", "RECHAZADA"].includes(quote.status),
       current: quote.status === "ENVIADA",
+    },
+    {
+      id: "fiscal",
+      label: "Fiscal",
+      detail: quoteInvoices.length
+        ? `${quoteInvoices.length} factura(s) ligada(s)`
+        : authorized
+          ? "Solicitar factura o remisión"
+          : "Tras autorización del cliente",
+      done: quoteInvoices.length > 0,
+      current: authorized && quoteInvoices.length === 0,
     },
   ];
 
@@ -268,6 +290,76 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
               <input type="hidden" name="decision" value="RECHAZADA" />
               <button type="submit" className={buttonVariants({ variant: "secondary" })}>Cliente rechaza</button>
             </form>
+          </div>
+        </SectionCard>
+      )}
+
+      {authorized && (
+        <SectionCard
+          icon={Receipt}
+          title="Documentos fiscales"
+          description="Cola comercial → coordinación. Factura timbrada o remisión según política del cliente."
+          tone={quoteInvoices.length ? "default" : "accent"}
+        >
+          {quoteInvoices.length > 0 && (
+            <ul className="mb-4 divide-y rounded-xl border border-border text-sm">
+              {quoteInvoices.map((inv) => (
+                <li key={inv.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                  <span>
+                    <span className="font-mono text-xs font-bold text-accent">{inv.folio}</span>
+                    <span className="text-slate-500"> · </span>
+                    <StatusBadge status={inv.status} />
+                    <span className="text-slate-600"> · {formatMxnDisplay(inv.totalMxn)}</span>
+                  </span>
+                  <Link href="/app/finanzas" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                    Ver en Finanzas
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {quoteDocRequests.length > 0 && (
+            <ul className="mb-4 space-y-1 text-xs text-slate-600">
+              {quoteDocRequests.map((r) => (
+                <li key={r.id}>
+                  Solicitud {r.requestType.replaceAll("_", " ")} ·{" "}
+                  {new Date(r.createdAt).toLocaleString("es-MX")}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap gap-3">
+            {canRequestInvoice(session) && (
+              <form action={requestDocumentAction}>
+                <input type="hidden" name="clientId" value={quote.clientId} />
+                <input type="hidden" name="quoteId" value={quote.id} />
+                <input type="hidden" name="requestType" value="FACTURA" />
+                <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                  Solicitar factura
+                </button>
+              </form>
+            )}
+            {canRequestRemission(session) && (
+              <form action={requestDocumentAction}>
+                <input type="hidden" name="clientId" value={quote.clientId} />
+                <input type="hidden" name="quoteId" value={quote.id} />
+                <input type="hidden" name="requestType" value="REMISION" />
+                <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                  Solicitar remisión
+                </button>
+              </form>
+            )}
+            {canGenerateFiscalDocuments(session) && displayTotal != null && quoteInvoices.length === 0 && (
+              <form action={createInvoiceAction} className="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="clientId" value={quote.clientId} />
+                <input type="hidden" name="quoteId" value={quote.id} />
+                <input type="hidden" name="totalMxn" value={displayTotal} />
+                <input type="hidden" name="contractTotalMxn" value={displayTotal} />
+                <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>
+                  Generar factura (coord.)
+                </button>
+              </form>
+            )}
           </div>
         </SectionCard>
       )}

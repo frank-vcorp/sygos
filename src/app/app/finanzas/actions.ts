@@ -74,6 +74,24 @@ export async function listRemissions(companyId: string) {
   return db.select().from(remissions).where(eq(remissions.companyId, companyId)).limit(50);
 }
 
+export async function listInvoicesForQuote(quoteId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.quoteId, quoteId), eq(invoices.companyId, companyId)))
+    .orderBy(desc(invoices.createdAt));
+}
+
+export async function listDocumentRequestsForQuote(quoteId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(documentRequests)
+    .where(and(eq(documentRequests.quoteId, quoteId), eq(documentRequests.companyId, companyId)))
+    .orderBy(desc(documentRequests.createdAt));
+}
+
 export async function requestDocumentAction(formData: FormData) {
   const session = await getSession();
   if (!session) throw new Error("No autenticado");
@@ -91,6 +109,7 @@ export async function requestDocumentAction(formData: FormData) {
     requestedByUserId: session.id,
   });
   revalidatePath("/app/finanzas");
+  if (quoteId) revalidatePath(`/app/cotizaciones/${quoteId}`);
 }
 
 export async function createInvoiceAction(formData: FormData) {
@@ -126,6 +145,7 @@ export async function createInvoiceAction(formData: FormData) {
   await openReceivableForInvoice(inv.id, session.activeCompany.id, clientId, totalMxn);
   await stampInvoiceWithFacturapi(inv.id, session.activeCompany.id);
   revalidatePath("/app/finanzas");
+  if (quoteId) revalidatePath(`/app/cotizaciones/${quoteId}`);
 }
 
 export async function createFreeInvoiceAction(formData: FormData) {

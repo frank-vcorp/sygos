@@ -21,6 +21,7 @@ import { canApplyQuoteDiscount, canSetQuotePrice } from "@/lib/permissions-comme
 import { isUserInTestMode, logTestMutation } from "@/lib/test-mode-guard";
 import { deliverDocument } from "@/lib/document-delivery";
 import { buildQuoteDeliveryPackage } from "@/lib/documents/quote-delivery";
+import { revalidateCommercialHub } from "@/lib/revalidate-commercial-hub";
 import type { SessionUser } from "@/lib/session";
 import { getSession } from "@/lib/session";
 
@@ -137,7 +138,7 @@ export async function recordQuoteClientDecisionAction(formData: FormData) {
   if (session.activeCompany.code === "SYSTRON") {
     await propagateClientDecisionToLinkedQuote(quoteId, decision);
   }
-  revalidatePath(`/app/cotizaciones/${quoteId}`);
+  await revalidateCommercialHub({ quoteId });
 }
 
 export async function sendQuoteAction(formData: FormData) {
@@ -343,8 +344,7 @@ export async function setQuotePriceAction(formData: FormData) {
       systronSupplierCostMxn: supplierCost,
     })
     .where(and(eq(quotes.id, quoteId), eq(quotes.companyId, session.activeCompany.id)));
-  revalidatePath(`/app/cotizaciones/${quoteId}`);
-  revalidatePath("/app/cotizaciones/pendientes");
+  await revalidateCommercialHub({ quoteId });
 }
 
 export async function applyQuoteDiscountAction(formData: FormData) {

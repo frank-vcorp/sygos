@@ -7,7 +7,7 @@ import { SectionCard } from "@/components/patterns/section-card";
 import { WorkflowStrip } from "@/components/patterns/workflow-strip";
 import { buttonVariants } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/form-fields";
-import { StatusBadge } from "@/components/ui/surface";
+import { Card, StatusBadge } from "@/components/ui/surface";
 import { formatMxnDisplay } from "@/lib/format-currency";
 import { getSession } from "@/lib/session";
 import { canAssignExternalService, canManageTechnicalState, canReturnDiagnosis, canValidateDiagnosis } from "@/lib/permissions-tecnica";
@@ -65,13 +65,87 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
       }))
     : [];
 
+  const diagValidated = diag?.status === "VALIDADO_GERENTE";
+  const repairClosed =
+    repair != null && (repair.status === "REPARACION_TERMINADA" || repair.status === "SIN_REPARACION");
+  const needsQuote =
+    (diagValidated || repairClosed) &&
+    !linkedQuote &&
+    (att.attentionType !== "DIAGNOSTICO_GARANTIA" || diag?.warrantyOutcome === "NO_PROCEDENTE");
+  const hubSteps = [
+    {
+      id: "open",
+      label: "Atención",
+      detail: att.reportedFault ?? "Registrada",
+      done: true,
+      current: false,
+    },
+    ...(diag
+      ? [
+          {
+            id: "diag",
+            label: "Diagnóstico",
+            detail: DIAG_STATUS[diag.status] ?? diag.status,
+            done: diagValidated,
+            current: !diagValidated,
+          },
+        ]
+      : []),
+    ...(repair || att.attentionType === "REPARACION"
+      ? [
+          {
+            id: "repair",
+            label: "Reparación / OS",
+            detail: repair
+              ? repair.status.replaceAll("_", " ")
+              : os[0]
+                ? `OS ${os[0].folio}`
+                : "Sin OS",
+            done: repairClosed,
+            current: Boolean(repair && !repairClosed),
+          },
+        ]
+      : os[0]
+        ? [
+            {
+              id: "os",
+              label: "Orden de servicio",
+              detail: `${os[0].folio} · ${os[0].status.replaceAll("_", " ")}`,
+              done: true,
+              current: false,
+            },
+          ]
+        : []),
+    {
+      id: "quote",
+      label: "Cotización",
+      detail: linkedQuote
+        ? linkedQuote.pendingPricing
+          ? `${linkedQuote.folio} · pendiente precio CEO`
+          : linkedQuote.folio
+        : needsQuote
+          ? "Debe generarse al validar o cerrar reparación"
+          : "Tras validación gerencial",
+      done: Boolean(linkedQuote && !linkedQuote.pendingPricing),
+      current: Boolean(linkedQuote?.pendingPricing || needsQuote),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Operación"
         title={att.attentionType.replaceAll("_", " ")}
         description={att.reportedFault ?? "Atención técnica en curso"}
-        breadcrumbs={[{ label: "Técnica", href: "/app/tecnica" }, { label: "Detalle" }]}
+        breadcrumbs={
+          equiAsset
+            ? [
+                { label: "Equipos", href: "/app/equi" },
+                { label: equiAsset.folio, href: `/app/equi/${equiAsset.id}` },
+                { label: "Atención" },
+              ]
+            : [{ label: "Técnica", href: "/app/tecnica" }, { label: "Detalle" }]
+        }
         actions={
           <div className="flex flex-wrap gap-2">
             {diag && <StatusBadge status={diag.status} />}
@@ -96,6 +170,29 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
           </div>
         }
       />
+
+      <Card className="p-4 sm:p-5">
+        <WorkflowStrip steps={hubSteps} />
+      </Card>
+
+      {linkedQuote?.pendingPricing && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Cotización{" "}
+          <Link href={`/app/cotizaciones/${linkedQuote.id}`} className="font-mono font-semibold text-accent hover:underline">
+            {linkedQuote.folio}
+          </Link>{" "}
+          en bandeja pendiente de precio.{" "}
+          <Link href="/app/cotizaciones/pendientes" className="font-semibold text-accent hover:underline">
+            Ir a pendientes
+          </Link>
+        </p>
+      )}
+
+      {needsQuote && (
+        <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800">
+          Falta generar la cotización comercial. Valida el diagnóstico con gerente o cierra la reparación para crear el pendiente de cotizar.
+        </p>
+      )}
 
       <DetailGrid title="Contexto de atención">
         <DetailItem label="Tipo" value={att.attentionType.replaceAll("_", " ")} />
@@ -232,11 +329,30 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
       )}
 
       {repair && (
-        <SectionCard icon={Wrench} title="Reparación preautorizada" description="Actualiza estado operativo del taller.">
+        <SectionCard
+          icon={Wrench}
+          title="Reparación preautorizada"
+          description="Al marcar terminada o sin reparación se crea el pendiente de cotizar (CEO fija precio)."
+        >
           <p className="text-sm text-slate-600">
             Prioridad {repair.priority} · +{repair.snapshotIncrementPercent}% · SLA {repair.snapshotSlaDays}d ·{" "}
             <StatusBadge status={repair.status} />
+            {os[0] && (
+              <>
+                {" "}
+                · OS{" "}
+                <span className="font-mono text-xs font-semibold text-accent">{os[0].folio}</span>
+              </>
+            )}
           </p>
+          {linkedQuote && (repair.status === "REPARACION_TERMINADA" || repair.status === "SIN_REPARACION") && (
+            <p className="mt-2 text-sm">
+              Cotización vinculada:{" "}
+              <Link href={`/app/cotizaciones/${linkedQuote.id}`} className="font-mono text-accent hover:underline">
+                {linkedQuote.folio}
+              </Link>
+            </p>
+          )}
           {canEdit && (
             <div className="mt-4 flex flex-wrap gap-2">
               {(["EN_REPARACION", "EN_ESPERA_REFACCIONES", "REPARACION_TERMINADA", "SIN_REPARACION"] as const).map((st) => (

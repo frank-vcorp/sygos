@@ -14,6 +14,7 @@ import {
   repairs,
   serviceOrders,
   technicalLogEntries,
+  quotes,
   technicalProductionCredits,
 } from "@/db/schema";
 import { nextCompanyFolio } from "@/lib/folio";
@@ -27,6 +28,7 @@ import {
 } from "@/lib/permissions-tecnica";
 import { addMonths, diagnosisSnapshot, repairSnapshot } from "@/lib/technical-catalog";
 import { ensureQuoteFromRepairPending, ensureQuoteFromValidatedDiagnosis } from "@/lib/pending-quotes";
+import { revalidateCommercialHub } from "@/lib/revalidate-commercial-hub";
 import { getSession } from "@/lib/session";
 
 async function requireSession() {
@@ -119,7 +121,7 @@ export async function createAttendanceAction(formData: FormData) {
   }
 
   revalidatePath("/app/tecnica");
-  if (equiId) revalidatePath(`/app/equi/${equiId}`);
+  await revalidateCommercialHub({ equiId, attendanceId: row.id });
   redirect(`/app/tecnica/${row.id}`);
 }
 
@@ -152,9 +154,12 @@ export async function advanceDiagnosisStatusAction(formData: FormData) {
       .where(eq(diagnoses.id, diagnosisId));
     if (nextStatus === "VALIDADO_GERENTE") {
       await creditProduction(att.id, session.id);
-      await ensureQuoteFromValidatedDiagnosis(att.id, att.companyId, session.id);
-      revalidatePath("/app/cotizaciones/pendientes");
-      if (att.equiId) revalidatePath(`/app/equi/${att.equiId}`);
+      const q = await ensureQuoteFromValidatedDiagnosis(att.id, att.companyId, session.id);
+      await revalidateCommercialHub({
+        attendanceId: att.id,
+        equiId: att.equiId,
+        quoteId: q?.id ?? null,
+      });
     }
   }
   revalidatePath(`/app/tecnica/${att.id}`);
@@ -200,10 +205,12 @@ export async function validateDiagnosisAction(formData: FormData) {
   const att = await getAttendanceByDiagnosis(diag.attendanceId);
   if (att) {
     await creditProduction(att.id, attributed);
-    await ensureQuoteFromValidatedDiagnosis(att.id, att.companyId, session.id);
-    revalidatePath(`/app/tecnica/${att.id}`);
-    revalidatePath("/app/cotizaciones/pendientes");
-    if (att.equiId) revalidatePath(`/app/equi/${att.equiId}`);
+    const q = await ensureQuoteFromValidatedDiagnosis(att.id, att.companyId, session.id);
+    await revalidateCommercialHub({
+      attendanceId: att.id,
+      equiId: att.equiId,
+      quoteId: q?.id ?? null,
+    });
   }
 }
 
@@ -242,7 +249,23 @@ export async function resolveWarrantyAction(formData: FormData) {
     .update(diagnoses)
     .set({ warrantyOutcome: outcome, updatedAt: sql`now()` })
     .where(eq(diagnoses.id, diagnosisId));
-  revalidatePath(`/app/tecnica/${diag.attendanceId}`);
+  const att = await getAttendanceByDiagnosis(diag.attendanceId);
+  if (att && outcome === "NO_PROCEDENTE") {
+    const q = await ensureQuoteFromValidatedDiagnosis(att.id, att.companyId, session.id);
+    if (q) {
+      await db
+        .update(quotes)
+        .set({ pendingOrigin: "GARANTIA_NO_PROCEDENTE", updatedAt: sql`now()` })
+        .where(eq(quotes.id, q.id));
+    }
+    await revalidateCommercialHub({
+      attendanceId: att.id,
+      equiId: att.equiId,
+      quoteId: q?.id ?? null,
+    });
+  } else {
+    revalidatePath(`/app/tecnica/${diag.attendanceId}`);
+  }
 }
 
 export async function ceoOverrideWarrantyAction(formData: FormData) {
@@ -282,8 +305,12 @@ export async function updateRepairStatusAction(formData: FormData) {
 
   if (status === "REPARACION_TERMINADA" || status === "SIN_REPARACION") {
     await creditProduction(att.id, session.id);
-    await ensureQuoteFromRepairPending(att.id, att.companyId, session.id);
-    revalidatePath("/app/cotizaciones/pendientes");
+    const q = await ensureQuoteFromRepairPending(att.id, att.companyId, session.id);
+    await revalidateCommercialHub({
+      attendanceId: att.id,
+      equiId: att.equiId,
+      quoteId: q?.id ?? null,
+    });
   }
 
   const [os] = await db.select().from(serviceOrders).where(eq(serviceOrders.attendanceId, att.id)).limit(1);
