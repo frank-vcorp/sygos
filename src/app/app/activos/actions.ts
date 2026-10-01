@@ -19,6 +19,7 @@ import {
   canViewEqui,
   canViewMot,
 } from "@/lib/permissions-activos";
+import { readLiveOperationalData } from "@/lib/live-data";
 import { revalidateCommercialHub } from "@/lib/revalidate-commercial-hub";
 import { getSession } from "@/lib/session";
 
@@ -69,6 +70,7 @@ export async function listEquiWithClients(companyId: string) {
 }
 
 export async function getEqui(companyId: string, id: string) {
+  readLiveOperationalData();
   const db = getDb();
   const rows = await db
     .select()
@@ -79,6 +81,7 @@ export async function getEqui(companyId: string, id: string) {
 }
 
 export async function getEquiDetail(companyId: string, id: string) {
+  readLiveOperationalData();
   const db = getDb();
   const [row] = await db
     .select({
@@ -185,6 +188,7 @@ export async function listQuotesForMot(motId: string) {
 }
 
 export async function getMotDetailEnriched(id: string) {
+  readLiveOperationalData();
   const mot = await getMot(id);
   if (!mot) return null;
   const db = getDb();
@@ -311,6 +315,7 @@ export async function listMotVisible() {
 }
 
 export async function getMot(id: string) {
+  readLiveOperationalData();
   const session = await requireSession();
   if (!canViewMot(session)) return null;
 
@@ -427,7 +432,7 @@ export async function confirmMotIngressAction(formData: FormData) {
 
   const id = String(formData.get("id") ?? "");
   const version = Number(formData.get("version") ?? 0);
-  if (!id || !version) throw new Error("Datos incompletos");
+  if (!id || !Number.isFinite(version) || version < 1) throw new Error("Datos incompletos");
 
   const db = getDb();
   const mot = await getMot(id);
@@ -461,13 +466,15 @@ export async function confirmMotIngressAction(formData: FormData) {
     authorUserId: session.id,
   });
 
-  revalidatePath("/app/mot");
-  revalidatePath(`/app/mot/${id}`);
+  revalidatePath("/app/mot", "page");
+  revalidatePath(`/app/mot/${id}`, "page");
+  revalidatePath("/app/mot/servomotores", "page");
+  revalidatePath("/app/tecnica/nueva", "page");
   await revalidateCommercialHub({
     motId: id,
     clientId: mot.systronClientId ?? mot.servomotoresClientId ?? undefined,
   });
-  redirect(`/app/mot/${id}`);
+  redirect(`/app/mot/${id}?ingress=1`);
 }
 
 export async function motTrialExitAction(formData: FormData) {

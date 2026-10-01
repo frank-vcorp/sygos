@@ -30,6 +30,8 @@ const STATUS_LABEL: Record<string, string> = {
   EGRESADO: "Egresado",
 };
 
+export const dynamic = "force-dynamic";
+
 const ATT_LABEL: Record<string, string> = {
   DIAGNOSTICO: "Diagnóstico",
   REPARACION: "Reparación preautorizada",
@@ -41,14 +43,14 @@ export default async function MotDetallePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ conflict?: string }>;
+  searchParams: Promise<{ conflict?: string; ingress?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!canViewMot(session)) redirect("/app");
 
   const { id } = await params;
-  const { conflict } = await searchParams;
+  const { conflict, ingress } = await searchParams;
   const detail = await getMotDetailEnriched(id);
   if (!detail) notFound();
   const { mot, systronClient, smClient } = detail;
@@ -165,6 +167,11 @@ export default async function MotDetallePage({
       {conflict === "1" && (
         <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Conflicto de versión; recarga e intenta de nuevo.
+        </p>
+      )}
+      {ingress === "1" && mot.custodyStatus === "EN_RESGUARDO_SERVOMOTORES" && (
+        <p className="rounded-xl bg-success-muted px-4 py-3 text-sm text-success">
+          Ingreso confirmado — custodia en resguardo y SLA iniciado.
         </p>
       )}
 

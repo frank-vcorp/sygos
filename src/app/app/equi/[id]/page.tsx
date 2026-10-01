@@ -17,6 +17,8 @@ import {
   listQuotesForEqui,
 } from "../../activos/actions";
 
+export const dynamic = "force-dynamic";
+
 const WH_LABEL: Record<string, string> = {
   SIN_ENTRADA: "Sin entrada",
   EN_RESGUARDO: "En resguardo",
@@ -39,12 +41,19 @@ function canRegisterEquiEntry(role: string) {
   );
 }
 
-export default async function EquiDetallePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EquiDetallePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ entry?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!canViewEqui(session)) redirect("/app");
 
   const { id } = await params;
+  const { entry } = await searchParams;
   const equi = await getEquiDetail(session.activeCompany.id, id);
   if (!equi || !equi.active) notFound();
 
@@ -127,6 +136,12 @@ export default async function EquiDetallePage({ params }: { params: Promise<{ id
       <Card className="p-4 sm:p-5">
         <WorkflowStrip steps={workflowSteps} />
       </Card>
+
+      {entry === "1" && equi.warehouseStatus === "EN_RESGUARDO" && (
+        <p className="rounded-xl bg-success-muted px-4 py-3 text-sm text-success">
+          Entrada registrada — el equipo está en resguardo en almacén.
+        </p>
+      )}
 
       {equi.warehouseStatus === "SIN_ENTRADA" && canRegisterEquiEntry(session.role) && (
         <SectionCard

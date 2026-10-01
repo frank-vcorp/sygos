@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { formatStatusBadgeLabel } from "@/lib/status-labels";
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
@@ -55,7 +56,7 @@ export function StatusBadge({
         className,
       )}
     >
-      {status.replaceAll("_", " ")}
+      {formatStatusBadgeLabel(status)}
     </span>
   );
 }

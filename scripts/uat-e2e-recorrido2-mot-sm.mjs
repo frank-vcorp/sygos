@@ -141,7 +141,9 @@ async function main() {
       const btn = page.getByRole("button", { name: "Confirmar ingreso" });
       if (await btn.count()) {
         await Promise.all([
-          page.waitForResponse((r) => r.request().method() === "POST" && r.status() < 500, { timeout: 45_000 }).catch(() => null),
+          page.waitForURL((u) => u.pathname.endsWith(motId) && u.search.includes("ingress=1"), { timeout: 60_000 }).catch(() =>
+            page.waitForURL((u) => u.pathname.endsWith(motId), { timeout: 60_000 }),
+          ),
           btn.click(),
         ]);
         for (let i = 0; i < 10; i++) {

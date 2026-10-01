@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/patterns/page-header";
 import { Card } from "@/components/ui/surface";
 import { buttonVariants } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 const MOT_STATUS_SHORT: Record<string, string> = {
   PENDIENTE_INGRESO_SERVOMOTORES: "sin ingreso SM",
   EN_RESGUARDO_SERVOMOTORES: "en resguardo",

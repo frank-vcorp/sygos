@@ -49,9 +49,10 @@ export async function registerEquiEntryAction(formData: FormData) {
     toStatus: "EN_RESGUARDO",
     authorUserId: session.id,
   });
-  revalidatePath("/app/almacen");
-  revalidatePath(`/app/equi/${id}`);
-  redirect(`/app/equi/${id}`);
+  revalidatePath("/app/almacen", "page");
+  revalidatePath(`/app/equi/${id}`, "page");
+  revalidatePath("/app/tecnica/nueva", "page");
+  redirect(`/app/equi/${id}?entry=1`);
 }
 
 export async function registerEquiTrialExitAction(formData: FormData) {

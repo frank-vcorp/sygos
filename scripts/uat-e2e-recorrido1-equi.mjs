@@ -81,7 +81,9 @@ async function main() {
       const btn = page.getByRole("button", { name: "Confirmar entrada a resguardo" });
       if (await btn.count()) {
         await Promise.all([
-          page.waitForResponse((r) => r.request().method() === "POST" && r.status() < 500, { timeout: 45_000 }).catch(() => null),
+          page.waitForURL((u) => u.pathname.endsWith(equiId) && u.search.includes("entry=1"), { timeout: 60_000 }).catch(() =>
+            page.waitForURL((u) => u.pathname.endsWith(equiId), { timeout: 60_000 }),
+          ),
           btn.click(),
         ]);
         for (let i = 0; i < 12; i++) {
