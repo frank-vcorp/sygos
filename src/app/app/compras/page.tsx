@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CircleDollarSign, ClipboardList, Gauge, ShoppingCart } from "lucide-react";
 import { getSession } from "@/lib/session";
+import { canManageSuppliers } from "@/lib/permissions";
+import { quickCreateHref } from "@/lib/quick-create-return";
 import { canAccessPurchases, canAuthorizePurchaseOrder, canProcessPurchaseOrder } from "@/lib/permissions-purchases";
 import { listSuppliers } from "../maestros/actions";
 import { PageHeader } from "@/components/patterns/page-header";
@@ -26,11 +29,16 @@ import {
   validateDirectPurchaseAction,
 } from "./actions";
 
-export default async function ComprasPage() {
+export default async function ComprasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ supplierId?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (!canAccessPurchases(session)) redirect("/app");
 
+  const { supplierId: preselectedSupplierId } = await searchParams;
   const companyId = session.activeCompany.id;
   const [rows, orders, budget, suppliers] = await Promise.all([
     listPurchases(companyId),
@@ -46,6 +54,16 @@ export default async function ComprasPage() {
         eyebrow="Abastecimiento"
         title="Compras y órdenes"
         description={`Control presupuestal y autorizaciones de ${session.activeCompany.displayName}.`}
+        actions={
+          canManageSuppliers(session.role) && canProcessPurchaseOrder(session) ? (
+            <Link
+              href={quickCreateHref("/app/proveedores/nuevo", "/app/compras")}
+              className={buttonVariants({ variant: "secondary", size: "sm" })}
+            >
+              Nuevo proveedor
+            </Link>
+          ) : undefined
+        }
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Presupuesto mensual" value={formatMxnDisplay(budget.monthlyBudgetMxn)} hint={budget.month} icon={Gauge} />
@@ -102,7 +120,7 @@ export default async function ComprasPage() {
                     <div className="flex flex-col gap-2">
                       <form action={validateDirectPurchaseAction} className="flex flex-wrap gap-1">
                         <input type="hidden" name="purchaseId" value={p.id} />
-                        <select name="supplierId" className="rounded-lg border border-border px-2 py-1 text-xs">
+                        <select name="supplierId" defaultValue={preselectedSupplierId ?? ""} className="rounded-lg border border-border px-2 py-1 text-xs">
                           <option value="">Sin proveedor</option>
                           {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
@@ -168,7 +186,7 @@ export default async function ComprasPage() {
                     {canProcessPurchaseOrder(session) && o.status === "AUTORIZADA" && (
                       <form action={processPurchaseOrderAction} className="flex flex-wrap gap-1">
                         <input type="hidden" name="purchaseOrderId" value={o.id} />
-                        <select name="supplierId" className="rounded-lg border border-border px-2 py-1 text-xs">
+                        <select name="supplierId" defaultValue={preselectedSupplierId ?? ""} className="rounded-lg border border-border px-2 py-1 text-xs">
                           {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
                         <select name="settlement" className="rounded-lg border border-border px-2 py-1 text-xs">

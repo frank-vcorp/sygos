@@ -28,6 +28,12 @@ import {
   canManageProspects,
   canManageSuppliers,
 } from "@/lib/permissions";
+import { findLikelyDuplicateClients, findLikelyDuplicateSuppliers } from "@/lib/master-duplicate-search";
+import {
+  parsePreserveFromForm,
+  redirectTargetAfterQuickCreate,
+  sanitizeReturnTo,
+} from "@/lib/quick-create-return";
 
 async function requireSession() {
   const session = await getSession();
@@ -53,6 +59,24 @@ export async function createClientAction(formData: FormData) {
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Nombre requerido");
+  const taxIdentity = String(formData.get("taxIdentity") ?? "").trim() || null;
+  const returnTo = String(formData.get("returnTo") ?? "");
+  const confirmDuplicate = formData.get("confirmDuplicate") === "1";
+
+  if (!confirmDuplicate) {
+    const dupes = await findLikelyDuplicateClients(session.activeCompany.id, name, taxIdentity);
+    if (dupes.length > 0) {
+      const sp = new URLSearchParams();
+      if (sanitizeReturnTo(returnTo)) sp.set("returnTo", returnTo);
+      sp.set("duplicateWarning", "1");
+      sp.set("duplicateIds", dupes.map((d) => d.id).join(","));
+      sp.set("name", name);
+      if (taxIdentity) sp.set("taxIdentity", taxIdentity);
+      const preserve = parsePreserveFromForm(formData);
+      for (const [k, v] of Object.entries(preserve)) sp.set(`preserve_${k}`, v);
+      redirect(`/app/clientes/nuevo?${sp.toString()}`);
+    }
+  }
 
   const db = getDb();
   const folio = await assignClientFolio(session.activeCompany.id, session.activeCompany.code);
@@ -66,7 +90,7 @@ export async function createClientAction(formData: FormData) {
       responsibleUserId: session.id,
       requiresInvoice: formData.get("requiresInvoice") === "on",
       creditDays: Number(formData.get("creditDays") ?? 0) || 0,
-      taxIdentity: String(formData.get("taxIdentity") ?? "").trim() || null,
+      taxIdentity,
       shippingAddress: String(formData.get("shippingAddress") ?? "").trim() || null,
     })
     .returning();
@@ -78,7 +102,9 @@ export async function createClientAction(formData: FormData) {
   }
 
   revalidatePath("/app/clientes");
-  redirect(`/app/clientes/${row.id}`);
+  redirect(
+    redirectTargetAfterQuickCreate(formData, "clientId", row.id, `/app/clientes/${row.id}`),
+  );
 }
 
 export async function updateClientAction(formData: FormData) {
@@ -318,6 +344,20 @@ export async function createSupplierAction(formData: FormData) {
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Nombre requerido");
+  const confirmDuplicate = formData.get("confirmDuplicate") === "1";
+  const returnTo = String(formData.get("returnTo") ?? "");
+
+  if (!confirmDuplicate) {
+    const dupes = await findLikelyDuplicateSuppliers(session.activeCompany.id, name);
+    if (dupes.length > 0) {
+      const sp = new URLSearchParams();
+      if (sanitizeReturnTo(returnTo)) sp.set("returnTo", returnTo);
+      sp.set("duplicateWarning", "1");
+      sp.set("duplicateIds", dupes.map((d) => d.id).join(","));
+      sp.set("name", name);
+      redirect(`/app/proveedores/nuevo?${sp.toString()}`);
+    }
+  }
 
   const db = getDb();
   const folio = await assignSupplierFolio(session.activeCompany.id, session.activeCompany.code);
@@ -333,7 +373,9 @@ export async function createSupplierAction(formData: FormData) {
   }).returning();
 
   revalidatePath("/app/proveedores");
-  redirect(`/app/proveedores/${row.id}`);
+  redirect(
+    redirectTargetAfterQuickCreate(formData, "supplierId", row.id, `/app/proveedores/${row.id}`),
+  );
 }
 
 export async function updateSupplierAction(formData: FormData) {
@@ -500,16 +542,30 @@ export async function addClientContactAction(formData: FormData) {
       .where(and(eq(clientContacts.clientId, clientId), eq(clientContacts.active, true)));
   }
 
-  await db.insert(clientContacts).values({
-    clientId,
-    name,
-    phone: String(formData.get("phone") ?? "").trim() || null,
-    email: String(formData.get("email") ?? "").trim() || null,
-    roleTitle: String(formData.get("roleTitle") ?? "").trim() || null,
-    isPrimary: makePrimary,
-  });
+  const [inserted] = await db
+    .insert(clientContacts)
+    .values({
+      clientId,
+      name,
+      phone: String(formData.get("phone") ?? "").trim() || null,
+      email: String(formData.get("email") ?? "").trim() || null,
+      roleTitle: String(formData.get("roleTitle") ?? "").trim() || null,
+      isPrimary: makePrimary,
+    })
+    .returning({ id: clientContacts.id });
 
   revalidatePath(`/app/clientes/${clientId}`);
+
+  const returnTo = String(formData.get("returnTo") ?? "");
+  const back = redirectTargetAfterQuickCreate(
+    formData,
+    "contactId",
+    inserted.id,
+    `/app/clientes/${clientId}`,
+  );
+  if (sanitizeReturnTo(returnTo)) {
+    redirect(back);
+  }
 }
 
 export async function setPrimaryClientContactAction(formData: FormData) {

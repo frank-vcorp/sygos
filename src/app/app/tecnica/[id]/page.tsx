@@ -9,6 +9,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/form-fields";
 import { Card, StatusBadge } from "@/components/ui/surface";
 import { formatMxnDisplay } from "@/lib/format-currency";
+import { canManageSuppliers } from "@/lib/permissions";
+import { quickCreateHref } from "@/lib/quick-create-return";
 import { getSession } from "@/lib/session";
 import { canAssignExternalService, canManageTechnicalState, canReturnDiagnosis, canValidateDiagnosis } from "@/lib/permissions-tecnica";
 import { getEqui } from "../../activos/actions";
@@ -39,10 +41,17 @@ const DIAG_STATUS: Record<string, string> = {
 
 const DIAG_ORDER = ["ABIERTO", "EN_TRABAJO", "TERMINADO", "PENDIENTE_VALIDACION_GERENTE", "VALIDADO_GERENTE"] as const;
 
-export default async function AtencionDetallePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AtencionDetallePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ supplierId?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   const { id } = await params;
+  const { supplierId: preselectedSupplierId } = await searchParams;
   const detail = await getAttendanceDetail(id, session.activeCompany.id);
   if (!detail) notFound();
   const { att, diag, repair, os, corrections, externalCases, production, logs } = detail;
@@ -397,12 +406,22 @@ export default async function AtencionDetallePage({ params }: { params: Promise<
           <form action={registerExternalServiceOutboundAction} className="grid gap-3 sm:grid-cols-3">
             <input type="hidden" name="attendanceId" value={att.id} />
             <Field label="Proveedor">
-              <Select name="supplierId" required>
+              <Select name="supplierId" required defaultValue={preselectedSupplierId ?? ""}>
                 <option value="">Seleccionar</option>
                 {suppliers.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </Select>
+              {canManageSuppliers(session.role) && (
+                <p className="mt-1 text-xs text-slate-600">
+                  <Link
+                    href={quickCreateHref("/app/proveedores/nuevo", `/app/tecnica/${id}`)}
+                    className="font-semibold text-accent hover:underline"
+                  >
+                    Crear proveedor
+                  </Link>
+                </p>
+              )}
             </Field>
             <Field label="Motivo salida">
               <Input name="note" required placeholder="Referencia" />

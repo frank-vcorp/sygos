@@ -21,7 +21,9 @@ import { Field, FormActions, Input } from "@/components/ui/form-fields";
 import { Card, EmptyState, StatusBadge } from "@/components/ui/surface";
 import { formatMxnDisplay } from "@/lib/format-currency";
 import { canSwitchActiveCompany } from "@/lib/permissions-company";
+import { canManageClients } from "@/lib/permissions";
 import { getSession, switchActiveCompany } from "@/lib/session";
+import { addClientContactAction } from "../../maestros/actions";
 import { canApplyQuoteDiscount, canSeeSupplierCost, canSetQuotePrice } from "@/lib/permissions-commercial";
 import {
   canGenerateFiscalDocuments,
@@ -58,10 +60,17 @@ const ORIGIN_LABEL: Record<string, string> = {
   SERVICIO_EN_CAMPO: "Servicio en campo",
 };
 
-export default async function CotizacionDetallePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CotizacionDetallePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ contactId?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   const { id } = await params;
+  const { contactId: preselectedContactId } = await searchParams;
   const quote = await getQuoteDetailForSession(session, id);
   if (!quote) notFound();
   if (quote.companyId !== session.activeCompany.id && canSwitchActiveCompany(session.role)) {
@@ -451,16 +460,49 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
           tone="accent"
         >
           {contacts.length === 0 ? (
-            <EmptyState
-              title="Sin contactos en el cliente"
-              description="Agrega al menos un contacto con correo o teléfono en la ficha del cliente."
-              action={
-                <Link href={`/app/clientes/${quote.clientId}`} className={buttonVariants({ variant: "primary", size: "sm" })}>
-                  Gestionar contactos
-                </Link>
-              }
-            />
+            <div className="space-y-4">
+              <EmptyState
+                title="Sin contactos en el cliente"
+                description="Alta rápida: captura un contacto mínimo y regresa aquí con el destinatario listo."
+              />
+              {canManageClients(session.role, session.activeCompany.code) && (
+                <form action={addClientContactAction} className="grid gap-2 rounded-xl border border-border p-4">
+                  <input type="hidden" name="clientId" value={quote.clientId} />
+                  <input type="hidden" name="returnTo" value={`/app/cotizaciones/${quote.id}`} />
+                  <p className="text-xs font-semibold uppercase text-slate-500">Crear contacto</p>
+                  <Input name="name" required placeholder="Nombre" className="!mt-0" />
+                  <Input name="email" type="email" placeholder="Correo" className="!mt-0" />
+                  <Input name="phone" placeholder="Teléfono / WhatsApp" className="!mt-0" />
+                  <label className="flex items-center gap-2 text-sm">
+                    <input name="makePrimary" type="checkbox" defaultChecked />
+                    Principal
+                  </label>
+                  <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>
+                    Guardar y volver
+                  </button>
+                </form>
+              )}
+              <Link href={`/app/clientes/${quote.clientId}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                Ficha completa del cliente
+              </Link>
+            </div>
           ) : (
+            <>
+              {canManageClients(session.role, session.activeCompany.code) && (
+                <form action={addClientContactAction} className="mb-4 grid gap-2 rounded-xl border border-dashed border-border p-3">
+                  <input type="hidden" name="clientId" value={quote.clientId} />
+                  <input type="hidden" name="returnTo" value={`/app/cotizaciones/${quote.id}`} />
+                  <p className="text-xs font-semibold text-slate-600">Alta rápida de contacto</p>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <Input name="name" required placeholder="Nombre" className="!mt-0 h-9 text-sm" />
+                    <Input name="email" type="email" placeholder="Correo" className="!mt-0 h-9 text-sm" />
+                    <Input name="phone" placeholder="Teléfono" className="!mt-0 h-9 text-sm" />
+                  </div>
+                  <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                    Agregar contacto
+                  </button>
+                </form>
+              )}
             <form action={sendQuoteAction} className="space-y-4">
               <input type="hidden" name="quoteId" value={quote.id} />
               <div className="space-y-2">
@@ -473,7 +515,7 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
                           type="checkbox"
                           name="contactIds"
                           value={c.id}
-                          defaultChecked={c.isPrimary}
+                          defaultChecked={preselectedContactId ? c.id === preselectedContactId : c.isPrimary}
                           className="mt-1"
                         />
                         <span>
@@ -506,6 +548,7 @@ export default async function CotizacionDetallePage({ params }: { params: Promis
                 Enviar cotización ahora
               </button>
             </form>
+            </>
           )}
         </SectionCard>
       )}
