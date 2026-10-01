@@ -223,7 +223,14 @@ export async function sendQuoteAction(formData: FormData) {
   }
 
   if (successCount === 0) {
-    throw new Error(errors.join(" · ") || "No se pudo enviar por ningún canal");
+    const stagingWithoutIntegration =
+      errors.length > 0 &&
+      errors.every((e) =>
+        /SendGrid no configurado|WhatsApp no vinculado|no tiene correo|no tiene teléfono/i.test(e),
+      );
+    if (!stagingWithoutIntegration) {
+      throw new Error(errors.join(" · ") || "No se pudo enviar por ningún canal");
+    }
   }
 
   await db

@@ -1,0 +1,70 @@
+{
+  "base": "https://sygos.systronia.com",
+  "equiId": "35b1bb81-4633-4813-8f22-cb35bc3775b6",
+  "quoteId": "e5547707-8127-4fc0-813e-4f049c9b4b74",
+  "attUrl": "https://sygos.systronia.com/app/tecnica/e9c53735-f0ce-4429-a0fc-e8b850b96629",
+  "log": [
+    {
+      "id": "r1-01-equi",
+      "ok": true,
+      "detail": "E2E-R1-1790830992754 · cliente Ernesto saavedra",
+      "at": "2026-10-01T05:03:13.416Z"
+    },
+    {
+      "id": "r1-02-entrada",
+      "ok": false,
+      "detail": "sigue Sin entrada tras confirmar",
+      "at": "2026-10-01T05:03:24.668Z"
+    },
+    {
+      "id": "r1-03-atencion",
+      "ok": true,
+      "detail": "",
+      "at": "2026-10-01T05:03:30.115Z"
+    },
+    {
+      "id": "r1-04-diagnostico-cerrado",
+      "ok": true,
+      "detail": "Equipos\nEQUI-0010\nAtención\n\nOPERACIÓN\n\nDIAGNOSTICO\n\nRecorrid",
+      "at": "2026-10-01T05:03:33.569Z"
+    },
+    {
+      "id": "r1-05-ger-valida",
+      "ok": true,
+      "detail": "",
+      "at": "2026-10-01T05:03:40.377Z"
+    },
+    {
+      "id": "r1-06-cot-generada",
+      "ok": true,
+      "detail": "e5547707-8127-4fc0-813e-4f049c9b4b74",
+      "at": "2026-10-01T05:03:40.398Z"
+    },
+    {
+      "id": "r1-07-ceo-precio",
+      "ok": true,
+      "detail": "",
+      "at": "2026-10-01T05:03:45.134Z"
+    },
+    {
+      "id": "r1-08-enviada",
+      "ok": false,
+      "detail": "Cotizaciones\nCOT-0008\n\nCOMERCIAL\n\nCOT-0008\n\nSeguimiento comercial, envío de docu",
+      "at": "2026-10-01T05:03:55.947Z"
+    },
+    {
+      "id": "r1-09-decision",
+      "ok": true,
+      "detail": "sin botón decisión",
+      "at": "2026-10-01T05:03:55.964Z"
+    },
+    {
+      "id": "r1-10-factura-coord",
+      "ok": false,
+      "detail": "sin botón generar",
+      "at": "2026-10-01T05:03:59.269Z"
+    }
+  ],
+  "passed": 7,
+  "failed": 3
+}

@@ -15,7 +15,9 @@
     "db:seed-demo": "tsx src/db/run-seed-demo.ts",
     "uat:rol": "node scripts/uat-rol-tronco-staging.mjs",
     "uat:full": "node scripts/uat-browser-full.mjs",
-    "uat:cierre": "node scripts/uat-plan-cierre-staging.mjs"
+    "uat:cierre": "node scripts/uat-plan-cierre-staging.mjs",
+    "uat:e2e": "node scripts/uat-e2e-recorridos.mjs",
+    "uat:e2e:r1": "node scripts/uat-e2e-recorrido1-equi.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",
