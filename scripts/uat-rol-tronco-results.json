@@ -1,0 +1,84 @@
+{
+  "base": "https://sygos.systronia.com",
+  "at": "2026-10-01T04:44:35.708Z",
+  "passed": 17,
+  "failed": 1,
+  "items": {
+    "passed": [
+      {
+        "key": "rol-ventas-inicio",
+        "note": ""
+      },
+      {
+        "key": "rol-ventas-cot-nueva-quick-client",
+        "note": ""
+      },
+      {
+        "key": "rol-ventas-nav-cotizaciones",
+        "note": ""
+      },
+      {
+        "key": "rol-ventas-sin-finanzas-nav",
+        "note": ""
+      },
+      {
+        "key": "rol-almacen-modulo",
+        "note": ""
+      },
+      {
+        "key": "rol-almacen-equi-list",
+        "note": ""
+      },
+      {
+        "key": "rol-tecnico-bandeja",
+        "note": ""
+      },
+      {
+        "key": "rol-tecnico-nueva-atencion",
+        "note": ""
+      },
+      {
+        "key": "rol-ger-systron-inicio",
+        "note": ""
+      },
+      {
+        "key": "rol-ger-systron-pendientes-ruta",
+        "note": ""
+      },
+      {
+        "key": "rol-ceo-panel",
+        "note": ""
+      },
+      {
+        "key": "rol-ceo-switch-sm",
+        "note": ""
+      },
+      {
+        "key": "rol-ger-sm-mot",
+        "note": ""
+      },
+      {
+        "key": "rol-ger-sm-compras",
+        "note": ""
+      },
+      {
+        "key": "rol-coord-finanzas",
+        "note": ""
+      },
+      {
+        "key": "admin-mot-list",
+        "note": ""
+      },
+      {
+        "key": "admin-mot-hub",
+        "note": ""
+      }
+    ],
+    "failed": [
+      {
+        "key": "rol-ger-systron-panel",
+        "note": ""
+      }
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-29T14:25:49.096Z",
+  "at": "2026-10-01T04:40:00.851Z",
   "log": [
     {
       "name": "f5-interco-factura-cxc-cxp",
@@ -19,7 +19,7 @@
     {
       "name": "f5-factura-borrador-sin-timbrar",
       "ok": true,
-      "detail": "Finanzas — SYSTRON\n\nIdentidad fiscal: Sin razón social · RFC —. Solo empresa act"
+      "detail": "Finanzas\nFacturas\nFAC-0002\n\nFINANZAS\n\nFAC-0002\n\nFactura fiscal vinculada al clie"
     },
     {
       "name": "f5-reintento-timbrado-ui",

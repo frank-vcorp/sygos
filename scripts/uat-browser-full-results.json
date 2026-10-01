@@ -1,0 +1,30 @@
+{
+  "passed": [
+    "f1-ceo-no-admin-usuarios",
+    "f1-operativos-solo-empresa",
+    "f1-clientes-systron",
+    "f1-cliente-interco-sm",
+    "f1-proveedor-interco-sy",
+    "f1-multicontacto-envio-cot",
+    "f1-seed-demo-opt-in",
+    "f2-sm-mot-list",
+    "f2-inv-sm-toggle",
+    "f2-ger-sm-panel",
+    "f2-custodia-sm-route",
+    "f3-mot-sy-ro-bitacora",
+    "f3-systron-solo-garantia-mot",
+    "f4-bandeja-ceo",
+    "f4-mot-interco-cot-sm",
+    "f4-vendedor-sin-costo-sm",
+    "f5-coord-factura-remision",
+    "f6-presupuesto-ui",
+    "f6-limite-directa-ui",
+    "f6-oc-procesada",
+    "f7-rrhh-modulos",
+    "f7-ger-sm-solo-fijo",
+    "f8-reportes-empresa",
+    "f9-modo-pruebas-ui",
+    "f9-integraciones-page"
+  ],
+  "failed": {}
+}
