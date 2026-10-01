@@ -7,12 +7,22 @@ export type IssuerBrand = {
   logoDataUrl?: string | null;
 };
 
+export type QuoteRequestLine = {
+  kind: string;
+  description: string;
+  quantity: number;
+};
+
 export type QuoteDocumentData = {
   folio: string;
   issuedAt: Date;
   status: string;
   originLabel: string;
+  offerTypeLabel?: string | null;
   commercialReference: string | null;
+  commercialNotes: string | null;
+  equipmentSummary: string | null;
+  requestLines: QuoteRequestLine[];
   clientName: string;
   clientTaxId: string | null;
   clientShippingAddress: string | null;

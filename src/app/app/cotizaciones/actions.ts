@@ -22,7 +22,14 @@ import {
 } from "@/db/schema";
 import { nextCompanyFolio } from "@/lib/folio";
 import { propagateClientDecisionToLinkedQuote } from "@/lib/quote-link";
-import { canApplyQuoteDiscount, canSetQuotePrice } from "@/lib/permissions-commercial";
+import { canApplyQuoteDiscount, canEditQuoteCommercialContext, canSetQuotePrice } from "@/lib/permissions-commercial";
+import {
+  assertIntendedContacts,
+  assertQuoteCommercialEquipment,
+  parseQuoteCommercialFormData,
+  replaceQuoteCommercialDetails,
+} from "@/lib/quote-commercial-persist";
+import { listQuoteIntendedContacts, listQuoteLines } from "@/lib/quote-commercial-queries";
 import { isUserInTestMode, logTestMutation } from "@/lib/test-mode-guard";
 import { deliverDocument } from "@/lib/document-delivery";
 import { buildQuoteDeliveryPackage } from "@/lib/documents/quote-delivery";
@@ -101,50 +108,91 @@ export async function listQuotesForClient(clientId: string, companyId: string) {
     .limit(50);
 }
 
-export async function createQuoteAction(formData: FormData) {
-  const session = await requireCommercial();
+async function insertCommercialQuote(session: SessionUser, formData: FormData) {
   const clientId = String(formData.get("clientId") ?? "");
   if (!clientId) throw new Error("Cliente requerido");
+  const pendingOriginRaw = String(formData.get("pendingOrigin") ?? "COTIZACION_INICIADA");
+  const pendingOrigin = pendingOriginRaw as
+    | "COTIZACION_INICIADA"
+    | "VENTA_EQUIPO"
+    | "SERVICIO_EN_CAMPO";
+  const parsed = parseQuoteCommercialFormData(formData);
+  const db = getDb();
+  await assertQuoteCommercialEquipment(
+    db,
+    session.activeCompany.id,
+    session.activeCompany.code,
+    clientId,
+    parsed,
+  );
+  await assertIntendedContacts(db, clientId, parsed.intendedContactIds);
+
   const test = await isUserInTestMode(session.id);
   const n = await nextCompanyFolio(session.activeCompany.id, "QUOTE", { testMode: test.active });
   const folio = `COT-${n.padStart(4, "0")}`;
-  const db = getDb();
-  const [row] = await db.insert(quotes).values({
-    companyId: session.activeCompany.id,
-    clientId,
-    folio,
-    status: "BORRADOR",
-    pendingPricing: true,
-    pendingOrigin: "COTIZACION_INICIADA",
-    commercialReference: String(formData.get("commercialReference") ?? "").trim() || null,
-    createdByUserId: session.id,
-  }).returning();
+  const [row] = await db
+    .insert(quotes)
+    .values({
+      companyId: session.activeCompany.id,
+      clientId,
+      folio,
+      status: "BORRADOR",
+      pendingPricing: true,
+      pendingOrigin,
+      createdByUserId: session.id,
+    })
+    .returning();
+  await replaceQuoteCommercialDetails(db, row.id, parsed);
   if (test.sessionId) await logTestMutation(test.sessionId, "quotes", row.id);
+  return { row, pendingOrigin };
+}
+
+export async function createQuoteAction(formData: FormData) {
+  const session = await requireCommercial();
+  const { row } = await insertCommercialQuote(session, formData);
   revalidatePath("/app/cotizaciones");
   redirect(`/app/cotizaciones/${row.id}`);
 }
 
+/** Venta equipo / servicio en campo — mismo cuerpo comercial §20.3. */
 export async function createSpecialCommercialQuoteAction(formData: FormData) {
   const session = await requireCommercial();
-  const origin = String(formData.get("origin") ?? "VENTA_EQUIPO") as "VENTA_EQUIPO" | "SERVICIO_EN_CAMPO";
-  const clientId = String(formData.get("clientId") ?? "");
-  if (!clientId) throw new Error("Cliente requerido");
-  const test = await isUserInTestMode(session.id);
-  const n = await nextCompanyFolio(session.activeCompany.id, "QUOTE", { testMode: test.active });
-  const db = getDb();
-  const [row] = await db.insert(quotes).values({
-    companyId: session.activeCompany.id,
-    clientId,
-    folio: `COT-${n.padStart(4, "0")}`,
-    status: "BORRADOR",
-    pendingPricing: true,
-    pendingOrigin: origin,
-    createdByUserId: session.id,
-  }).returning();
-  if (test.sessionId) await logTestMutation(test.sessionId, "quotes", row.id);
-  revalidatePath(origin === "VENTA_EQUIPO" ? "/app/ventas/equipo" : "/app/ventas/campo");
+  const origin = String(formData.get("pendingOrigin") ?? formData.get("origin") ?? "VENTA_EQUIPO");
+  formData.set("pendingOrigin", origin);
+  const { row, pendingOrigin } = await insertCommercialQuote(session, formData);
+  revalidatePath(pendingOrigin === "VENTA_EQUIPO" ? "/app/ventas/equipo" : "/app/ventas/campo");
   redirect(`/app/cotizaciones/${row.id}`);
 }
+
+export async function updateQuoteCommercialContextAction(formData: FormData) {
+  const session = await requireCommercial();
+  const quoteId = String(formData.get("quoteId") ?? "");
+  if (!quoteId) throw new Error("Cotización no válida");
+  const db = getDb();
+  const [quote] = await db
+    .select()
+    .from(quotes)
+    .where(and(eq(quotes.id, quoteId), eq(quotes.companyId, session.activeCompany.id)))
+    .limit(1);
+  if (!quote) throw new Error("Cotización no encontrada");
+  if (!canEditQuoteCommercialContext(session.role, quote)) {
+    throw new Error("Ya no puedes editar el contexto comercial de esta cotización");
+  }
+  const parsed = parseQuoteCommercialFormData(formData);
+  await assertQuoteCommercialEquipment(
+    db,
+    session.activeCompany.id,
+    session.activeCompany.code,
+    quote.clientId,
+    parsed,
+  );
+  await assertIntendedContacts(db, quote.clientId, parsed.intendedContactIds);
+  await replaceQuoteCommercialDetails(db, quoteId, parsed);
+  revalidatePath(`/app/cotizaciones/${quoteId}`);
+  revalidatePath("/app/cotizaciones/pendientes");
+}
+
+export { listQuoteLines, listQuoteIntendedContacts };
 
 export async function recordQuoteClientDecisionAction(formData: FormData) {
   const session = await requireCommercial();

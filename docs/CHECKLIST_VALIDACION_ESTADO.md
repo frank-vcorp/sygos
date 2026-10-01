@@ -1,6 +1,12 @@
 # Checklist validación — estado de implementación
 _Leyenda: ⬜ pendiente · 🟡 parcial · ✅ cumple_
 
+> **2026-10-01 — Reestructuración:** revisión honesta en [REESTRUCTURACION_SISTEMA_AUDIT.md](./REESTRUCTURACION_SISTEMA_AUDIT.md) y plan en [REESTRUCTURACION_SISTEMA_PLAN.md](./REESTRUCTURACION_SISTEMA_PLAN.md). Los ✅ históricos no implican §20.3 probado en UI hasta nueva UAT.
+
+## Fase 4 — re-audit comercial (2026-10-01)
+- ✅ Vendedor inicia cotización **con contexto Discovery §20.3** (UI `/app/cotizaciones/nueva`, ventas equipo/campo; líneas, equipo/preliminar, contactos, referencia; edición en detalle mientras pendiente de precio).
+- ✅ Flujo unificado pendientes + origen visible + precio CEO + envío/decisión (E2E operativo).
+
 ## Fase 1 — ✅ cerrada (2026-09-28)
 - ✅ Existen los contextos `SYSTRON` y `Servomotores`.
 - ✅ CEO, Coordinación y Administrador pueden cambiar de empresa.

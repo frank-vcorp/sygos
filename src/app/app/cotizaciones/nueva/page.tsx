@@ -5,7 +5,12 @@ import { listClientsForSelect } from "../../activos/actions";
 import { createQuoteAction } from "../actions";
 import { PageHeader } from "@/components/patterns/page-header";
 import { Card } from "@/components/ui/surface";
-import { CotizacionNuevaForm } from "@/components/quick-create/cotizacion-nueva-form";
+import { CommercialQuoteCaptureForm } from "@/components/commercial/commercial-quote-capture-form";
+import {
+  listActiveContactsForCompany,
+  listEquiOptionsForCommercial,
+  listMotOptionsForCommercial,
+} from "@/lib/quote-commercial-queries";
 
 export default async function NuevaCotizacionPage({
   searchParams,
@@ -15,23 +20,33 @@ export default async function NuevaCotizacionPage({
   const session = await getSession();
   if (!session) redirect("/login");
   const { clientId, commercialReference } = await searchParams;
-  const clients = await listClientsForSelect(session.activeCompany.id);
+  const companyId = session.activeCompany.id;
+  const [clients, contacts, equiOptions, motOptions] = await Promise.all([
+    listClientsForSelect(companyId),
+    listActiveContactsForCompany(companyId),
+    listEquiOptionsForCommercial(companyId),
+    listMotOptionsForCommercial(session.activeCompany.code),
+  ]);
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto max-w-2xl">
       <PageHeader
         eyebrow="Comercial"
         title="Nueva cotización"
-        description="El vendedor puede iniciar sin precio; CEO/Admin fija precio después."
+        description="Captura el contexto comercial (§20.3): líneas, equipo o datos preliminares, contactos y referencia. El CEO fija el precio después."
         breadcrumbs={[{ label: "Cotizaciones", href: "/app/cotizaciones" }, { label: "Nueva" }]}
       />
       <Card className="p-6">
-        <CotizacionNuevaForm
+        <CommercialQuoteCaptureForm
           clients={clients}
+          contacts={contacts}
+          equiOptions={equiOptions}
+          motOptions={motOptions}
           canCreateClient={canManageClients(session.role, session.activeCompany.code)}
+          formAction={createQuoteAction}
+          cancelHref="/app/cotizaciones"
           initialClientId={clientId}
-          initialReference={commercialReference}
-          createQuoteAction={createQuoteAction}
+          defaults={{ commercialReference }}
         />
       </Card>
     </div>

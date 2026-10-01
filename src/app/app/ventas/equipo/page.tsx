@@ -1,11 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { canManageClients } from "@/lib/permissions";
 import { listClientsForSelect } from "../../activos/actions";
 import { createSpecialCommercialQuoteAction } from "../../cotizaciones/actions";
 import { PageHeader } from "@/components/patterns/page-header";
 import { Card } from "@/components/ui/surface";
 import { buttonVariants } from "@/components/ui/button";
+import { CommercialQuoteCaptureForm } from "@/components/commercial/commercial-quote-capture-form";
+import {
+  listActiveContactsForCompany,
+  listEquiOptionsForCommercial,
+  listMotOptionsForCommercial,
+} from "@/lib/quote-commercial-queries";
 
 export default async function VentaEquipoPage() {
   const session = await getSession();
@@ -13,30 +20,38 @@ export default async function VentaEquipoPage() {
   if (session.activeCompany.code !== "SYSTRON" || session.role !== "VENTAS_SYSTRON") {
     if (!["CEO", "ADMINISTRADOR"].includes(session.role)) redirect("/app");
   }
-  const clients = await listClientsForSelect(session.activeCompany.id);
+  const companyId = session.activeCompany.id;
+  const [clients, contacts, equiOptions, motOptions] = await Promise.all([
+    listClientsForSelect(companyId),
+    listActiveContactsForCompany(companyId),
+    listEquiOptionsForCommercial(companyId),
+    listMotOptionsForCommercial(session.activeCompany.code),
+  ]);
 
   return (
-    <div className="max-w-xl">
+    <div className="mx-auto max-w-2xl space-y-4">
       <PageHeader
         eyebrow="Comercial"
         title="Venta de equipo"
-        description="Cotización comercial sin ingreso físico hasta autorización e ingreso de equipo."
+        description="Misma captura comercial que una cotización iniciada por vendedor; tipo de oferta fijado en venta de equipo."
       />
-      <Card className="p-5">
-        <form action={createSpecialCommercialQuoteAction} className="flex flex-col gap-3 text-sm sm:flex-row sm:items-end">
-          <input type="hidden" name="origin" value="VENTA_EQUIPO" />
-          <label className="flex-1">
-            <span className="mb-1 block text-xs font-medium text-slate-500">Cliente</span>
-            <select name="clientId" required className="w-full rounded-md border border-border px-3 py-2">
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </label>
-          <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Nueva cotización</button>
-        </form>
-        <Link href="/app/cotizaciones" className="mt-4 inline-block text-sm font-semibold text-accent hover:underline">
-          Ver cotizaciones
-        </Link>
+      <Card className="p-6">
+        <CommercialQuoteCaptureForm
+          clients={clients}
+          contacts={contacts}
+          equiOptions={equiOptions}
+          motOptions={motOptions}
+          canCreateClient={canManageClients(session.role, session.activeCompany.code)}
+          formAction={createSpecialCommercialQuoteAction}
+          cancelHref="/app/cotizaciones"
+          fixedOfferType="VENTA_EQUIPO"
+          hiddenPendingOrigin="VENTA_EQUIPO"
+          defaults={{ offerType: "VENTA_EQUIPO", equipmentMode: "preliminary" }}
+        />
       </Card>
+      <Link href="/app/cotizaciones" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        Ver cotizaciones
+      </Link>
     </div>
   );
 }

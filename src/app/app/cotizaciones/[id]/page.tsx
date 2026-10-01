@@ -26,7 +26,20 @@ import { canSwitchActiveCompany } from "@/lib/permissions-company";
 import { canManageClients } from "@/lib/permissions";
 import { getSession, switchActiveCompany } from "@/lib/session";
 import { addClientContactAction } from "../../maestros/actions";
-import { canApplyQuoteDiscount, canSeeSupplierCost, canSetQuotePrice } from "@/lib/permissions-commercial";
+import {
+  canApplyQuoteDiscount,
+  canEditQuoteCommercialContext,
+  canSeeSupplierCost,
+  canSetQuotePrice,
+} from "@/lib/permissions-commercial";
+import { CommercialQuoteCaptureForm } from "@/components/commercial/commercial-quote-capture-form";
+import { QUOTE_LINE_KIND_LABEL, QUOTE_OFFER_TYPE_LABEL } from "@/lib/quote-commercial-labels";
+import { deriveEquipmentMode } from "@/lib/quote-commercial-persist";
+import {
+  listActiveContactsForCompany,
+  listEquiOptionsForCommercial,
+  listMotOptionsForCommercial,
+} from "@/lib/quote-commercial-queries";
 import {
   canGenerateFiscalDocuments,
   canRequestInvoice,
@@ -49,8 +62,11 @@ import {
   getQuoteOriginLinks,
   recordQuoteClientDecisionAction,
   listContactsForClient,
+  listQuoteIntendedContacts,
+  listQuoteLines,
   sendQuoteAction,
   setQuotePriceAction,
+  updateQuoteCommercialContextAction,
 } from "../actions";
 
 const ORIGIN_LABEL: Record<string, string> = {
@@ -82,7 +98,8 @@ export default async function CotizacionDetallePage({
   }
   const authorized =
     quote.status === "AUTORIZADA" || quote.status === "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO";
-  const [contacts, origin, intercoPartner, quoteInvoices, quoteRemissions, quoteDocRequests, quotePayments] =
+  const canEditContext = canEditQuoteCommercialContext(session.role, quote);
+  const [contacts, origin, intercoPartner, quoteInvoices, quoteRemissions, quoteDocRequests, quotePayments, quoteLines, intendedContacts, captureBundle] =
     await Promise.all([
       listContactsForClient(quote.clientId),
       getQuoteOriginLinks(quote.attendanceId),
@@ -91,7 +108,17 @@ export default async function CotizacionDetallePage({
       authorized ? listRemissionsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
       authorized ? listDocumentRequestsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
       authorized ? listPaymentsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
+      listQuoteLines(quote.id),
+      listQuoteIntendedContacts(quote.id),
+      canEditContext
+        ? Promise.all([
+            listActiveContactsForCompany(session.activeCompany.id),
+            listEquiOptionsForCommercial(session.activeCompany.id),
+            listMotOptionsForCommercial(session.activeCompany.code),
+          ])
+        : Promise.resolve(null),
     ]);
+  const intendedContactIds = intendedContacts.map((c) => c.contactId);
   const fiscalDone = quoteInvoices.length > 0 || quoteRemissions.length > 0;
   const showSupplierCost = canSeeSupplierCost(session);
   const hideCostFromVendedor = session.role === "VENTAS_SYSTRON";
@@ -206,9 +233,16 @@ export default async function CotizacionDetallePage({
           }
         />
         <DetailItem
+          label="Tipo de oferta"
+          value={quote.offerType ? (QUOTE_OFFER_TYPE_LABEL[quote.offerType] ?? quote.offerType) : "—"}
+        />
+        <DetailItem
           label="Referencia comercial"
           value={quote.commercialReference?.trim() || "—"}
         />
+        {quote.commercialNotes?.trim() && (
+          <DetailItem label="Observaciones" value={quote.commercialNotes} className="sm:col-span-2" />
+        )}
         {!hideCostFromVendedor && quote.priceMxn != null && (
           <DetailItem label="Precio base" value={formatMxnDisplay(quote.priceMxn)} />
         )}
@@ -233,6 +267,42 @@ export default async function CotizacionDetallePage({
                 </span>
               )
             }
+          />
+        )}
+        {quote.equiId && (
+          <DetailItem
+            label="EQUI vinculado"
+            value={
+              <Link href={`/app/equi/${quote.equiId}`} className="font-mono text-accent hover:underline">
+                Ver equipo
+              </Link>
+            }
+          />
+        )}
+        {quote.motId && (
+          <DetailItem
+            label="MOT vinculado"
+            value={
+              <Link href={`/app/mot/${quote.motId}`} className="font-mono text-accent hover:underline">
+                Ver MOT
+              </Link>
+            }
+          />
+        )}
+        {(quote.preliminaryBrand || quote.preliminaryModel || quote.preliminarySerial || quote.preliminaryNotes) && (
+          <DetailItem
+            label="Equipo preliminar"
+            value={
+              [
+                quote.preliminaryBrand,
+                quote.preliminaryModel,
+                quote.preliminarySerial ? `Serie ${quote.preliminarySerial}` : null,
+                quote.preliminaryNotes,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "—"
+            }
+            className="sm:col-span-2"
           />
         )}
         {quote.authorizedWithoutEquipment && (
@@ -291,6 +361,90 @@ export default async function CotizacionDetallePage({
           <DetailItem label="Reparación" value={origin.repairStatus.replaceAll("_", " ")} />
         )}
       </DetailGrid>
+
+      {(quoteLines.length > 0 || intendedContacts.length > 0) && (
+        <SectionCard
+          icon={FileOutput}
+          title="Solicitud comercial capturada"
+          description="Líneas y contactos previstos al iniciar la cotización (Discovery §20.3)."
+          tone="muted"
+        >
+          {quoteLines.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs uppercase text-slate-500">
+                    <th className="py-2 pr-3">Tipo</th>
+                    <th className="py-2 pr-3">Descripción</th>
+                    <th className="py-2 text-right">Cant.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quoteLines.map((line) => (
+                    <tr key={line.id} className="border-b border-border/60">
+                      <td className="py-2 pr-3 text-slate-600">{QUOTE_LINE_KIND_LABEL[line.kind] ?? line.kind}</td>
+                      <td className="py-2 pr-3">{line.description}</td>
+                      <td className="py-2 text-right font-mono">{line.quantity}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {intendedContacts.length > 0 && (
+            <ul className="mt-4 space-y-1 text-sm text-slate-700">
+              <p className="text-xs font-semibold uppercase text-slate-500">Contactos previstos</p>
+              {intendedContacts.map((c) => (
+                <li key={c.contactId}>
+                  {c.name}
+                  {c.email && <span className="text-slate-500"> · {c.email}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+      )}
+
+      {canEditContext && captureBundle && (
+        <SectionCard
+          icon={Inbox}
+          title="Editar contexto comercial"
+          description="Mientras no haya precio CEO ni atención técnica origen, puedes ajustar líneas, equipo y contactos."
+          tone="accent"
+        >
+          <CommercialQuoteCaptureForm
+            clients={[{ id: quote.clientId, name: quote.clientName, isIntercompany: quote.clientIsIntercompany }]}
+            contacts={captureBundle[0]}
+            equiOptions={captureBundle[1]}
+            motOptions={captureBundle[2]}
+            canCreateClient={false}
+            formAction={updateQuoteCommercialContextAction}
+            cancelHref={`/app/cotizaciones/${quote.id}`}
+            lockClientId={quote.clientId}
+            quoteId={quote.id}
+            fixedOfferType={quote.offerType ?? undefined}
+            submitLabel="Guardar contexto"
+            defaults={{
+              offerType: quote.offerType ?? undefined,
+              commercialReference: quote.commercialReference ?? undefined,
+              commercialNotes: quote.commercialNotes ?? undefined,
+              equipmentMode: deriveEquipmentMode(quote),
+              equiId: quote.equiId ?? undefined,
+              motId: quote.motId ?? undefined,
+              preliminaryBrand: quote.preliminaryBrand ?? undefined,
+              preliminaryModel: quote.preliminaryModel ?? undefined,
+              preliminarySerial: quote.preliminarySerial ?? undefined,
+              preliminaryNotes: quote.preliminaryNotes ?? undefined,
+              lines: quoteLines.map((l) => ({
+                kind: l.kind,
+                description: l.description,
+                quantity: l.quantity,
+              })),
+              intendedContactIds,
+            }}
+          />
+        </SectionCard>
+      )}
 
       {origin && (origin.serviceOrders.length > 0 || origin.diagnosisStatus || origin.repairStatus) && (
         <SectionCard
@@ -606,7 +760,11 @@ export default async function CotizacionDetallePage({
                           type="checkbox"
                           name="contactIds"
                           value={c.id}
-                          defaultChecked={preselectedContactId ? c.id === preselectedContactId : c.isPrimary}
+                          defaultChecked={
+                            preselectedContactId
+                              ? c.id === preselectedContactId
+                              : intendedContactIds.includes(c.id) || c.isPrimary
+                          }
                           className="mt-1"
                         />
                         <span>

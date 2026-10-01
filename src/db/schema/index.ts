@@ -445,6 +445,16 @@ export const quotePendingOriginEnum = pgEnum("quote_pending_origin", [
   "SERVICIO_EN_CAMPO",
 ]);
 
+/** Discovery §20.1 — tipo de oferta comercial capturada por vendedor. */
+export const quoteOfferTypeEnum = pgEnum("quote_offer_type", [
+  "DIAGNOSTICO",
+  "REPARACION_SERVICIO",
+  "SERVICIO_CAMPO",
+  "VENTA_EQUIPO",
+]);
+
+export const quoteLineKindEnum = pgEnum("quote_line_kind", ["SERVICIO", "PRODUCTO"]);
+
 export const creditNoteStatusEnum = pgEnum("credit_note_status", [
   "PENDIENTE_AUTORIZACION",
   "AUTORIZADA",
@@ -780,11 +790,53 @@ export const quotes = pgTable(
     linkedQuoteId: uuid("linked_quote_id"),
     authorizedWithoutEquipment: boolean("authorized_without_equipment").notNull().default(false),
     commercialReference: text("commercial_reference"),
+    offerType: quoteOfferTypeEnum("offer_type"),
+    equiId: uuid("equi_id").references(() => equiUnits.id),
+    motId: uuid("mot_id").references(() => motUnits.id),
+    preliminaryBrand: text("preliminary_brand"),
+    preliminaryModel: text("preliminary_model"),
+    preliminarySerial: text("preliminary_serial"),
+    preliminaryNotes: text("preliminary_notes"),
+    commercialNotes: text("commercial_notes"),
     createdByUserId: uuid("created_by_user_id").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("quotes_company_status_idx").on(t.companyId, t.status)],
+);
+
+export const quoteLines = pgTable(
+  "quote_lines",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    quoteId: uuid("quote_id")
+      .notNull()
+      .references(() => quotes.id, { onDelete: "cascade" }),
+    kind: quoteLineKindEnum("kind").notNull(),
+    description: text("description").notNull(),
+    quantity: integer("quantity").notNull().default(1),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("quote_lines_quote_idx").on(t.quoteId)],
+);
+
+export const quoteIntendedContacts = pgTable(
+  "quote_intended_contacts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    quoteId: uuid("quote_id")
+      .notNull()
+      .references(() => quotes.id, { onDelete: "cascade" }),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => clientContacts.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("quote_intended_contacts_quote_idx").on(t.quoteId),
+    uniqueIndex("quote_intended_contacts_unique").on(t.quoteId, t.contactId),
+  ],
 );
 
 export const quotePriceRevisions = pgTable("quote_price_revisions", {

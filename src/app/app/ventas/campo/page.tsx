@@ -1,33 +1,51 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { canManageClients } from "@/lib/permissions";
 import { listClientsForSelect } from "../../activos/actions";
 import { createSpecialCommercialQuoteAction } from "../../cotizaciones/actions";
 import { PageHeader } from "@/components/patterns/page-header";
 import { Card } from "@/components/ui/surface";
 import { buttonVariants } from "@/components/ui/button";
+import { CommercialQuoteCaptureForm } from "@/components/commercial/commercial-quote-capture-form";
+import {
+  listActiveContactsForCompany,
+  listEquiOptionsForCommercial,
+  listMotOptionsForCommercial,
+} from "@/lib/quote-commercial-queries";
 
 export default async function ServicioCampoPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.activeCompany.code !== "SYSTRON" && !["CEO", "ADMINISTRADOR"].includes(session.role)) redirect("/app");
-  const clients = await listClientsForSelect(session.activeCompany.id);
+  const companyId = session.activeCompany.id;
+  const [clients, contacts, equiOptions, motOptions] = await Promise.all([
+    listClientsForSelect(companyId),
+    listActiveContactsForCompany(companyId),
+    listEquiOptionsForCommercial(companyId),
+    listMotOptionsForCommercial(session.activeCompany.code),
+  ]);
 
   return (
-    <div className="max-w-xl">
+    <div className="mx-auto max-w-2xl space-y-4">
       <PageHeader eyebrow="Comercial" title="Servicio en campo" description="Cotización para servicio en sitio del cliente." />
-      <Card className="p-5">
-        <form action={createSpecialCommercialQuoteAction} className="flex flex-col gap-3 text-sm sm:flex-row sm:items-end">
-          <input type="hidden" name="origin" value="SERVICIO_EN_CAMPO" />
-          <select name="clientId" required className="flex-1 rounded-md border border-border px-3 py-2">
-            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>Nueva cotización</button>
-        </form>
-        <Link href="/app/cotizaciones" className="mt-4 inline-block text-sm font-semibold text-accent hover:underline">
-          Ver cotizaciones
-        </Link>
+      <Card className="p-6">
+        <CommercialQuoteCaptureForm
+          clients={clients}
+          contacts={contacts}
+          equiOptions={equiOptions}
+          motOptions={motOptions}
+          canCreateClient={canManageClients(session.role, session.activeCompany.code)}
+          formAction={createSpecialCommercialQuoteAction}
+          cancelHref="/app/cotizaciones"
+          fixedOfferType="SERVICIO_CAMPO"
+          hiddenPendingOrigin="SERVICIO_EN_CAMPO"
+          defaults={{ offerType: "SERVICIO_CAMPO" }}
+        />
       </Card>
+      <Link href="/app/cotizaciones" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        Ver cotizaciones
+      </Link>
     </div>
   );
 }

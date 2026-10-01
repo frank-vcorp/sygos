@@ -16,8 +16,24 @@ export function quoteToCommercialDocument(data: QuoteDocumentData, companyId: st
   }
   totals.push({ label: "Total MXN", amountMxn: data.totalMxn, emphasis: true });
 
-  const detailParts = [data.originLabel];
+  const detailParts = [data.offerTypeLabel ?? data.originLabel];
   if (data.commercialReference) detailParts.push(`Ref. ${data.commercialReference}`);
+  if (data.equipmentSummary) detailParts.push(data.equipmentSummary);
+
+  const documentLines =
+    data.requestLines.length > 0
+      ? data.requestLines.map((line) => ({
+          description: `${line.quantity}× ${line.description}`,
+          detail: line.kind,
+          amountMxn: 0,
+        }))
+      : [
+          {
+            description: data.concept,
+            detail: detailParts.join(" · "),
+            amountMxn: data.subtotalMxn,
+          },
+        ];
 
   return {
     companyId,
@@ -29,13 +45,7 @@ export function quoteToCommercialDocument(data: QuoteDocumentData, companyId: st
     clientName: data.clientName,
     clientTaxId: data.clientTaxId,
     clientShippingAddress: data.clientShippingAddress,
-    lines: [
-      {
-        description: data.concept,
-        detail: detailParts.join(" · "),
-        amountMxn: data.subtotalMxn,
-      },
-    ],
+    lines: documentLines,
     totals,
     legalNote: `Precios en pesos mexicanos. Vigencia hasta ${validity.toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })} (${data.validityDays} días naturales). Los tiempos de entrega y condiciones operativas se confirman al autorizar por escrito.`,
     footerTag: "Documento generado por Sygos",
