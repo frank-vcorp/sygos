@@ -251,6 +251,21 @@ export async function getRemissionDetail(companyId: string, id: string) {
   return row ?? null;
 }
 
+export async function listPaymentsForQuote(quoteId: string, companyId: string) {
+  const db = getDb();
+  return db
+    .select({
+      payment: payments,
+      invoiceFolio: invoices.folio,
+      invoiceId: invoices.id,
+    })
+    .from(payments)
+    .innerJoin(invoices, eq(payments.invoiceId, invoices.id))
+    .where(and(eq(invoices.quoteId, quoteId), eq(payments.companyId, companyId)))
+    .orderBy(desc(payments.paidAt))
+    .limit(30);
+}
+
 export async function listPaymentsForInvoice(invoiceId: string, companyId: string) {
   const db = getDb();
   return db

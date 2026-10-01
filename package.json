@@ -12,7 +12,9 @@
     "db:ensure-patches": "tsx scripts/ensure-db-patches.ts",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/db/seed.ts",
-    "db:seed-demo": "tsx src/db/run-seed-demo.ts"
+    "db:seed-demo": "tsx src/db/run-seed-demo.ts",
+    "uat:rol": "node scripts/uat-rol-tronco-staging.mjs",
+    "uat:full": "node scripts/uat-browser-full.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",
@@ -46,6 +48,7 @@
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.35.0",
     "eslint-config-next": "^15.5.3",
+    "playwright": "^1.51.1",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"

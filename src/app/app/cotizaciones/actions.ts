@@ -9,11 +9,14 @@ import {
   clientContacts,
   clients,
   companies,
+  diagnoses,
   equiUnits,
   motUnits,
   quotePriceRevisions,
   quoteSendContacts,
   quotes,
+  repairs,
+  serviceOrders,
   users,
 } from "@/db/schema";
 import { nextCompanyFolio } from "@/lib/folio";
@@ -324,6 +327,24 @@ export async function getQuoteOriginLinks(attendanceId: string | null) {
     const [m] = await db.select({ folio: motUnits.folio }).from(motUnits).where(eq(motUnits.id, att.motId)).limit(1);
     motFolio = m?.folio ?? null;
   }
+
+  const osRows = await db
+    .select({ id: serviceOrders.id, folio: serviceOrders.folio, status: serviceOrders.status })
+    .from(serviceOrders)
+    .where(eq(serviceOrders.attendanceId, attendanceId));
+
+  const [diag] = await db
+    .select({ id: diagnoses.id, status: diagnoses.status })
+    .from(diagnoses)
+    .where(eq(diagnoses.attendanceId, attendanceId))
+    .limit(1);
+
+  const [repair] = await db
+    .select({ id: repairs.id, status: repairs.status })
+    .from(repairs)
+    .where(eq(repairs.attendanceId, attendanceId))
+    .limit(1);
+
   return {
     attendanceId: att.id,
     attentionType: att.attentionType,
@@ -331,6 +352,11 @@ export async function getQuoteOriginLinks(attendanceId: string | null) {
     equiFolio,
     motId: att.motId,
     motFolio,
+    serviceOrders: osRows,
+    diagnosisId: diag?.id ?? null,
+    diagnosisStatus: diag?.status ?? null,
+    repairId: repair?.id ?? null,
+    repairStatus: repair?.status ?? null,
   };
 }
 

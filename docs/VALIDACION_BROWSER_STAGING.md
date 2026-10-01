@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| URL | https://sygos.vector-ia.mx |
+| URL | https://sygos.systronia.com (UAT 2026-09-30); alterno https://sygos.vector-ia.mx |
 | Commit desplegado | `cecaa31c` (docs + build previo) |
 | Fecha recorrido | 2026-09-28 / 2026-09-29 (UTC-6); **barrido completo UAT** 2026-09-29 |
 | Rol usado | Vectoria — **ADMINISTRADOR** (sesión principal) + **6 usuarios demo** (2026-09-29) |

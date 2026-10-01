@@ -8,8 +8,10 @@ import {
   Percent,
   Send,
   Receipt,
+  Stethoscope,
   Truck,
   Users,
+  Wrench,
 } from "lucide-react";
 import { PageHeader } from "@/components/patterns/page-header";
 import { DetailGrid, DetailItem } from "@/components/patterns/detail-grid";
@@ -35,6 +37,7 @@ import {
   createRemissionAction,
   listDocumentRequestsForQuote,
   listInvoicesForQuote,
+  listPaymentsForQuote,
   listRemissionsForQuote,
   requestDocumentAction,
 } from "../../finanzas/actions";
@@ -79,14 +82,16 @@ export default async function CotizacionDetallePage({
   }
   const authorized =
     quote.status === "AUTORIZADA" || quote.status === "AUTORIZADA_PENDIENTE_INGRESO_EQUIPO";
-  const [contacts, origin, intercoPartner, quoteInvoices, quoteRemissions, quoteDocRequests] = await Promise.all([
-    listContactsForClient(quote.clientId),
-    getQuoteOriginLinks(quote.attendanceId),
-    getIntercompanyQuotePartner(quote.id),
-    authorized ? listInvoicesForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
-    authorized ? listRemissionsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
-    authorized ? listDocumentRequestsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
-  ]);
+  const [contacts, origin, intercoPartner, quoteInvoices, quoteRemissions, quoteDocRequests, quotePayments] =
+    await Promise.all([
+      listContactsForClient(quote.clientId),
+      getQuoteOriginLinks(quote.attendanceId),
+      getIntercompanyQuotePartner(quote.id),
+      authorized ? listInvoicesForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
+      authorized ? listRemissionsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
+      authorized ? listDocumentRequestsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
+      authorized ? listPaymentsForQuote(quote.id, session.activeCompany.id) : Promise.resolve([]),
+    ]);
   const fiscalDone = quoteInvoices.length > 0 || quoteRemissions.length > 0;
   const showSupplierCost = canSeeSupplierCost(session);
   const hideCostFromVendedor = session.role === "VENTAS_SYSTRON";
@@ -263,7 +268,61 @@ export default async function CotizacionDetallePage({
             }
           />
         )}
+        {origin?.diagnosisStatus && (
+          <DetailItem
+            label="Diagnóstico"
+            value={
+              <span>
+                {origin.diagnosisStatus.replaceAll("_", " ")}
+                {origin.diagnosisId && (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <Link href={`/app/tecnica/${origin.attendanceId}`} className="text-accent hover:underline">
+                      Ver atención
+                    </Link>
+                  </>
+                )}
+              </span>
+            }
+          />
+        )}
+        {origin?.repairStatus && (
+          <DetailItem label="Reparación" value={origin.repairStatus.replaceAll("_", " ")} />
+        )}
       </DetailGrid>
+
+      {origin && (origin.serviceOrders.length > 0 || origin.diagnosisStatus || origin.repairStatus) && (
+        <SectionCard
+          icon={Stethoscope}
+          title="Operación técnica vinculada"
+          description="Órdenes de servicio y estados del flujo que originó esta cotización."
+          tone="muted"
+        >
+          <ul className="space-y-2 text-sm">
+            {origin.serviceOrders.map((os) => (
+              <li key={os.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+                <span>
+                  <Wrench className="mr-1 inline size-3.5 text-slate-500" />
+                  <span className="font-mono text-xs font-bold text-accent">{os.folio}</span>
+                  <StatusBadge status={os.status} className="ml-2" />
+                </span>
+                <Link href={`/app/tecnica/${origin.attendanceId}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                  Atención técnica
+                </Link>
+              </li>
+            ))}
+            {!origin.serviceOrders.length && (
+              <li className="text-slate-500">
+                Sin OS registrada ·{" "}
+                <Link href={`/app/tecnica/${origin.attendanceId}`} className="text-accent hover:underline">
+                  Abrir atención
+                </Link>
+              </li>
+            )}
+          </ul>
+        </SectionCard>
+      )}
 
       {canSetQuotePrice(session.role) && quote.pendingPricing && (
         <SectionCard
@@ -401,6 +460,25 @@ export default async function CotizacionDetallePage({
                 </li>
               ))}
             </ul>
+          )}
+          {quotePayments.length > 0 && (
+            <>
+              <p className="mb-2 text-xs font-semibold uppercase text-slate-500">Pagos registrados</p>
+              <ul className="mb-4 divide-y rounded-xl border border-border text-sm">
+                {quotePayments.map(({ payment: pay, invoiceFolio, invoiceId }) => (
+                  <li key={pay.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                    <span>
+                      {formatMxnDisplay(pay.amountMxn)} · {pay.validationStatus.replaceAll("_", " ")}
+                      <span className="text-slate-500"> · factura </span>
+                      <Link href={`/app/finanzas/facturas/${invoiceId}`} className="font-mono text-xs text-accent hover:underline">
+                        {invoiceFolio}
+                      </Link>
+                    </span>
+                    <span className="text-xs text-slate-500">{new Date(pay.paidAt).toLocaleDateString("es-MX")}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
           <div className="flex flex-wrap gap-3">
             {canRequestInvoice(session) && (

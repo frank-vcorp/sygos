@@ -2,10 +2,10 @@
  * Cierra UAT del plan (sin timbrado/envío real de comprobantes).
  * Env: VECTORIA_SUPERUSER_PASSWORD, SYGOS_DEMO_USERS_PASSWORD
  */
-import { chromium } from "playwright";
+import { launchUatBrowser } from "./uat-browser-launch.mjs";
 import { writeFileSync } from "fs";
 
-const BASE = "https://sygos.vector-ia.mx";
+const BASE = (process.env.SYGOS_STAGING_URL || "https://sygos.systronia.com").replace(/\/$/, "");
 const ADMIN = "Vectoria";
 const ADMIN_PW = (process.env.VECTORIA_SUPERUSER_PASSWORD || "").trim();
 const DEMO_PW = (process.env.SYGOS_DEMO_USERS_PASSWORD || "").trim();
@@ -36,7 +36,7 @@ async function switchCo(page, name) {
 
 async function main() {
   if (!ADMIN_PW || !DEMO_PW) throw new Error("missing passwords");
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchUatBrowser();
 
   // Interco: SM factura → SYSTRON pago parcial (coord)
   {

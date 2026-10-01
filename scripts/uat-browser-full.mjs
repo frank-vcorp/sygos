@@ -2,10 +2,10 @@
  * Full staging browser UAT — emits checklist keys validated.
  * Env: SYGOS_VECTORIA_INITIAL_PASSWORD, SYGOS_DEMO_USERS_PASSWORD
  */
-import { chromium } from "playwright";
+import { launchUatBrowser } from "./uat-browser-launch.mjs";
 import { writeFileSync } from "fs";
 
-const BASE = "https://sygos.vector-ia.mx";
+const BASE = (process.env.SYGOS_STAGING_URL || "https://sygos.systronia.com").replace(/\/$/, "");
 const ADMIN = "Vectoria";
 const ADMIN_PW = (
   process.env.SYGOS_VECTORIA_INITIAL_PASSWORD ||
@@ -56,7 +56,7 @@ async function switchCompany(page, name) {
 
 async function main() {
   if (!ADMIN_PW || !DEMO_PW) throw new Error("missing passwords in env");
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchUatBrowser();
 
   // Fase 1
   {

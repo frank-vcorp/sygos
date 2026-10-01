@@ -2,9 +2,9 @@
  * Staging UAT sweep — outputs JSON lines: { id, ok, note }
  * Usage: SYGOS_DEMO_USERS_PASSWORD=... node scripts/uat-staging-sweep.mjs
  */
-import { chromium } from "playwright";
+import { launchUatBrowser } from "./uat-browser-launch.mjs";
 
-const BASE = process.env.SYGOS_STAGING_URL ?? "https://sygos.vector-ia.mx";
+const BASE = (process.env.SYGOS_STAGING_URL || "https://sygos.systronia.com").replace(/\/$/, "");
 const DEMO_PW = process.env.SYGOS_DEMO_USERS_PASSWORD?.trim();
 const ADMIN_USER = process.env.SYGOS_ADMIN_USER ?? "Vectoria";
 const ADMIN_PW = process.env.SYGOS_VECTORIA_INITIAL_PASSWORD?.trim();
@@ -42,7 +42,7 @@ async function pathAfterGoto(page, path) {
 }
 
 async function main() {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchUatBrowser();
 
   // --- Fase 1 ---
   {
