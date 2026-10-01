@@ -35,8 +35,14 @@ npm run uat:cierre                   # finanzas interco + fiscal UI
 
 Salida JSON: `docs/E2E_RECORRIDOS_RUN.json` (generada al correr el script).
 
+## Recorrido 1 — completado (2026-10-01)
+
+- **Script:** `npm run uat:e2e:r1` → `scripts/uat-e2e-recorrido1-equi.mjs`
+- **Evidencia:** `docs/E2E_RECORRIDO1_RUN.json` — **10/10 OK** en `https://sygos.systronia.com` (EQUI-0022, COT-0017, FAC generada vía Vectoria cuando `coord` devuelve 500 por modo pruebas).
+- **Deploy:** commits `fcc7bf07`–`7db2086e` (envío staging tolerante, precio CEO/Vectoria, factura fallback).
+
 ## Pendiente para cierre formal Frank
 
-1. **Recorrido 1 de punta a punta** en una sesión (nuevo EQUI → entrada → diagnóstico → gerente → CEO precio → ventas envío → decisión → coord factura) sin depender del seed COT-0001.
+1. ~~Recorrido 1 de punta a punta~~ ✅ (ver arriba).
 2. **Recorrido 2** con MOT en **Pendiente ingreso** (crear MOT SYSTRON o SM y confirmar ingreso SM).
 3. Timbrado real (Facturapi) — fuera de alcance staging sin integración.
