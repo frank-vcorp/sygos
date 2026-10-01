@@ -64,9 +64,14 @@ async function main() {
     const home = await gotoOk(page, "/app", ["Inicio", "bandeja", "SYSTRON", "Comercial"]);
     if (home.ok) ok("rol-ventas-inicio");
     else bad("rol-ventas-inicio", home.pathname);
-    const cotNueva = await gotoOk(page, "/app/cotizaciones/nueva", ["Crear cliente", "Cliente", "cotización"]);
-    if (cotNueva.ok) ok("rol-ventas-cot-nueva-quick-client");
-    else bad("rol-ventas-cot-nueva-quick-client", cotNueva.text.slice(0, 60));
+    const cotNueva = await gotoOk(page, "/app/cotizaciones/nueva", [
+      "Crear cliente",
+      "Cliente",
+      "Tipo de oferta",
+      "Servicios / productos",
+    ]);
+    if (cotNueva.ok) ok("rol-ventas-cot-nueva-captura-20-3");
+    else bad("rol-ventas-cot-nueva-captura-20-3", cotNueva.text.slice(0, 80));
     if (await navHas(page, "Cotizaciones")) ok("rol-ventas-nav-cotizaciones");
     else bad("rol-ventas-nav-cotizaciones");
     if (!(await navHas(page, "Finanzas"))) ok("rol-ventas-sin-finanzas-nav");
