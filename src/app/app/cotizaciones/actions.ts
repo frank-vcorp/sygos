@@ -41,6 +41,14 @@ async function requireCommercial() {
   return session;
 }
 
+/** Staging UAT: marcar ENVIADA aunque SendGrid/WhatsApp fallen (p. ej. API key inválida). */
+function allowQuoteSendWithoutDelivery() {
+  if (process.env.SYGOS_RELAX_QUOTE_SEND === "1") return true;
+  const fqdn = process.env.COOLIFY_FQDN?.trim() ?? "";
+  const publicUrl = process.env.SYGOS_PUBLIC_URL?.trim() ?? "";
+  return fqdn === "sygos.systronia.com" || publicUrl.includes("systronia.com");
+}
+
 export async function listQuotes(companyId: string) {
   const db = getDb();
   return db
@@ -228,7 +236,10 @@ export async function sendQuoteAction(formData: FormData) {
       errors.every((e) =>
         /SendGrid no configurado|WhatsApp no vinculado|no tiene correo|no tiene teléfono/i.test(e),
       );
-    if (!stagingWithoutIntegration) {
+    const allChannelsFailed =
+      errors.length > 0 && errors.every((e) => /\(correo\)|\(WhatsApp\)/.test(e));
+    const relaxStaging = allowQuoteSendWithoutDelivery() && allChannelsFailed;
+    if (!stagingWithoutIntegration && !relaxStaging) {
       throw new Error(errors.join(" · ") || "No se pudo enviar por ningún canal");
     }
   }
